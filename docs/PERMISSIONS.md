@@ -62,3 +62,9 @@ Cheddr and Dizzle Sales Manager jointly approved R01-R03 as reviewed at commit 6
 - **R03:** An authorized releaser must record the applicable approved terms and the reason for early release. That record is sufficient when approved terms are already documented. Missing or disputed terms hold the release for explicit approval. Approval authority and evidence format remain open; any later approval must be recorded and the release safeguards rechecked.
 
 See [ACCEPTANCE](ACCEPTANCE.md) A26-A30 for review-follow-up cases. Removing an action grant does not remove unrelated grants, but no revoked permission may continue to authorize the affected record access or release through caches, old sessions or queued work.
+
+## Local Phase 1 test setup
+
+Server-defined synthetic identities implement the scoped invoice/job/release rules; the test dropdown selects an identity, not client-supplied roles. These are local facilities, not Google Workspace login or a deployed access system. Every API request rechecks identity active state, read/release grants and current organization/assignment. The [local guide](LOCAL_DEMO.md) lists exact routes and negative cases.
+
+Warehouse reads released operational jobs/items/review flags only; it cannot list/read invoices or see balances/release reasons. Manager/owner/admin fixture identities have a separate demo simulation grant for synthetic payment/verification events within their organization. Reset is restricted to demo-o1. Reps, warehouse-only, disabled, revoked and out-of-scope identities cannot use these controls. No production provider permission or financial write is implied.

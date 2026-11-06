@@ -81,3 +81,17 @@ Source: explicit user report of joint approval by **Cheddr and Dizzle Sales Mana
 | Approving participants | Cheddr and Dizzle Sales Manager |
 
 Approval is limited to R01-R03 and A26-A30 as reviewed. It is not evidence of executed tests, implemented capabilities, approval of all other proposed technical choices, or verification of Zoho behavior. Q01-Q04 and other unresolved questions remain open; terms-dispute approval authority/evidence format and deployment ownership are not assigned by this sign-off. Both PRs remain draft, main unchanged; merge is a separate step for Cheddr, and app scaffolding remains a separate task on hold.
+
+## Local Phase 1 implementation choices, November 6, 2026
+
+Source: user's explicit request to build the local invoice-to-warehouse demo after PR #1 merged. This authorizes the scoped local scaffold and supersedes the prior scaffolding hold for this task; it does not authorize production infrastructure, live integration or external sends. Active lead: Cheddr (Marketing / Admin). R01-R03 business behavior is unchanged.
+
+| ID | Local implementation choice | Limits / review |
+|---|---|---|
+| L01 | One npm project: React/TypeScript + Vite, Node built-in HTTP API via tsx, Zod input schemas; Node 24 baseline | Directory layout and local API mapping are now concrete for both builders to review; production hosting remains undecided |
+| L02 | In-memory fixtures, synchronous single-process release/job/audit mutations keyed by canonical invoice, immutable original release audit | No durable transactions, worker recovery, database, migrations or production uniqueness guarantee |
+| L03 | Server-defined local test identity selected by header, loopback-only listeners, no-store API and restrictive host/origin handling | Demonstrates role/action/organization/assignment checks; deliberately not real authentication. No external deployment |
+| L04 | Synthetic source snapshots use USD cents, versions 1/2, five-minute freshness and explicit verification controls | Fixture assumptions only; Q01-Q04 remain open. Provider ordering/payment/credit semantics must be validated independently |
+| L05 | HTTP integration tests + Playwright Chromium user flows; PR Actions run typecheck/tests/build/browser checks | No deployment permissions or live credentials; approved acceptance specs have only the scoped coverage documented in LOCAL_DEMO |
+
+See [LOCAL_DEMO](LOCAL_DEMO.md) for reproducible behavior and [CONTRACTS](CONTRACTS.md) for consumer boundaries. Owner/admin and sales manager release permissions remain distinct from fixture simulation grants; price lists, COAs and marketing are outside this branch.
