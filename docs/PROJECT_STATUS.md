@@ -44,6 +44,8 @@ November 6: active lead is user / marketing lead with Codex. Branch `docs/image-
 
 The [proposal](IMAGE_STUDIO_SALES_ASSETS_PROPOSAL.md) covers draft/review/publish/version/retirement, selected/all audiences, immutable approvals, three synthetic asset examples and AS01-AS17. Shared additions: proposed C6 and explicit editorial/publication action grants, logged in DECISIONS as M01-M07. C1-C5, A01-A25, AGENTS and PROJECT_SCOPE are preserved. No application, dependency, infrastructure, provider call, generated image or external send is part of this task.
 
+Published as [draft PR #2](https://github.com/Dizzledist/dizzle-business-suite/pull/2), dependent on PR #1. Review the [proposal-only delta](https://github.com/Dizzledist/dizzle-business-suite/compare/docs/phase-0-foundation...docs/image-studio-sales-assets) while the foundation remains unmerged. Documentation checks passed: 52 relative links, three parseable sample JSON records with consistent references, 17 unique scenario rows and whitespace review. These do not constitute runtime acceptance or shared signoff.
+
 Next tasks after proposal review:
 
 - **User / marketing lead:** Decide/editorially review M01 and M03-M07, nominate image/price-list/COA reviewers with owner/admin, and settle image inputs/exports and retirement behavior. No generation is authorized by this proposal.
