@@ -4,7 +4,7 @@
 
 Read [README](README.md), [project scope](docs/PROJECT_SCOPE.md), [status](docs/PROJECT_STATUS.md) and the latest [handoff](docs/HANDOFF.md) at the start of every session. The scope is the agreed business baseline; record subsequent explicit decisions in [DECISIONS](docs/DECISIONS.md) with source, date and superseded rule. Do not silently resolve contradictions.
 
-Phase 0 documentation was merged in PR #1. The user's November 6 Phase 1 task authorizes a minimal local React/TypeScript app and API with synthetic invoice/payment/warehouse fixtures, API-enforced test identities, isolated tests and PR CI. This supersedes the earlier scaffolding hold for this scoped task only. No live Zoho, production infrastructure, real identity provider, outbound sends, department dashboards or marketing Assets belong in this task. See [local demo](docs/LOCAL_DEMO.md) for run commands, fixture assumptions and acceptance coverage.
+Phase 0 and the Phase 1 local workflow were merged in PR #1 and PR #3. The user's November 6 follow-on authorizes a local Warehouse Fulfillment Kanban, sample packing slip, tracking and captured Slack test adapter using the existing release checks. This supersedes the earlier department-dashboard exclusion only for this scoped warehouse board. No live Slack/Zoho, label purchasing, stock writes, production infrastructure, real identity provider, customer sends, other department dashboards or marketing Assets belong in this task. See [local demo](docs/LOCAL_DEMO.md) and [warehouse guide](docs/WAREHOUSE_DEMO.md) for run commands, fixture assumptions and acceptance coverage.
 
 ## Builder responsibilities
 

@@ -59,4 +59,18 @@ Cheddr and Dizzle Sales Manager [jointly approved R01-R03 and A26-A30](DECISIONS
 
 ## Evidence for vertical-slice completion
 
+### Local warehouse regression extension
+
+The user's follow-on warehouse task adds these local checks without claiming full shipment/notification or production acceptance. See [WAREHOUSE_DEMO](WAREHOUSE_DEMO.md) for the exact transition boundary and gaps.
+
+| ID | Local evidence required |
+|---|---|
+| K01 | Existing payment/terms release creates one Orders card; later payment/replay never resets shipped state or release audit |
+| K02 | Warehouse opens authorized sample PDF and printable preview; Print invokes printing; sample is labeled generic/non-job-specific and distinct from invoice |
+| K03 | Drag-to-Shipped opens tracking popup; cancel leaves full job unchanged. Button alternative requires tracking and API rejects invalid input |
+| K04 | Save shipment/status before adapter call. Alert contains assigned rep/customer/invoice/tracking. Different request keys/same tracking yield same shipment and one captured alert |
+| K05 | Adapter failure retains shipment/failed alert; retry captures one delivery with original shipment ID; repeated sent retry is a no-op |
+| K06 | Reps and non-warehouse managers cannot move/retry; disabled/revoked/cross-organization requests fail; slip reads follow job scope |
+| K07 | Search/type/priority/Pacific-date filters preserve scoped data; pickup routes to awaiting pickup; partial-shipment and unsupported/correction moves are rejected and gaps displayed |
+
 Record isolated test results for A01-A30, concurrency/recovery evidence, role checks across retrieval paths, provider mapping verification and unresolved limitations. R01-R03 and A26-A30 are jointly approved as recorded in DECISIONS; any later policy amendments require explicit review. No live acceptance or cutover until relevant Q01-Q06/Q08 decisions are settled and staging is isolated. The user's scoped Phase 1 request authorizes the local scaffold; additional departments, live integrations and production infrastructure remain separate tasks.

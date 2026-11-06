@@ -13,6 +13,8 @@ npm run dev
 
 Open **http://127.0.0.1:5173**. API runs on **http://127.0.0.1:3001**. Both bind loopback only; keep these ports free. Stop with Ctrl+C. Separate terminals can instead run `npm run dev:api` and `npm run dev:web`. The API rejects `NODE_ENV=production`; do not publish the fixture app or expose it through a tunnel.
 
+For the follow-on Warehouse Kanban, document viewing/printing, tracking moves and local Slack outcomes, follow [WAREHOUSE_DEMO](WAREHOUSE_DEMO.md). Phase 1 PR #3 was merged as `d4afc223d7313274ecea75f3655d2188abbbbbd6`; the warehouse branch starts from that main revision and preserves the release logic.
+
 State is in memory, shared by tabs connected to the same API process, and resets on API restart, server watch reload, or **Reset demo**. There is no database/migration, secret configuration or production startup command. Demo reset is permitted only to the demo-o1 manager/owner/admin. No `.env` file is needed.
 
 ## Reproduce the workflow
@@ -66,7 +68,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-`npm run check` runs the four checks after browser installation. On Linux, use `npx playwright install --with-deps chromium` if browser OS dependencies are absent. Playwright starts isolated local servers; stop `npm run dev` before browser tests because they intentionally refuse to reuse an existing demo. API tests create fresh ephemeral-port servers per case. Browser tests reset the fixture API and run serially. Screenshots/traces are ignored under `test-results/`.
+`npm run check` runs the four checks after browser installation. On Linux, use `npx playwright install --with-deps chromium` if browser OS dependencies are absent. Playwright uses isolated loopback ports **5273** (web) and **3101** (API) and refuses to reuse those test servers. The regular demo on 5173/3001 may stay running. API tests create fresh ephemeral-port servers per case. Browser tests reset their own fixture API and run serially. Screenshots/traces are ignored under `test-results/`. PDF-viewer tests use full Chromium's new headless mode, also installed by the Chromium setup command.
 
 [GitHub Actions](../.github/workflows/checks.yml) runs typecheck, HTTP tests, build and Chromium browser tests on PRs using Node 24 and `npm ci`. No deployment, provider credentials or write permissions are configured. No separate lint tool is installed; TypeScript and tests are the current code checks.
 

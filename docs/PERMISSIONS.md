@@ -68,3 +68,9 @@ See [ACCEPTANCE](ACCEPTANCE.md) A26-A30 for review-follow-up cases. Removing an 
 Server-defined synthetic identities implement the scoped invoice/job/release rules; the test dropdown selects an identity, not client-supplied roles. These are local facilities, not Google Workspace login or a deployed access system. Every API request rechecks identity active state, read/release grants and current organization/assignment. The [local guide](LOCAL_DEMO.md) lists exact routes and negative cases.
 
 Warehouse reads released operational jobs/items/review flags only; it cannot list/read invoices or see balances/release reasons. Manager/owner/admin fixture identities have a separate demo simulation grant for synthetic payment/verification events within their organization. Reset is restricted to demo-o1. Reps, warehouse-only, disabled, revoked and out-of-scope identities cannot use these controls. No production provider permission or financial write is implied.
+
+## Local Warehouse Kanban extension
+
+The user's follow-on request adds an explicit `move` grant to server-defined identities. Only an active **warehouse role plus move grant**, within job organization/read scope, can move a released card or retry a saved shipment alert. Owner/admin/sales-manager roles alone grant no warehouse mutations. Reps remain read-only even for assigned cards; current assignment also gates packing-slip reads. Protected slips are available to the warehouse operational role only for released, organization-scoped jobs.
+
+Manager/owner/admin demo identities may simulate one local alert failure within demo-o1; this is not permission to send to Slack. The [warehouse guide](WAREHOUSE_DEMO.md) specifies current-source/card revision holds and supported states. Disabled/revoked/cross-organization requests remain denied. No invoice/payment/stock mutation, label purchase or generalized warehouse permission grant is implied by the local role setup.

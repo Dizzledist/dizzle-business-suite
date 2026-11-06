@@ -616,3 +616,248 @@ footer p {
     font-size: 10px;
   }
 }
+
+/* Local warehouse board and print sample. */
+.board-filters {
+  display: grid;
+  grid-template-columns: 2fr repeat(4, 1fr);
+  gap: 10px;
+  margin: 20px 0;
+}
+.board-filters label,
+.modal label {
+  font-size: 11px;
+  color: #c1c1cb;
+}
+.board-filters input,
+.board-filters select,
+.modal input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px;
+  color: #f5f5f8;
+  background: #202027;
+  border: 1px solid #40404c;
+  border-radius: 7px;
+  min-width: 0;
+  font: inherit;
+}
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 18px;
+  align-items: start;
+}
+.kanban-column {
+  background: #17171e;
+  border: 1px solid #31313d;
+  border-radius: 10px;
+  min-height: 230px;
+  padding: 12px;
+}
+.column-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 2px 14px;
+  border-bottom: 2px solid #b63b49;
+  margin-bottom: 14px;
+}
+.column-title h3 {
+  margin: 0;
+  font-size: 13px;
+}
+.column-title > span {
+  background: #30303c;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+.column-hint {
+  font-size: 11px;
+  color: #a6a6b5;
+}
+.kanban .job-card {
+  padding: 14px;
+  margin-bottom: 12px;
+  min-width: 0;
+}
+.kanban .job-card[draggable="true"] {
+  cursor: grab;
+}
+.kanban .job-card p {
+  font-size: 12px;
+}
+.kanban .job-card .job-id {
+  font-size: 9px;
+}
+.card-meta {
+  display: flex;
+  gap: 10px;
+  color: #d0bda4;
+  font-size: 11px;
+}
+.card-notes {
+  line-height: 1.6;
+}
+.kanban .job-item {
+  gap: 10px;
+  font-size: 10px;
+}
+.kanban button {
+  padding: 8px;
+  font-size: 10px;
+  margin-top: 8px;
+}
+.kanban details {
+  margin: 14px 0;
+  border-top: 1px solid #393942;
+  padding-top: 12px;
+  font-size: 11px;
+}
+.kanban summary {
+  cursor: pointer;
+  color: #d9d9e0;
+}
+.move-button {
+  width: 100%;
+  background: #8b2d3a;
+  border-color: #b54c5c;
+}
+.tracking {
+  background: #264b3a55;
+  border-radius: 6px;
+  padding: 10px;
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+.tracking p {
+  color: #b3e4c9;
+}
+.slack-preview {
+  margin-top: 16px;
+  border-top: 1px solid #45534c;
+  padding-top: 12px;
+  overflow-wrap: anywhere;
+}
+.slack-preview h4 {
+  font-size: 11px;
+  margin: 0;
+  color: #aee1c3;
+}
+.slack-preview p {
+  font-size: 10px !important;
+}
+.slack-preview.failed h4,
+.slack-preview.failed p[role="alert"] {
+  color: #ffb4bf;
+}
+.modal-overlay,
+.print-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000b;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow: auto;
+}
+.modal {
+  background: #202029;
+  border: 1px solid #53535f;
+  border-radius: 14px;
+  max-width: 520px;
+  width: 100%;
+  padding: 28px;
+}
+.modal h2 {
+  margin-bottom: 16px;
+}
+.modal p {
+  font-size: 12px;
+  margin-top: 12px;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+.modal-actions .primary {
+  width: auto;
+}
+.print-overlay {
+  display: block;
+  background: #111e;
+}
+.no-print {
+  max-width: 720px;
+  margin: 0 auto 20px;
+}
+.packing-paper {
+  background: white;
+  color: #222;
+  padding: 45px;
+  margin: 0 auto;
+  max-width: 720px;
+  min-height: 900px;
+}
+.packing-paper h1 {
+  background: #ed4051;
+  color: #fff;
+  font-size: 26px;
+  padding: 20px;
+  letter-spacing: 0;
+}
+.packing-paper p {
+  color: #333;
+  margin: 20px 0;
+}
+.packing-paper h2 {
+  margin: 30px 0;
+}
+.packing-paper table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 40px 0;
+}
+.packing-paper th,
+.packing-paper td {
+  text-align: left;
+  padding: 12px 6px;
+  border-bottom: 1px solid #aaa;
+}
+.packing-paper th {
+  background: #eee;
+}
+@media (max-width: 1000px) {
+  .board-filters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media print {
+  body > *:not(.print-overlay) {
+    display: none !important;
+  }
+  .print-overlay {
+    position: static;
+    display: block;
+    background: white;
+    padding: 0;
+    overflow: visible;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .packing-paper {
+    padding: 10px;
+    margin: 0;
+    max-width: none;
+    min-height: 0;
+  }
+}

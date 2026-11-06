@@ -2,40 +2,38 @@
 
 Updated: November 6, 2026 (America/Los_Angeles).
 
-## Verified starting state and current task
+## Current task and verified base
 
-Repository: Dizzledist/dizzle-business-suite, origin `https://github.com/Dizzledist/dizzle-business-suite.git`. Phase 0 PR #1 merged as `19662f7cd731a64828801d52e825d5406be98633`. Fetched origin/main was that commit and ancestry was verified before creating **feat/phase-1-local-workflow**. Starting tracked tree was clean; `dizzle-business-suite.code-workspace` remains untracked/excluded.
+Cheddr and Dizzle Sales Manager approved Phase 1 at `dac677db9a76d43118717a68d543e81cc3c777fe`. PR #3 targeted main, exact-head GitHub Actions passed, GitHub reported clean mergeability and allowed merge commits. Marked ready and merged as **d4afc223d7313274ecea75f3655d2188abbbbbd6**. Verified app, demo guide and CI workflow on origin/main matched the approved head.
 
-Current task: user's explicit Phase 1 local workflow request. Active foundation/build lead is Cheddr (Marketing / Admin), with this Codex session implementing the scoped task. The request supersedes the earlier scaffolding hold for this local prototype only. Main stays unchanged during review; PR #2 remains a separate draft.
+The subsequent user request authorizes the Warehouse Fulfillment Kanban. Created **feat/warehouse-fulfillment-kanban** from fetched origin/main at that merge. Active lead: Cheddr (Marketing / Admin) with Codex. Main stays unchanged after the authorized Phase 1 merge; PR #2 remains draft and separate. Workspace file remains untracked/excluded.
 
-Published in [draft PR #3](https://github.com/Dizzledist/dizzle-business-suite/pull/3) against main. Implementation commit: `3439260`; publication notes follow on the same branch. Local checks pass; GitHub Actions results are tracked on the PR independently from local evidence.
+Published as [draft PR #4](https://github.com/Dizzledist/dizzle-business-suite/pull/4) against main. Implementation commit `caa4e69`; this publication note follows on the same branch. Local checks passed; GitHub Actions results are tracked on that PR separately from local evidence.
 
-## Implemented local slice
+## Implemented local warehouse slice
 
-- React/TypeScript/Vite shell with server-defined sales manager, rep, warehouse, owner/admin and negative test identities.
-- Loopback Node API with organization/assignment scope and active read/release grants enforced on every request. Warehouse receives released operational jobs only, without invoice balances/release reasons.
-- Synthetic invoice/payment adapter, verified-full-payment release, documented approved terms/reason release, single canonical job, preserved original audit, replay/older-event handling, and holds/review flags for stale/unverified/mapping uncertainty.
-- Invoice list/detail, source balance/payment/freshness, linked job/release audit, demo event/reset controls and scoped warehouse board. All state is in memory.
-- PR CI for typecheck, HTTP tests, client build and Chromium browser tests; [run guide and API/coverage details](LOCAL_DEMO.md).
+- Existing Phase 1 release path still creates exactly one Orders job from verified full payment or authorized terms/reason; payment replay and later payment preserve existing job/status/release audit.
+- Dark Orders, Partially Shipped, Shipped and Dropoff/Pickup columns, scoped counts/search and shipping type/priority/inclusive Pacific created-date filters.
+- Cards expose customer, invoice, assigned rep, shipping type, priority, notes, timestamps, items and documents. Sales reads respect current account/organization scope.
+- Authenticated sample packing slip PDF plus print preview/action; explicitly separate from invoice PDF and labeled generic/non-job-specific. ReportLab output visually checked with Poppler.
+- Warehouse-role + move-grant checks in API; drag/button Shipped popup requires tracking, Cancel does not mutate. Stale source/card revisions hold new moves.
+- Shipment/status saved before in-memory outbox and local Slack adapter. Alert includes rep/customer/invoice/tracking; semantic retries/different keys preserve one shipment/capture. Failure retains saved shipment and exposes explicit retry.
+- Pickup routing to awaiting-pickup is supported; Partially Shipped is visible/read-only. Partial quantities, pickup completion, corrections and per-job documents remain gaps.
 
-Approved R01-R03 and A26-A30 are the business baseline. [DECISIONS](DECISIONS.md) records local implementation choices; they do not verify Zoho. [CONTRACTS](CONTRACTS.md) records the local API mapping for shared review. No marketing/Assets scope from PR #2 was imported.
+## Validation and limits
 
-## Validation and acceptance evidence
+Local checks cover **49 HTTP tests**, **5 Chromium tests**, typecheck and build. Browser evidence includes actual PDF opening, print media/content/function invocation (not physical printer output), cancellation, tracking, alert capture/failure/retry, denied rep move and filters. Final command/link/whitespace outcomes and PR publication are recorded in the handoff/final response.
 
-`npm run check` passed locally on Node 24: typecheck, **31 HTTP integration tests**, build and **3 Chromium browser tests**. The added automatic-payment regression starts with a fresh unpaid invoice, proves the warehouse is empty, receives full payment without a terms release, and verifies one warehouse job with unchanged ID/original audit after replay. Desktop and mobile screenshots were visually inspected in the initial implementation. No separate lint configuration exists.
+Regular demo: 5173/3001. Playwright uses isolated 5273/3101 so an existing demo need not be stopped. Both API instances bind loopback; LOCAL_API_PORT/LOCAL_WEB_PORT are optional local test configuration. State/outbox/captures reset on restart; this is not durable storage or production authentication.
 
-Implemented acceptance evidence: A02-A10; denial-response/no-job portion of A11 (safe denial audit remains unimplemented); in-process concurrency portion of A12; A13-A14; draft/credit/mapping safeguards from A15-A17; invoice/job scope portion of A18/A28; active-job behavior of A26-A27; A29; missing/disputed terms hold from A30. See the precise limits in [LOCAL_DEMO](LOCAL_DEMO.md). These are fixture tests, not live provider acceptance or completed production Phase 1.
+See [warehouse guide](WAREHOUSE_DEMO.md) and [Phase 1 guide](LOCAL_DEMO.md) for exact routes, demo steps, transitions and acceptance gaps. Safe denial audit remains unimplemented; tested denials do not imply full A11 completion. No live Slack, label purchasing, Zoho stock changes, deployment or customer sends. Q01-Q04 provider behavior and production architecture remain open.
 
-## Gaps and next steps
+## Next tasks
 
-No Google Workspace authentication, durable persistence/queue/audit, multi-process transactions, protected files/search/AI, reassignment UI, source aliases/import, invoice amendments/reversals, shipment quantities/tracking, notifications, migration, live Zoho or staging/production environment. Jobs use only Orders; no new warehouse stage was approved. Archive-specific A27 behavior and durable crash recovery are deferred. Terms-dispute resolution has no authority/UI contract yet; these invoices stay held.
-
-Q01-Q04 remain open: actual Zoho origin/organization/data-center mapping, payment/credit semantics, event ordering/freshness and stock effects. Demo five-minute freshness and ordered source snapshots are labeled fixture assumptions.
-
-| Builder | Next safe task |
+| Builder | Next safe step |
 |---|---|
-| Cheddr / Phase 1 lead and merge operator | Review this local slice with sales manager; select a separate real identity/persistence foundation task with isolated tests and one shared implementation lead. Keep live connectors/infrastructure separately authorized |
-| Dizzle Sales Manager | Validate sales account/invoice/terms examples, rep isolation and audit behavior in the demo; define account/store ownership cases before dashboard work |
-| Both builders | Review the local C1-C5 mapping and remaining permission/terms-dispute decisions. Reconcile the separate Assets proposal in PR #2 independently |
+| Cheddr / merge operator | Review the local Kanban/permission/outbox extension with sales manager; select a separate partial-shipment/pickup-completion or durable identity/storage task after deciding scope |
+| Dizzle Sales Manager | Verify read-only assigned-account cards/tracking and rep alert content; validate fixture metadata and document distinctions |
+| Both builders | Review local warehouse transition table and gaps. Keep PR #2's Assets proposal separate; do not infer live integration/stock/label authority from this demo |
 
-Department dashboards, marketing studio/Assets, live integration, infrastructure, deployment and operational cutover remain future tasks. Replit remains operational; this demo does not replace any production writer.
+Replit remains operational. This local branch does not replace any production writer.

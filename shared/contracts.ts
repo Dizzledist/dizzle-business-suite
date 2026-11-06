@@ -1,7 +1,7 @@
 export type Role = 'owner' | 'admin' | 'sales_manager' | 'sales_rep' | 'warehouse';
 export interface Identity {
   id: string; name: string; organizationId: string; roles: Role[];
-  active: boolean; read: boolean; release: boolean; demo: boolean;
+  active: boolean; read: boolean; release: boolean; demo: boolean; move: boolean;
 }
 export interface ReleaseAudit {
   actor: string; at: string; basis: 'verified_payment' | 'approved_terms';
@@ -9,8 +9,18 @@ export interface ReleaseAudit {
 }
 export interface JobView {
   id: string; invoiceId: string; invoiceNumber: string; accountName: string;
-  status: 'Orders'; items: { sku: string; quantity: number; unit: string }[];
+  status: WarehouseStatus; items: { sku: string; quantity: number; unit: string }[];
   review: string | null; releaseAudit?: ReleaseAudit;
+  assignedRep: string; shippingType: 'Shipping' | 'Pickup'; priority: 'Normal' | 'Urgent';
+  notes: string; createdAt: string; updatedAt: string; revision: number;
+  shipment: Shipment | null; alert: SlackAlert | null;
+}
+export const warehouseStatuses = ['Orders', 'Partially Shipped', 'Shipped', 'Dropoff/Pickup'] as const;
+export type WarehouseStatus = typeof warehouseStatuses[number];
+export interface Shipment { id: string; tracking: string; savedAt: string; actor: string }
+export interface SlackAlert {
+  id: string; status: 'queued' | 'sent' | 'failed'; attempts: number;
+  message: string; error: string | null;
 }
 export interface InvoiceView {
   id: string; number: string; accountId: string; accountName: string;

@@ -4,7 +4,7 @@ export const FIXTURE_NOTICE = 'Synthetic fixtures only. Zoho origin, payment/cre
 export const FRESHNESS_MS = 5 * 60 * 1000;
 export function identityFixtures(): Identity[] {
   const make = (id: string, name: string, roles: Identity['roles'], release = false, demo = false): Identity =>
-    ({ id, name, roles, organizationId: 'demo-o1', active: true, read: true, release, demo });
+    ({ id, name, roles, organizationId: 'demo-o1', active: true, read: true, release, demo, move: roles.includes('warehouse') });
   return [
     make('manager', 'Sales manager', ['sales_manager'], true, true),
     make('rep-a', 'Rep A · Juniper accounts', ['sales_rep']),
