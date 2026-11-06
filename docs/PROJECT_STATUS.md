@@ -15,7 +15,7 @@ Active lead: current Codex session for the user. Branch: `docs/phase-0-foundatio
 
 Deliverables: [conventions](../AGENTS.md), [handoff](HANDOFF.md), [decisions](DECISIONS.md), [contracts](CONTRACTS.md), [permissions](PERMISSIONS.md), [acceptance scenarios](ACCEPTANCE.md), and README navigation. These are documentation proposals where labeled, not implemented functionality. Publication and verification outcomes are appended to the handoff.
 
-Phase 0 documentation is prepared for a draft PR. Shared contract review and unresolved provider/ownership decisions remain open; Phase 0 is not represented as provisioned infrastructure or completed business signoff. Both builders must review contracts C1-C5, permission proposals and acceptance scenarios before dependent implementation.
+Phase 0 documentation is committed and published in [draft PR #1](https://github.com/Dizzledist/dizzle-business-suite/pull/1), targeting main. Shared contract review and unresolved provider/ownership decisions remain open; Phase 0 is not represented as provisioned infrastructure or completed business signoff. Both builders must review contracts C1-C5, permission proposals and acceptance scenarios before dependent implementation.
 
 ## Next tasks by builder
 
