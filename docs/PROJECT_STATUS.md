@@ -8,6 +8,8 @@ Repository: Dizzledist/dizzle-business-suite, origin `https://github.com/Dizzled
 
 Current task: user's explicit Phase 1 local workflow request. Active foundation/build lead is Cheddr (Marketing / Admin), with this Codex session implementing the scoped task. The request supersedes the earlier scaffolding hold for this local prototype only. Main stays unchanged during review; PR #2 remains a separate draft.
 
+Published in [draft PR #3](https://github.com/Dizzledist/dizzle-business-suite/pull/3) against main. Implementation commit: `3439260`; publication notes follow on the same branch. Local checks pass; GitHub Actions results are tracked on the PR independently from local evidence.
+
 ## Implemented local slice
 
 - React/TypeScript/Vite shell with server-defined sales manager, rep, warehouse, owner/admin and negative test identities.

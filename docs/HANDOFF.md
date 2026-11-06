@@ -75,6 +75,13 @@ Verification note: reviewed the six-file documentation diff against starting PR 
 - **Next: Dizzle Sales Manager:** Reproduce rep isolation and invoice/terms/audit cases; refine company/store assignment fixtures and sales/owner data needs before dashboards.
 - **Next shared step:** Review local API/C1-C5 mapping and remaining choices; keep PR #2 draft and reconcile its Assets proposal independently.
 
+## Session 2026-11-06 / Phase 1 publication outcome
+
+- **Commit / review:** Implementation `3439260` on `feat/phase-1-local-workflow`; [draft PR #3](https://github.com/Dizzledist/dizzle-business-suite/pull/3) targets main. This publication note is a follow-up documentation commit in the same PR.
+- **Final local validation:** Clean `npm ci` and `npm run check` passed: typecheck, 31 HTTP integration tests, build and 2 Chromium browser tests. All 51 relative links across 10 Markdown documents resolved; diff/staged whitespace checks passed. Runtime code unchanged after the passing checks. Coverage gaps and exact reproduction commands are in LOCAL_DEMO; no live Zoho acceptance is claimed.
+- **Preservation / external actions:** Pushed only the task branch and created the draft PR. PR #2 verified open/draft/unmerged with unchanged head `451b6b5`; main remains `19662f7`. Workspace file remains untracked with original SHA-256 `4F888FE1084D2A9091583D5093693D81453C0B8D06DFD6192B096972BAE551D4`. No merge/deployment/provider write/send occurred.
+- **Handoff:** Both builders can run `npm ci` then `npm run dev`; stop the demo before Playwright checks. Cheddr reviews local identity/persistence next-task scope with sales manager; sales manager validates assigned account/terms/payment/audit fixtures. Keep remaining provider, production identity, durable storage and wider acceptance work explicit; keep PR #2 separate.
+
 ## Template for the next session
 
 ```markdown
