@@ -48,3 +48,21 @@ These are unverified. Resolve with dated evidence in a later authorized discover
 | Q11 | What retention/offboarding policy, backup recovery objectives, budget and cutover window apply? | Owner/admin with builders | Production readiness |
 
 Record decisions when they become necessary. Confirmed business rules above remain in force while technical details are unresolved.
+
+## Image studio / Sales Assets proposal, November 6, 2026
+
+Source: user's request for a documentation-only proposal on a separate branch. No confirmed baseline decision is superseded. PR #1 stays the foundation; proposed C6 and its permission additions live on `docs/image-studio-sales-assets`. User leads the proposal; both builders review shared contract changes.
+
+Confirmed scope requirements for approval/version metadata, selected/all authorized-rep publication, confidential-file restrictions, exact-batch COAs and no unapproved external sends are traced in the [proposal](IMAGE_STUDIO_SALES_ASSETS_PROPOSAL.md). The following choices are **open**, not adopted decisions:
+
+| ID | Proposed choice awaiting review | Required reviewers |
+|---|---|---|
+| M01 | Separate create/review/publish/retire/revoke grants, no self-approval; designate price-list and COA verifiers | Owner/admin and both builders |
+| M02 | Recipient snapshots for selected/all mode; explicit updates for new hires/reassignments, always intersect current authorization | Both builders; sales manager validates rep behavior |
+| M03 | One current publication per asset; new approved version supersedes old atomically | Both builders |
+| M04 | Price-list account/store scope and effective dates; authoritative SKU/batch/issuer mapping and required COA evidence | Sales manager, user and product/document verifier |
+| M05 | Image model/export capabilities, exact-label composition, approved references, usage budgets and uncertain generation outcomes | User, foundation lead and owner |
+| M06 | Authorized file gateway/cache revocation, upload validation, retention, historical audit access and limits of downloaded-copy recall | Foundation lead, owner/admin and both builders |
+| M07 | External send approvers, destinations/channels and verified WhatsApp/manual-handoff capabilities | User, sales manager and owner |
+
+Record accepted choices here with date, owner and evidence before implementing them. The proposal supplies examples and acceptance scenarios; it does not verify providers or authorize live generation, publishing or sends.

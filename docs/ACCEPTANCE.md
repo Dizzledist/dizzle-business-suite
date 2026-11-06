@@ -48,3 +48,7 @@ A23 requires a later approved notification sender contract (Q08); no messages ar
 ## Evidence for vertical-slice completion
 
 Record isolated test results for A01-A25, concurrency/recovery evidence, role checks across retrieval paths, provider mapping verification and unresolved limitations. No live acceptance or cutover until relevant Q01-Q06/Q08 decisions are settled and staging is isolated. UI fixtures may be built earlier against reviewed contracts without claiming real Zoho verification.
+
+## Separate marketing/Assets proposal
+
+The [image studio and Sales Assets proposal](IMAGE_STUDIO_SALES_ASSETS_PROPOSAL.md) adds synthetic approved-image, restricted-price-list and batch-specific-COA examples and AS01-AS17 scenarios for later review. They cover drafts, exact-version approval, selected/all publication, live rep authorization, version replacement/retirement, no-match COA lookup, notifications and external-send boundaries. These are unexecuted specifications for proposed C6; A01-A25 and C1-C5 are unchanged.

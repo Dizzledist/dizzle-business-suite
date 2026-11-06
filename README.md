@@ -16,3 +16,7 @@ This repository contains the project brief and Phase 0 documentation for the sha
 - [Invoice-to-warehouse acceptance scenarios](docs/ACCEPTANCE.md)
 
 Both builders must review the shared contracts and permission proposals before implementing dependent modules. Proposed types and integration behavior are documentation, not deployed capabilities.
+
+## Workflow proposals for review
+
+- [Image studio and Sales Assets: lifecycle, sample records, access and acceptance scenarios](docs/IMAGE_STUDIO_SALES_ASSETS_PROPOSAL.md) — separate documentation task, dependent on the shared foundation; no implementation signoff claimed.

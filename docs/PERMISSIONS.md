@@ -52,3 +52,22 @@ Service identities do not inherit interactive admin access. Secrets/scopes and a
 - External approval binds actual recipients and content to a named approver; modified drafts require renewed approval. Approval is additional to data and send permissions, not a replacement.
 - Routine shipment confirmation automation needs approved templates, sender policy and verified customer scope. Zoho continues to own invoice/payment communications.
 - Offboarding disables access/revokes tokens according to a policy still to be agreed; do not delete historical authorship as a shortcut.
+
+## Proposed C6 asset action grants for review
+
+This extension is part of the separate [image studio/Assets proposal](IMAGE_STUDIO_SALES_ASSETS_PROPOSAL.md), not a change to confirmed foundation authority. The general matrix's proposed approve/version/publish capability would be split into explicit grants below. No grant is configured and no existing role receives it automatically. Both builders review; owner/admin decides M01. Other department roles require explicit scope grants rather than inherited editorial authority.
+
+| Proposed action | Marketing/editor | Designated reviewer | Publisher / asset manager | Sales rep |
+|---|---|---|---|---|
+| Create/edit draft; request image generation | Proposed scoped grant | Only with editor grant | Only with editor grant | No |
+| Read draft / download for internal review | Proposed own/team draft scope | Proposed review scope | Proposed management scope | No |
+| Approve/reject exact version/renditions/policy | Only with separate reviewer grant; proposed no self-approval | Proposed type-specific scope; sales/owner verifier for price lists, product/document verifier for COAs | Only with separate reviewer grant | No |
+| Publish or change internal recipient audience | Only with publisher grant | Only with publisher grant | Proposed grant within approved audience ceiling | No |
+| Retire/supersede publication | Only with asset-manager grant | Only with asset-manager grant | Proposed scoped grant, audited reason | No |
+| Revoke approval for invalid material | Only with reviewer/revoker grant | Proposed scoped revocation grant | Only with revoker grant | No |
+| Read/download published current asset | Editorial/management scope to decide | Review/management scope to decide | Management scope to decide | Publication audience AND live brand/account restrictions |
+| Read retired historical content | Explicit audit grant | Explicit audit grant | Explicit audit grant | No by default |
+| Prepare external share | Explicit asset/share scope | Explicit asset/share scope | Explicit asset/share scope | Current authorized version + permitted destination |
+| Execute external send | Separate send permission AND named recipient/content approval | Same | Same | Same, current assignment checked |
+
+Rep access to general approved images can be brand-scoped without a customer assignment. Restricted customer price lists additionally require current assignment to that customer; publishing to all does not change that. COA lookup must match the exact approved product/batch and permitted document. Grant administration remains owner/admin; neither the marketing build lead nor sales build lead can grant themselves editorial or confidential-file permissions. Details M01-M07 await review.

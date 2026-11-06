@@ -26,6 +26,21 @@ Append entries and later outcome/correction notes; preserve prior session eviden
 - **External actions:** Fetched origin, pushed only the task branch, and created the draft PR. GitHub connector returned 404 for PR creation; existing Git authentication via GitHub API successfully created it. No merge, deployment, provider integration, customer data action or external message send occurred.
 - **Remaining review / next tasks:** Both builders review C1-C5 and permissions. Sales manager defines sales/owner fixtures, assignments and isolation cases; user defines marketing/image studio/Assets approval and rep-consumption contract. Appoint one shared foundation lead before separate scaffolding; provider questions remain explicitly unverified.
 
+## Session 2026-11-06 / user with Codex: image studio and Sales Assets proposal
+
+- **Task / active lead:** Documentation-only workflow proposal for user / marketing lead. Both builders review shared changes; no runtime implementation or signoff claimed.
+- **Starting Git state:** Read README, AGENTS, scope, status, handoff, C1-C5, permissions, acceptance and decisions on `docs/phase-0-foundation`. Fetch verified HEAD/foundation remote `925f11d`, main `aeab1c8`; tracked tree clean, only workspace file untracked.
+- **Branch / review:** Created `docs/image-studio-sales-assets` from the fetched foundation branch to consume its unmerged contracts. Separate draft PR against main depends on PR #1; review proposal-only changes against `origin/docs/phase-0-foundation` until that merges. PR #1/main are not edited by this task.
+- **What changed:** Added [workflow proposal](IMAGE_STUDIO_SALES_ASSETS_PROPOSAL.md), sample image/price-list/COA records and AS01-AS17; added navigation and shared-review pointers. Updated current status and logged open choices M01-M07.
+- **Shared contracts affected:** Proposed C6 records/commands and action-grant extension; consumes C1/C2 without changing identity/assignment rules. C1-C5 and A01-A25 preserved. User reviews editor/publisher behavior; sales manager reviews rep consumption; owner/admin reviews grants and product/document verifiers review COA provenance.
+- **Checks / results:** Final diff, relative-link, sample JSON, staging/preservation and publication results will be appended in the outcome note. Runtime tests do not exist; AS scenarios are specifications.
+- **Schema / environment:** None. No dependencies, provider credentials, app code, migrations, infrastructure or live integration work.
+- **External actions so far:** Fetched GitHub state only. Publishing this documentation branch/PR follows the repository handoff rule; no image generation, asset publishing, file upload or message send.
+- **Known gaps / decisions:** M01-M07 are proposed choices. Provider/model capabilities, costs, storage/cache revocation and WhatsApp delivery remain unverified. External send approval remains separate from asset approval/internal rep publication.
+- **Next: sales manager:** Review rep audience, price-list restrictions/reassignment, COA matching and C6 permission scope; prepare fixture-backed sales consumption cases.
+- **Next: user / marketing lead:** Resolve reviewer/publisher roles with owner/admin and product verifier; review image exports, asset versions/retirement and sharing scope.
+- **Next shared step:** Both builders review C6; designate foundation/file-access lead before any implementation. Preserve separate PR scopes and resolve prerequisite PR #1 first.
+
 ## Template for the next session
 
 ```markdown

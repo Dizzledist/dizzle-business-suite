@@ -114,3 +114,16 @@ Required behavior:
 ## Review checklist
 
 Both builders review C1-C5, assignment scope, money/quantity precision, audit/idempotency, source aliases, freshness semantics and role matrix. Sales manager validates sales/owner consumers; user validates operational and future marketing/Assets access. Owner resolves business exceptions; designated integration lead supplies provider evidence. No signoff is claimed by the presence of these documents.
+
+## C6: Image studio and Sales Assets (proposed extension; shared review required)
+
+Added for the November 6 image studio/Assets proposal on `docs/image-studio-sales-assets`, separate from foundation PR #1. The [workflow proposal](IMAGE_STUDIO_SALES_ASSETS_PROPOSAL.md) defines proposed Asset, immutable AssetVersion, AssetPolicy, ReviewDecision, Publication, GenerationRequest and notification/audit records with synthetic examples and AS01-AS17 scenarios. No C1-C5 rule is superseded and no field is an implemented API.
+
+- Marketing publishes one approved version consumed by sales; both builders review the record/command vocabulary, exact-version approval, export manifest, access policy and retirement semantics before code.
+- C1 supplies active identity and action/resource grants. Proposed editorial/review/publish/retire grants extend the [permission design](PERMISSIONS.md); they do not create new auth or imply authority from build ownership.
+- C2 supplies current account assignment for confidential price lists. Selected/all recipient snapshots are intersected with current permissions; all mode cannot widen account access. Reassignment removes old access; adding the new rep is an explicit audience update under the proposed policy.
+- Proposed single-current-publication behavior, expected revisions and idempotency make replacement/retirement recoverable; approval binds immutable bytes/renditions and metadata/policy. New versions or broader policies need renewed review.
+- Files, previews, search, notifications and AI must use the same authorization and current-version checks. Exact product/batch lookup returns no verified COA match when evidence is missing; COAs are uploaded original documents, never generated.
+- Generation usage is recorded; provider/model/cost/capability selection is unverified. Internal publication does not approve external send recipients/content. No invoice/payment/stock mutation is introduced.
+
+Review owners: user for editorial/studio and publication, sales manager for rep consumption and restrictions, owner/admin for grants, designated foundation lead for file delivery/revocation. Decisions M01-M07 remain open in the proposal and [decision log](DECISIONS.md).
