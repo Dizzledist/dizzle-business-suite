@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DemoEvent, InvoiceView, Workspace } from '../shared/contracts';
+import { WarehouseBoard } from './WarehouseBoard';
 
 const identities = [
   ['manager', 'Sales manager'], ['rep-a', 'Rep A'], ['rep-b', 'Rep B'], ['warehouse', 'Warehouse'],
@@ -44,9 +45,11 @@ export function App() {
       const result = await api<{ outcome?: string }>(path, payload);
       await reload(version);
       setNotice(result.outcome ? `${message}: ${result.outcome}` : message);
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Request failed.');
       try { await reload(version); } catch { setData(null); }
+      return false;
     }
     finally { setBusy(false); }
   }
@@ -113,9 +116,8 @@ export function App() {
             </div></section>}
           </section>}
         </div>}
-        <section className="warehouse"><div className="section-heading"><div><span className="eyebrow">FULFILLMENT</span><h2>Warehouse board</h2></div><span className="badge">Orders · {data.jobs.length}</span></div>
-          {data.jobs.length === 0 ? <div className="empty"><span>□</span><h3>No released work yet</h3><p>Unpaid and partially paid invoices stay outside this queue.</p></div> : <div className="job-grid">{data.jobs.map(j => <article className="panel job-card" key={j.id} data-testid="warehouse-job"><div className="panel-title"><h3>{j.invoiceNumber}</h3><span className="badge green">{j.status}</span></div><p>{j.accountName}</p><p className="job-id">{j.id}</p>{j.items.map(item => <div className="job-item" key={item.sku}><span>{item.sku}</span><strong>{item.quantity} {item.unit}</strong></div>)}{j.review && <div className="hold-note">Review required · {j.review}</div>}<small>Linked source: {j.invoiceId}</small></article>)}</div>}
-        </section>
+        {data.identity.demo && <button className="secondary" disabled={busy} onClick={() => act('/demo/slack-failure', {}, 'Next local shipment alert will fail once')}>Fail next Slack alert</button>}
+        <WarehouseBoard jobs={data.jobs} identity={data.identity} busy={busy} error={error} act={act}/>
         <footer>{data.fixtureNotice}<p>API data resets on restart or Reset demo. No real customers, invoices, payments, inventory or messages.</p></footer>
       </>}
     </main>

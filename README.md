@@ -17,12 +17,14 @@ Open **http://127.0.0.1:5173**. Start as Sales manager, select DZ-1001, and eith
 
 See [local demo and acceptance coverage](docs/LOCAL_DEMO.md) for exact steps, API routes, test identities, verification assumptions and deferred production requirements. The identity selector is a local test facility, not production authentication.
 
+The [Warehouse Kanban demo](docs/WAREHOUSE_DEMO.md) adds four familiar columns, filters, a sample packing slip/print view, tracking-confirmed shipments and captured local Slack alerts. Only warehouse identities with move permission can change cards; sales views stay read-only. Partial shipment quantities and pickup completion remain deferred.
+
 ```sh
 npx playwright install chromium
 npm run check
 ```
 
-Checks run TypeScript, HTTP integration tests, the client build and Chromium browser tests. Stop an active demo before browser tests so they can start fresh local servers. GitHub Actions runs the same checks on pull requests.
+Checks run TypeScript, HTTP integration tests, the client build and Chromium browser tests. Browser tests use separate loopback ports 5273/3101 so the regular demo on 5173/3001 can stay running. GitHub Actions runs the same checks on pull requests.
 
 ## Shared development foundation
 

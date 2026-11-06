@@ -95,3 +95,16 @@ Source: user's explicit request to build the local invoice-to-warehouse demo aft
 | L05 | HTTP integration tests + Playwright Chromium user flows; PR Actions run typecheck/tests/build/browser checks | No deployment permissions or live credentials; approved acceptance specs have only the scoped coverage documented in LOCAL_DEMO |
 
 See [LOCAL_DEMO](LOCAL_DEMO.md) for reproducible behavior and [CONTRACTS](CONTRACTS.md) for consumer boundaries. Owner/admin and sales manager release permissions remain distinct from fixture simulation grants; price lists, COAs and marketing are outside this branch.
+
+## Warehouse local extension, November 6, 2026
+
+Source: user's explicit Warehouse Fulfillment Kanban request after approving/authorizing merge of Phase 1 PR #3. PR #3 merged as `d4afc223d7313274ecea75f3655d2188abbbbbd6`; task branch `feat/warehouse-fulfillment-kanban` starts from that main revision. No screenshot was attached; visual work uses the described columns/layout. These decisions apply to the local build, not a fully approved production warehouse graph.
+
+| ID | Local decision / boundary | Review/gap |
+|---|---|---|
+| W01 | Existing release command remains sole creation path; Orders -> Shipped requires warehouse role + move grant and tracking. Sales views read-only. Orders -> Dropoff/Pickup routes Pickup work to awaiting pickup | User-authorized local workflow; partial quantities, pickup completion and corrections remain undecided |
+| W02 | Shipment/status saved before in-memory outbox/captured Slack adapter; stable shipment/alert IDs deduplicate different request keys; failed alert retains shipment for retry | No durable queue, live Slack delivery, channel/rep mapping or stock impact |
+| W03 | Generic local packing slip PDF/print preview shares sample metadata, is authenticated through job scope, and explicitly differs from invoice PDF | Job-specific slip generation/invoice links remain deferred. No real label is purchased/generated |
+| W04 | Playwright uses loopback 5273/3101, separate from regular 5173/3001 demo | Local environment configuration only; no provider secrets or infrastructure |
+
+Both builders review the [warehouse guide](WAREHOUSE_DEMO.md), C5/permission extension and gaps before wider use. Earlier Phase 1-only Orders projection/warehouse read-only descriptions are extended only by W01-W03; invoice/payment ownership, account isolation and release safeguards remain unchanged.

@@ -1,0 +1,11 @@
+{
+  "title": "SAMPLE PACKING SLIP",
+  "reference": "PACK-DEMO-001",
+  "customer": "Juniper Market (synthetic example)",
+  "invoiceReference": "DZ-1001 (example only)",
+  "address": "100 Sample Lane, Demo City, CA 90000",
+  "sku": "DEMO-SKU-01",
+  "description": "Demonstration product",
+  "quantity": 10,
+  "note": "Generic local sample - not job-specific. Not an invoice or shipping label. No prices or payment information. Do not use for live fulfillment."
+}

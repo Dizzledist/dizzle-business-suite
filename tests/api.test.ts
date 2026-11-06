@@ -187,4 +187,82 @@ describe('Local HTTP invoice-to-warehouse workflow', () => {
     expect((await request('/invoices/inv-b', 'rep-a')).status).toBe(404);
     expect((await release('inv-open', 'rep-a')).status).toBe(403);
   });
+  const move = (id: string, actor = 'warehouse', overrides: Record<string, unknown> = {}) => request(`/jobs/${id}/move`, actor,
+    { target: 'Shipped', tracking: '1ZLOCAL12345', expectedRevision: 1, requestKey: 'shipment-1', ...overrides });
+  it('saves shipment before Slack, preserves release audit and deduplicates different submission keys', async () => {
+    await event('full'); const original = (await workspace()).jobs[0];
+    const send = workflow.slack.send.bind(workflow.slack);
+    workflow.slack.send = (id, message) => {
+      const saved = workflow.workspace(workflow.authenticate('warehouse')).jobs[0];
+      expect(saved.status).toBe('Shipped'); expect(saved.shipment?.tracking).toBe('1ZLOCAL12345');
+      expect(saved.alert?.status).toBe('queued'); send(id, message);
+    };
+    expect((await move(original.id)).status).toBe(200);
+    const saved = (await workspace()).jobs[0];
+    expect(saved.status).toBe('Shipped'); expect(saved.releaseAudit).toEqual(original.releaseAudit);
+    expect(saved.alert).toMatchObject({ status: 'sent', attempts: 1 });
+    for (const text of ['rep-a', 'Juniper Market', 'DZ-1001', '1ZLOCAL12345']) expect(saved.alert?.message).toContain(text);
+    await Promise.all(['new-key-1', 'new-key-2', 'new-key-3'].map(requestKey => move(original.id, 'warehouse', { requestKey })));
+    expect((await workspace()).jobs).toEqual([saved]); expect(workflow.slack.captured.size).toBe(1);
+    await event('replay'); await event('partial');
+    expect((await workspace()).jobs).toEqual([saved]);
+    expect((await move(original.id, 'warehouse', { tracking: 'DIFFERENT123' })).status).toBe(409);
+    expect(workflow.slack.captured.size).toBe(1);
+  });
+  it('failed Slack leaves shipment saved; explicit retries capture only one alert', async () => {
+    await event('full'); const job = (await workspace()).jobs[0];
+    expect((await request('/demo/slack-failure', 'manager', {})).status).toBe(200);
+    const failed = await (await move(job.id)).json();
+    expect(failed.status).toBe('Shipped'); expect(failed.shipment.tracking).toBe('1ZLOCAL12345');
+    expect(failed.alert).toMatchObject({ status: 'failed', attempts: 1 }); expect(workflow.slack.captured.size).toBe(0);
+    await move(job.id, 'warehouse', { requestKey: 'another' });
+    expect(workflow.slack.captured.size).toBe(0); // repeated shipment is not an implicit alert retry
+    const retry = await request(`/jobs/${job.id}/alert/retry`, 'warehouse', {});
+    expect((await retry.json()).alert).toMatchObject({ status: 'sent', attempts: 2 });
+    await request(`/jobs/${job.id}/alert/retry`, 'warehouse', {});
+    expect((await workspace()).jobs[0].shipment).toEqual(failed.shipment);
+    expect(workflow.slack.captured.size).toBe(1);
+  });
+  it.each(['', '   ', 'x', '<script>bad</script>'])('invalid tracking %j cannot save a shipment or alert', async tracking => {
+    await event('full'); const job = (await workspace()).jobs[0];
+    expect((await move(job.id, 'warehouse', { tracking })).status).toBe(400);
+    expect((await workspace()).jobs[0]).toEqual(job); expect(workflow.slack.captured.size).toBe(0);
+  });
+  it.each(['rep-a', 'rep-b', 'manager', 'owner', 'admin', 'disabled', 'revoked', 'outside'])('%s cannot move warehouse cards or retry alerts without warehouse authority', async actor => {
+    await event('full'); const job = (await workspace()).jobs[0];
+    expect((await move(job.id, actor)).ok).toBe(false);
+    expect((await request(`/jobs/${job.id}/alert/retry`, actor, {})).ok).toBe(false);
+    expect((await workspace()).jobs[0]).toEqual(job);
+  });
+  it('warehouse authority never crosses organization boundaries', async () => {
+    await event('full'); const job = (await workspace()).jobs[0];
+    const outside = workflow.identities.find(i => i.id === 'outside')!;
+    outside.roles.push('warehouse'); outside.move = true;
+    expect((await move(job.id, 'outside')).status).toBe(404);
+    expect((await workspace()).jobs[0]).toEqual(job);
+  });
+  it('stale source and stale card revisions hold new moves without losing work', async () => {
+    await event('full'); const job = (await workspace()).jobs[0];
+    expect((await move(job.id, 'warehouse', { expectedRevision: 99 })).status).toBe(409);
+    await event('stale'); expect((await move(job.id)).status).toBe(409);
+    expect((await workspace()).jobs[0]).toMatchObject({ id: job.id, status: 'Orders', shipment: null });
+  });
+  it('partial workflow is disabled; pickup routing saves awaiting-pickup state without a shipping alert', async () => {
+    await event('full'); const job = (await workspace()).jobs[0];
+    expect((await move(job.id, 'warehouse', { target: 'Partially Shipped' })).status).toBe(409);
+    expect((await move(job.id, 'warehouse', { target: 'Dropoff/Pickup' })).status).toBe(409);
+    await event('full', 'inv-b'); const pickup = (await workspace()).jobs.find(j => j.invoiceId === 'inv-b')!;
+    const result = await (await move(pickup.id, 'warehouse', { target: 'Dropoff/Pickup', tracking: undefined })).json();
+    expect(result).toMatchObject({ status: 'Dropoff/Pickup', shipment: null, alert: null });
+    expect((await move(pickup.id)).status).toBe(409); expect(workflow.slack.captured.size).toBe(0);
+  });
+  it('sample packing slip PDF is scoped to released job access and distinct from invoice records', async () => {
+    await event('full'); const job = (await workspace()).jobs[0];
+    const pdf = await request(`/jobs/${job.id}/packing-slip.pdf`, 'warehouse');
+    expect(pdf.status).toBe(200); expect(pdf.headers.get('content-type')).toBe('application/pdf');
+    expect(Buffer.from(await pdf.arrayBuffer()).subarray(0, 5).toString()).toBe('%PDF-');
+    expect((await request(`/jobs/${job.id}/packing-slip.pdf`, 'rep-a')).status).toBe(200);
+    for (const actor of ['rep-b', 'outside', 'disabled', 'revoked']) expect((await request(`/jobs/${job.id}/packing-slip.pdf`, actor)).ok).toBe(false);
+    expect((await request(`/jobs/${job.id}/invoice.pdf`, 'warehouse')).status).toBe(404);
+  });
 });

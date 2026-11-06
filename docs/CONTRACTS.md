@@ -126,3 +126,13 @@ User authorized a local implementation on November 6; this does not resolve prov
 - Warehouse projection contains source reference, customer, required items, Orders status and review flag; it omits invoice balances and release-audit reasons. This concrete local projection is for both builders to review before broader warehouse implementation.
 
 The local route/data representation and fixtures are implementation choices, not changes to approved R01-R03. Both builders review shared consumers; no new Zoho behavior, warehouse stage, stock transaction, invoice creation or external messaging contract is introduced.
+
+## Local Warehouse C5/notification extension for both builders' review
+
+The user's warehouse request extends the Phase 1 projection with the four existing states, assigned rep, shipping type, priority, notes, timestamps/revision, saved shipment and local alert outcome. [WAREHOUSE_DEMO](WAREHOUSE_DEMO.md) defines supported transitions, API routes, format validation and explicit gaps. Source financial state and immutable release audit still come from the existing workflow.
+
+Move command: released job ID, target, expectedRevision, requestKey, tracking when Shipped. API revalidates active identity/read/move grant, warehouse role, organization/job scope, source uncertainty, status graph and tracking. A same-tracking repeated Shipped request returns the original shipment even with a different key; conflicting tracking/corrections fail for separate review. Pickup routing is awaiting collection only; partial shipment commands are rejected pending quantity/package rules.
+
+After saving shipment/status, create one outbox entry keyed by shipment ID, then attempt the local Slack adapter. Delivery failure leaves shipment saved and retryable; retry uses the same delivery ID, and sent entries are no-ops. All state is in memory; no durable delivery/transaction guarantee is claimed. Alert payload includes assigned rep, customer, invoice and tracking, scoped to the linked job. No live Slack send, customer confirmation, label purchase or Zoho stock write is introduced.
+
+Packing-slip PDF access uses current released job scope. The committed reference sample is generic/non-job-specific, not an invoice PDF or real fulfillment document. Per-job generation and authoritative invoice links remain deferred. This extension needs both builders' review; it does not settle production Q04/Q06/Q08 behavior.

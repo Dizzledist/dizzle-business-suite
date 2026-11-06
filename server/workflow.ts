@@ -1,11 +1,15 @@
 import { randomUUID } from 'node:crypto';
-import type { DemoEvent, Identity, InvoiceView, JobView, ReleaseAudit, Workspace } from '../shared/contracts';
+import type { DemoEvent, Identity, InvoiceView, JobView, ReleaseAudit, Workspace, WarehouseStatus, Shipment, SlackAlert } from '../shared/contracts';
+import { LocalSlackAdapter } from './slack';
 import { FIXTURE_NOTICE, FRESHNESS_MS, identityFixtures, invoiceFixtures, type InvoiceRecord } from './fixtures';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
-interface JobRecord { id: string; invoiceId: string; audit: ReleaseAudit }
+interface JobRecord {
+  id: string; invoiceId: string; audit: ReleaseAudit; status: WarehouseStatus;
+  updatedAt: string; revision: number; shipment: Shipment | null; alert: SlackAlert | null;
+}
 // Synchronous mutations in one local process: no await between checks and inserts.
 // Persistence, multi-process transactions, worker recovery and durable audit are deferred.
 export class Workflow {
@@ -13,8 +17,8 @@ export class Workflow {
   private invoices: InvoiceRecord[];
   private jobs = new Map<string, JobRecord>();
   private events = new Set<string>();
-  constructor(private now: () => number = Date.now) { this.invoices = invoiceFixtures(now()); }
-  reset() { this.invoices = invoiceFixtures(this.now()); this.jobs.clear(); this.events.clear(); }
+  constructor(private now: () => number = Date.now, readonly slack = new LocalSlackAdapter()) { this.invoices = invoiceFixtures(now()); }
+  reset() { this.invoices = invoiceFixtures(this.now()); this.jobs.clear(); this.events.clear(); this.slack.reset(); }
   authenticate(id: string | undefined): Identity {
     const actor = this.identities.find(i => i.id === id);
     if (!actor || !actor.active) throw new ApiError(401, 'Active local test identity required.');
@@ -58,7 +62,13 @@ export class Workflow {
   private jobView(actor: Identity, invoice: InvoiceRecord, job: JobRecord): JobView {
     return {
       id: job.id, invoiceId: invoice.id, invoiceNumber: invoice.number, accountName: invoice.accountName,
-      status: 'Orders', items: [{ sku: 'DEMO-SKU-01', quantity: 10, unit: 'each' }], review: this.hold(invoice),
+      status: job.status, items: [{ sku: 'DEMO-SKU-01', quantity: 10, unit: 'each' }], review: this.hold(invoice),
+      assignedRep: invoice.assignedRep === 'rep-b' ? 'Rep B' : 'Rep A',
+      shippingType: invoice.id === 'inv-b' ? 'Pickup' : 'Shipping',
+      priority: invoice.id === 'inv-open' ? 'Urgent' : 'Normal',
+      notes: invoice.id === 'inv-b' ? 'Customer pickup; confirm collection separately.' : 'Include sample product information. Buy label through existing process.',
+      createdAt: job.audit.at, updatedAt: job.updatedAt, revision: job.revision,
+      shipment: job.shipment ? { ...job.shipment } : null, alert: job.alert ? { ...job.alert } : null,
       ...(this.canRead(actor, invoice) ? { releaseAudit: { ...job.audit } } : {}),
     };
   }
@@ -82,7 +92,8 @@ export class Workflow {
   private createJob(invoice: InvoiceRecord, audit: ReleaseAudit) {
     const existing = this.jobs.get(invoice.id);
     if (existing) return existing;
-    const job = { id: `job-${randomUUID()}`, invoiceId: invoice.id, audit: Object.freeze({ ...audit }) };
+    const job: JobRecord = { id: `job-${randomUUID()}`, invoiceId: invoice.id, audit: Object.freeze({ ...audit }),
+      status: 'Orders', updatedAt: audit.at, revision: 1, shipment: null, alert: null };
     this.jobs.set(invoice.id, job);
     return job;
   }
@@ -103,6 +114,55 @@ export class Workflow {
   }
   requireDemo(actor: Identity) {
     if (!this.broad(actor) || !actor.demo) throw new ApiError(403, 'Local demo controls require manager/owner/admin permission.');
+  }
+  private movableJob(actor: Identity, id: string): JobRecord {
+    if (!actor.move || !actor.roles.includes('warehouse')) throw new ApiError(403, 'Warehouse move permission required. Sales views are read-only.');
+    const view = this.getJob(actor, id); // organization and record scope checked before mutation
+    return this.jobs.get(view.invoiceId)!;
+  }
+  private deliver(job: JobRecord) {
+    const alert = job.alert!;
+    if (alert.status === 'sent') return;
+    alert.attempts++;
+    try { this.slack.send(alert.id, alert.message); alert.status = 'sent'; alert.error = null; }
+    catch { alert.status = 'failed'; alert.error = 'Local Slack adapter failed. Shipment is saved; retry the alert.'; }
+  }
+  moveJob(actor: Identity, id: string, request: { target: WarehouseStatus; tracking?: string; expectedRevision: number; requestKey: string }) {
+    const job = this.movableJob(actor, id);
+    const invoice = this.invoices.find(i => i.id === job.invoiceId)!;
+    const tracking = request.tracking?.trim().toUpperCase();
+    if (request.target === 'Shipped' && (!tracking || !/^[A-Z0-9][A-Z0-9-]{4,79}$/.test(tracking))) throw new ApiError(400, 'Tracking number is required (5-80 letters, digits or hyphens).');
+    if (job.status === 'Shipped' && request.target === 'Shipped') {
+      if (tracking !== job.shipment?.tracking) throw new ApiError(409, 'Shipment already saved with different tracking; correction workflow is deferred.');
+      return this.getJob(actor, id); // semantic idempotency across different request keys
+    }
+    if (job.revision !== request.expectedRevision) throw new ApiError(409, 'Card changed; reload before moving.');
+    if (this.hold(invoice)) throw new ApiError(409, 'Resolve source verification/review before a new warehouse move. Existing work is preserved.');
+    if (job.status !== 'Orders') throw new ApiError(409, 'This transition is not implemented. Completed shipments cannot be moved back.');
+    if (request.target === 'Partially Shipped') throw new ApiError(409, 'Partial shipment quantity/package rules are pending; this column is read-only.');
+    const pickup = invoice.id === 'inv-b';
+    if (request.target === 'Dropoff/Pickup' && pickup) {
+      job.status = 'Dropoff/Pickup'; job.updatedAt = new Date(this.now()).toISOString(); job.revision++;
+      return this.getJob(actor, id); // awaiting pickup, not confirmed shipped/collected
+    }
+    if (request.target !== 'Shipped' || pickup) throw new ApiError(409, 'Use Dropoff/Pickup for pickup work. Pickup completion and other transitions are deferred.');
+    // Commit shipment state in memory BEFORE creating/delivering the outbox message.
+    job.shipment = { id: `shipment-${randomUUID()}`, tracking: tracking!, savedAt: new Date(this.now()).toISOString(), actor: actor.id };
+    job.status = 'Shipped'; job.updatedAt = job.shipment.savedAt; job.revision++;
+    job.alert = { id: `shipment-alert:${job.shipment.id}`, status: 'queued', attempts: 0,
+      message: `Assigned rep: ${invoice.assignedRep} | Customer: ${invoice.accountName} | Invoice: ${invoice.number} | Tracking: ${job.shipment.tracking}`, error: null };
+    this.deliver(job);
+    return this.getJob(actor, id);
+  }
+  retryAlert(actor: Identity, id: string) {
+    const job = this.movableJob(actor, id);
+    if (!job.shipment || !job.alert) throw new ApiError(409, 'No saved shipment alert to retry.');
+    this.deliver(job); return this.getJob(actor, id);
+  }
+  failNextAlert(actor: Identity) {
+    this.requireDemo(actor);
+    if (actor.organizationId !== 'demo-o1') throw new ApiError(403, 'Demo control belongs to demo-o1.');
+    this.slack.failNext = true;
   }
   simulate(actor: Identity, id: string, event: DemoEvent) {
     this.requireDemo(actor);
