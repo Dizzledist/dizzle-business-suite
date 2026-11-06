@@ -45,6 +45,20 @@ Append entries and later outcome/correction notes; preserve prior session eviden
 
 Verification note: reviewed the six-file documentation diff against starting PR head `925f11d`. All 45 relative links across nine Markdown documents resolve; A01-A30 have 30 unique scenario rows; working-tree whitespace check passed. README, AGENTS and PROJECT_SCOPE are unchanged. Only the six named foundation documentation files are to be staged; the workspace file remains untracked. No runtime checks were available or claimed. Final staged whitespace/preservation checks precede commit/push; the task's final response records the published commit and verified PR states.
 
+## Session 2026-11-06 / Cheddr with Codex: Phase 0 joint sign-off recorded
+
+- **Task:** Record explicit joint approval and assignments only, on the existing PR #1 branch. Approving participants: **Cheddr and Dizzle Sales Manager**, as explicitly reported by the user.
+- **Verified reviewed revision:** Before edits, current branch, fetched `origin/docs/phase-0-foundation` and GitHub PR #1 head all matched `609f2cae3059c98873274afd60c76885f261dbb7`; diff from reviewed commit was empty. Tracked tree clean; workspace file remained untracked. PR #2 was draft at `451b6b5`; main was `aeab1c8`.
+- **Branch / review / commit reference:** `docs/phase-0-foundation`, [draft PR #1](https://github.com/Dizzledist/dizzle-business-suite/pull/1); sign-off commit subject `docs: record joint Phase 0 sign-off and assignments`.
+- **Approved policies:** R01 scoped rep-role/additional-grant access; R02 hold unverifiable new releases and preserve existing jobs with stale-review flags; R03 record documented approved terms/reason, holding missing/disputed terms for explicit approval. Approved acceptance specifications: A26-A30 at the reviewed commit. Wording/behavior is unchanged; only sign-off status and assignments are recorded.
+- **Assignments:** Merge operator **Cheddr (Marketing / Admin)**; Phase 1 lead **Cheddr (Marketing / Admin)**. Deployment operator and terms-dispute approver remain open. These assignments supersede the historical unassigned entries above.
+- **Documents/contracts:** DECISIONS holds the dated approval source/revision/participants; status and conventions reflect assigned roles. C1/C5, permissions and acceptance references change from pending to approved, without approving all other proposed implementation details. Prior handoff entries remain historical evidence.
+- **Schema/environment/runtime:** None. Acceptance specifications are approved, not executed tests. Zoho mappings, payment/credit semantics, freshness/ordering and stock behavior remain unverified/open.
+- **External scope:** Read PR metadata and fetched Git state; commit/push the sign-off record only to PR #1. Both PRs stay draft; no main/PR #2 push, merge, app scaffolding, deployment, integration write or external message send.
+- **Checks:** All 46 relative links across nine Markdown documents resolved; whitespace check passed. Approved R01-R03 wording exactly matches the reviewed revision, and A26-A30 are unchanged apart from sign-off labels. The seven-file diff was reviewed for sign-off/assignment changes only; staged scope/whitespace are checked before commit. Published commit and PR state verification are reported in the final response. No runtime tests were run or claimed.
+- **Next: Cheddr:** Handle merge as a separate step; plan a separately authorized Phase 1 task as designated lead. Scaffolding remains on hold.
+- **Next: Dizzle Sales Manager:** Carry approved account/release/acceptance behavior into sales/owner fixture requirements; coordinate remaining shared technical choices with Cheddr.
+
 ## Template for the next session
 
 ```markdown

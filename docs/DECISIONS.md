@@ -49,7 +49,7 @@ These are unverified. Resolve with dated evidence in a later authorized discover
 
 Record decisions when they become necessary. Confirmed business rules above remain in force while technical details are unresolved.
 
-## Phase 0 review follow-up: pending joint sign-off
+## Phase 0 review follow-up: recommendation history
 
 Recorded November 6, 2026 from the user's Phase 0 review follow-up request. **R01-R03 are recommendations pending joint sign-off by the user and sales manager, not adopted decisions.** They clarify proposed C1/C5 behavior and the permission design without superseding confirmed scope requirements. Owner/admin grant controls and Zoho source ownership remain in force.
 
@@ -62,3 +62,22 @@ Recorded November 6, 2026 from the user's Phase 0 review follow-up request. **R0
 Record the joint sign-off date, participants and any amendments here before marking a recommendation accepted. R03 does not establish who resolves disputed terms or the approval UI/schema; those remain to be agreed. It never bypasses actor authority, invoice eligibility, mapping verification or audit requirements.
 
 Unverified Zoho behavior in Q01-Q04 remains open, including authoritative payment/status/credit semantics, freshness and ordering, source identity mappings and stock effects. These recommendations do not verify or resolve those provider questions. Merge operator and Phase 1 lead are **unassigned, for the user and sales manager to assign**. Both PRs stay draft, main stays unchanged and app scaffolding remains on hold while review/sign-off continues.
+
+## Phase 0 joint sign-off: approved November 6, 2026
+
+Source: explicit user report of joint approval by **Cheddr and Dizzle Sales Manager**, followed by the supplied role assignments. Reviewed revision: `609f2cae3059c98873274afd60c76885f261dbb7` on `docs/phase-0-foundation`, [PR #1](https://github.com/Dizzledist/dizzle-business-suite/pull/1). Before recording, GitHub PR head and fetched branch both matched that exact revision; the intervening diff was empty. This record supersedes the pending status and unassigned merge/Phase 1 roles in the historical review entry above; it does not amend the reviewed policy or scenario behavior.
+
+| Approved item | Scope of joint approval |
+|---|---|
+| R01 | A sales rep role alone grants access only to assigned accounts. A separately granted role or full-access permission can broaden access only within its authorized scope |
+| R02 | Hold a manual terms release when current invoice validity or the account mapping cannot be verified. If a warehouse job already exists, preserve it and flag stale verification for review |
+| R03 | An authorized releaser must record the applicable approved terms and the reason for early release. That record is sufficient when approved terms are already documented. If the terms are missing or disputed, hold the release for explicit approval |
+| A26-A30 | Approved as acceptance specifications at the reviewed revision: partial payment updates the existing job; distinct release request keys preserve the job/original audit; disabled/revoked/cross-organization requests are denied; stale verification preserves existing work with a review flag; missing/disputed terms hold for explicit approval |
+
+| Assignment | Designated participant |
+|---|---|
+| Merge operator | Cheddr (Marketing / Admin) |
+| Phase 1 lead | Cheddr (Marketing / Admin) |
+| Approving participants | Cheddr and Dizzle Sales Manager |
+
+Approval is limited to R01-R03 and A26-A30 as reviewed. It is not evidence of executed tests, implemented capabilities, approval of all other proposed technical choices, or verification of Zoho behavior. Q01-Q04 and other unresolved questions remain open; terms-dispute approval authority/evidence format and deployment ownership are not assigned by this sign-off. Both PRs remain draft, main unchanged; merge is a separate step for Cheddr, and app scaffolding remains a separate task on hold.

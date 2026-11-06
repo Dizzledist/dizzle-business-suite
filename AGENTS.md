@@ -14,7 +14,9 @@ Phase 0 is documentation and shared contracts only. No application scaffolding, 
 | Marketing, image studio and Assets publishing | User / Cheddr marketing manager; sales manager reviews rep consumption |
 | Identity, account assignment, Zoho invoice/payment and warehouse release contracts | Shared review by both builders; appoint one active implementation lead per task |
 | Warehouse, production, operations and client services | User coordination is proposed by scope; confirm individual assignments before implementation |
-| Review, merge and deployment | Operator remains to be appointed; never infer deployment authority from build ownership |
+| Review and merge | Cheddr (Marketing / Admin) is the designated merge operator; merge is a separate step for Cheddr |
+| Phase 1 foundation | Cheddr (Marketing / Admin) is the designated Phase 1 lead; scaffolding requires a separate task |
+| Deployment | Operator remains to be appointed; never infer deployment authority from build ownership |
 
 Build ownership does not confer employee permissions. Review [CONTRACTS](docs/CONTRACTS.md) and [PERMISSIONS](docs/PERMISSIONS.md) together before dependents. Amend shared interfaces explicitly and identify affected consumers in the PR. Do not create parallel auth layers, Zoho connectors, account ownership logic or stock ledgers.
 

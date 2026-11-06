@@ -53,9 +53,9 @@ Service identities do not inherit interactive admin access. Secrets/scopes and a
 - Routine shipment confirmation automation needs approved templates, sender policy and verified customer scope. Zoho continues to own invoice/payment communications.
 - Offboarding disables access/revokes tokens according to a policy still to be agreed; do not delete historical authorship as a shortcut.
 
-## Phase 0 review recommendations: pending joint sign-off
+## Phase 0 review policies: jointly approved November 6, 2026
 
-The user and sales manager must jointly sign off R01-R03 in [DECISIONS](DECISIONS.md). These recommendations are not adopted decisions or configured permissions. They clarify the existing proposed design; confirmed release-role and Zoho ownership restrictions remain unchanged.
+Cheddr and Dizzle Sales Manager jointly approved R01-R03 as reviewed at commit 609f2ca; see [DECISIONS](DECISIONS.md) for the dated sign-off record. These are approved policy requirements; runtime permissions are not configured. Other proposed technical details remain subject to review; confirmed release-role and Zoho ownership restrictions remain unchanged.
 
 - **R01:** A sales rep role alone grants access only to assigned accounts. A separately granted role or full-access permission can broaden access only within its authorized scope. No role selection or historic assignment grants access; inactive identities, revoked permissions and organization boundaries still deny unauthorized requests.
 - **R02:** Hold a manual terms release when current invoice validity or the account mapping cannot be verified. If a warehouse job already exists, preserve it and flag stale verification for review. Neither full access nor a terms-release role establishes payment or overrides uncertain invoice eligibility.
