@@ -52,3 +52,13 @@ Service identities do not inherit interactive admin access. Secrets/scopes and a
 - External approval binds actual recipients and content to a named approver; modified drafts require renewed approval. Approval is additional to data and send permissions, not a replacement.
 - Routine shipment confirmation automation needs approved templates, sender policy and verified customer scope. Zoho continues to own invoice/payment communications.
 - Offboarding disables access/revokes tokens according to a policy still to be agreed; do not delete historical authorship as a shortcut.
+
+## Phase 0 review recommendations: pending joint sign-off
+
+The user and sales manager must jointly sign off R01-R03 in [DECISIONS](DECISIONS.md). These recommendations are not adopted decisions or configured permissions. They clarify the existing proposed design; confirmed release-role and Zoho ownership restrictions remain unchanged.
+
+- **R01:** A sales rep role alone grants access only to assigned accounts. A separately granted role or full-access permission can broaden access only within its authorized scope. No role selection or historic assignment grants access; inactive identities, revoked permissions and organization boundaries still deny unauthorized requests.
+- **R02:** Hold a manual terms release when current invoice validity or the account mapping cannot be verified. If a warehouse job already exists, preserve it and flag stale verification for review. Neither full access nor a terms-release role establishes payment or overrides uncertain invoice eligibility.
+- **R03:** An authorized releaser must record the applicable approved terms and the reason for early release. That record is sufficient when approved terms are already documented. Missing or disputed terms hold the release for explicit approval. Approval authority and evidence format remain open; any later approval must be recorded and the release safeguards rechecked.
+
+See [ACCEPTANCE](ACCEPTANCE.md) A26-A30 for review-follow-up cases. Removing an action grant does not remove unrelated grants, but no revoked permission may continue to authorize the affected record access or release through caches, old sessions or queued work.

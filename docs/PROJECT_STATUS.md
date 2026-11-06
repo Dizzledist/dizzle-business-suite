@@ -37,3 +37,14 @@ Dashboard build ownership is confirmed; warehouse/production ownership and merge
 | 3-6: Departments through cutover | Not started; Replit remains operational until migration and departmental signoff |
 
 No launch date, budget, runtime stack versions, provider accounts, deployment or automated check results are claimed. Open Zoho questions block only dependent behavior, not unrelated documentation or fixture design.
+
+## Current follow-up: Phase 0 joint review
+
+November 6, 2026: active lead is the current Codex session for the user, updating only `docs/phase-0-foundation` and existing [draft PR #1](https://github.com/Dizzledist/dizzle-business-suite/pull/1). Before editing, verified starting PR #1 head and fetched branch at `925f11d`; PR #2 remains draft at `451b6b5`, main at `aeab1c8`. The tracked tree was clean; the workspace file stays untracked and out of commits.
+
+Added pending recommendations R01 (assignment-only rep role with scoped separate grants), R02 (hold unverifiable manual release; preserve existing job with stale-review flag), and R03 (record documented approved terms plus early-release reason; hold missing/disputed terms for explicit approval). See [DECISIONS](DECISIONS.md) for the full wording and pending user/sales-manager joint sign-off. C1/C5 and permissions refer to those pending recommendations. Acceptance now includes A26-A30 for partial payment after manual release, different release keys, disabled/revoked/cross-organization denial, existing-job stale verification and missing/disputed terms.
+
+- **Next for both builders:** Review and jointly sign off or amend R01-R03; no acceptance is inferred from this documentation update.
+- **Assignments for user and sales manager:** Merge operator and Phase 1 lead remain unassigned. No role is appointed by this session.
+- **Still open:** Q01-Q04 Zoho behavior and other recorded integration questions; no provider capability or payment policy has been verified here.
+- **Hold:** Keep both PRs in draft, main unchanged and app scaffolding on hold until review is complete. No app code, dependencies, infrastructure or live integrations are added. PR #2's Assets proposal stays on its own branch; reconciling it with this foundation follow-up is a later task.

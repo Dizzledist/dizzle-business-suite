@@ -26,6 +26,25 @@ Append entries and later outcome/correction notes; preserve prior session eviden
 - **External actions:** Fetched origin, pushed only the task branch, and created the draft PR. GitHub connector returned 404 for PR creation; existing Git authentication via GitHub API successfully created it. No merge, deployment, provider integration, customer data action or external message send occurred.
 - **Remaining review / next tasks:** Both builders review C1-C5 and permissions. Sales manager defines sales/owner fixtures, assignments and isolation cases; user defines marketing/image studio/Assets approval and rep-consumption contract. Appoint one shared foundation lead before separate scaffolding; provider questions remain explicitly unverified.
 
+## Session 2026-11-06 / user with Codex: Phase 0 review follow-up
+
+- **Task / lead:** Current Codex session for the user; documentation-only follow-up to the user/sales-manager review. No implementation or joint sign-off claimed.
+- **Starting branch / verified PR head:** Began on `docs/image-studio-sales-assets` at `451b6b5`, tracked tree clean with only the workspace file untracked. Read AGENTS, scope and existing foundation docs. Verified GitHub PR #1 open/draft/unmerged at `925f11d65fce1b7d1de890d4429b58e4938ec207`, head `docs/phase-0-foundation`, base main; fetched origin and switched to that matching foundation branch before editing.
+- **Branch / review / commit reference:** `docs/phase-0-foundation`, existing [draft PR #1](https://github.com/Dizzledist/dizzle-business-suite/pull/1). Follow-up commit subject: `docs: record Phase 0 review follow-up`. No new PR or Assets-proposal changes.
+- **What changed / contracts:** Pending R01-R03 recorded in DECISIONS and referenced in C1/C5, permissions, status and acceptance. Added A26-A30; no Zoho source ownership, invoice creator rights or one-job invariant changed.
+- **Joint sign-off recommendation R01 — pending user + sales manager:** A sales rep role alone grants access only to assigned accounts. A separately granted role or full-access permission can broaden access only within its authorized scope.
+- **Joint sign-off recommendation R02 — pending user + sales manager:** Hold a manual terms release when current invoice validity or the account mapping cannot be verified. If a warehouse job already exists, preserve it and flag stale verification for review.
+- **Joint sign-off recommendation R03 — pending user + sales manager:** An authorized releaser must record the applicable approved terms and the reason for early release. That record is sufficient when approved terms are already documented. If the terms are missing or disputed, hold the release for explicit approval.
+- **Checks / results:** Documentation diff, relative-link and whitespace results are recorded in the verification note below. No runtime test harness exists; acceptance cases remain specifications.
+- **Schema / environment:** None. No app scaffolding, dependencies, migrations, infrastructure or live integrations.
+- **External actions / scope:** Read GitHub PR state and fetched origin; task authorizes committing/pushing only this documentation follow-up to PR #1. Keep PR #1 and PR #2 draft; do not merge, push main, change PR #2 or send messages.
+- **Open decisions / assignments:** User and sales manager must assign the merge operator and Phase 1 lead; both remain unassigned. Q01-Q04 Zoho source/payment/freshness/ordering/stock behavior remains open. Terms-dispute approver and evidence format remain for joint review.
+- **Next: sales manager:** Review R01-R03, account scope and A26-A30; record sign-off/amendments with user. Sales/owner requirements remain their build responsibility.
+- **Next: user / marketing lead:** Review R01-R03 with sales manager; jointly assign merge operator and Phase 1 lead when ready. Keep the Assets proposal separate; no generation/publishing is authorized.
+- **Next safe shared step:** Complete joint review and recorded assignments. App scaffolding stays on hold; no implementation may infer approval from these recommendations.
+
+Verification note: reviewed the six-file documentation diff against starting PR head `925f11d`. All 45 relative links across nine Markdown documents resolve; A01-A30 have 30 unique scenario rows; working-tree whitespace check passed. README, AGENTS and PROJECT_SCOPE are unchanged. Only the six named foundation documentation files are to be staged; the workspace file remains untracked. No runtime checks were available or claimed. Final staged whitespace/preservation checks precede commit/push; the task's final response records the published commit and verified PR states.
+
 ## Template for the next session
 
 ```markdown

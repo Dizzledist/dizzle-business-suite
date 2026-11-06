@@ -48,3 +48,17 @@ These are unverified. Resolve with dated evidence in a later authorized discover
 | Q11 | What retention/offboarding policy, backup recovery objectives, budget and cutover window apply? | Owner/admin with builders | Production readiness |
 
 Record decisions when they become necessary. Confirmed business rules above remain in force while technical details are unresolved.
+
+## Phase 0 review follow-up: pending joint sign-off
+
+Recorded November 6, 2026 from the user's Phase 0 review follow-up request. **R01-R03 are recommendations pending joint sign-off by the user and sales manager, not adopted decisions.** They clarify proposed C1/C5 behavior and the permission design without superseding confirmed scope requirements. Owner/admin grant controls and Zoho source ownership remain in force.
+
+| ID | Recommendation for joint sign-off | Status / affected documents |
+|---|---|---|
+| R01 | A sales rep role alone grants access only to assigned accounts. A separately granted role or full-access permission can broaden access only within its authorized scope | Pending user + sales manager; C1/C2, PERMISSIONS, A18-A19/A28 |
+| R02 | Hold a manual terms release when current invoice validity or the account mapping cannot be verified. If a warehouse job already exists, preserve it and flag stale verification for review | Pending user + sales manager; C4/C5, PERMISSIONS, A14/A29 |
+| R03 | An authorized releaser must record the applicable approved terms and the reason for early release. That record is sufficient when approved terms are already documented. If the terms are missing or disputed, hold the release for explicit approval | Pending user + sales manager; C5, PERMISSIONS, A07/A10/A30 |
+
+Record the joint sign-off date, participants and any amendments here before marking a recommendation accepted. R03 does not establish who resolves disputed terms or the approval UI/schema; those remain to be agreed. It never bypasses actor authority, invoice eligibility, mapping verification or audit requirements.
+
+Unverified Zoho behavior in Q01-Q04 remains open, including authoritative payment/status/credit semantics, freshness and ordering, source identity mappings and stock effects. These recommendations do not verify or resolve those provider questions. Merge operator and Phase 1 lead are **unassigned, for the user and sales manager to assign**. Both PRs stay draft, main stays unchanged and app scaffolding remains on hold while review/sign-off continues.
