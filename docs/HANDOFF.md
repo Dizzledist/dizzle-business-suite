@@ -59,6 +59,22 @@ Verification note: reviewed the six-file documentation diff against starting PR 
 - **Next: Cheddr:** Handle merge as a separate step; plan a separately authorized Phase 1 task as designated lead. Scaffolding remains on hold.
 - **Next: Dizzle Sales Manager:** Carry approved account/release/acceptance behavior into sales/owner fixture requirements; coordinate remaining shared technical choices with Cheddr.
 
+## Session 2026-11-06 / Cheddr with Codex: Phase 1 local workflow
+
+- **Task / active lead:** Cheddr (Marketing / Admin); implement the explicitly authorized local workflow/app shell, not the entire production foundation. User request supersedes the historical scaffolding hold for this task only.
+- **Starting Git:** Fetched origin/main at `19662f7cd731a64828801d52e825d5406be98633`, verified required Phase 0 merge ancestry, created `feat/phase-1-local-workflow`. Tracked tree clean; workspace file untracked and preserved. PR #2 stays a separate draft; no Assets proposal work is included.
+- **Branch / commit reference:** `feat/phase-1-local-workflow`; implementation commit subject `feat: demonstrate local invoice-to-warehouse workflow`. Draft PR link/publication outcome follows when available.
+- **Modules/contracts:** React shell, shared UI types, loopback HTTP API, fixture adapter, authorization/release domain, in-memory original audit and job uniqueness, HTTP/browser tests, PR CI. C1-C5 mapping and concrete warehouse projection documented for both builders; approved R01-R03 unchanged.
+- **What works:** Assigned rep scope, manager/owner/admin terms release with documented terms + reason, full verified fixture payment auto-release, event replay/older snapshots and distinct-key release idempotency, later partial/full payments on same job/audit, stale/unverified/mapping holds and existing-job review flags, disabled/revoked/cross-organization denial. Warehouse sees released operational jobs only.
+- **Checks:** `npm run check` passed: typecheck, 31 HTTP tests, build, 2 Chromium browser tests. Desktop/mobile screenshots visually inspected. No lint tool configured. Initial CSS import/Host-test transport/browser-server orchestration failures were fixed and final checks pass. Documentation links/whitespace and staged scope checked before publication.
+- **Acceptance coverage/gaps:** See LOCAL_DEMO's matrix. Covers A02-A11, in-process portion of A12, A13-A14, selected safeguards from A15-A18, active-job A26-A27, API portion of A28, A29 and terms-hold A30. No claim of full source mirror, durable crash recovery, archives, files/search/AI, reassignment workflow, shipping/notifications, migration or live Zoho verification.
+- **Schema/environment:** No database/migrations/secrets. Node 24, npm lockfile, local API port 3001 and web port 5173. NODE_ENV=production rejects API startup. Playwright sets CI=true for its Vite child; no credential values or provider environment required.
+- **External actions:** Downloaded npm dependencies/Chromium for local checks; task authorizes push of task branch and draft PR only. No merge/main push, live provider calls, stock/payment writes, deployment or customer communication.
+- **Open questions:** Q01-Q04 remain open. Five-minute freshness, ordered USD payment snapshots, in-memory uniqueness and server-defined identity selection are local assumptions, not production contracts. Terms-dispute approver/UI and durable identity/file/worker foundations remain future decisions.
+- **Next: Cheddr:** Review demo with sales manager, then select a scoped real identity/persistence foundation task with one active lead. Keep infrastructure/live connectors separately authorized.
+- **Next: Dizzle Sales Manager:** Reproduce rep isolation and invoice/terms/audit cases; refine company/store assignment fixtures and sales/owner data needs before dashboards.
+- **Next shared step:** Review local API/C1-C5 mapping and remaining choices; keep PR #2 draft and reconcile its Assets proposal independently.
+
 ## Template for the next session
 
 ```markdown

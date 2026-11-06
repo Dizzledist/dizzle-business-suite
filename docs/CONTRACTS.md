@@ -115,3 +115,14 @@ Required behavior:
 ## Review checklist
 
 Both builders review C1-C5, assignment scope, money/quantity precision, audit/idempotency, source aliases, freshness semantics and role matrix. Sales manager validates sales/owner consumers; user validates operational and future marketing/Assets access. Owner resolves business exceptions; designated integration lead supplies provider evidence. No signoff is claimed by the presence of these documents.
+
+## Local Phase 1 mapping for shared review
+
+User authorized a local implementation on November 6; this does not resolve provider mappings above. [shared/contracts.ts](../shared/contracts.ts) defines UI projections, [server/workflow.ts](../server/workflow.ts) owns release/access logic, and [LOCAL_DEMO](LOCAL_DEMO.md) documents routes, fixture assumptions and acceptance gaps.
+
+- C1/C2: server-owned test identity/grant/role records, organization boundary and a single current assigned rep per synthetic account; no real login or grant-management API. Assignment changes, buyer/store matching and generalized full-access grants remain deferred.
+- C3/C4: seeded read-only normalized invoice mirror, integer USD cents serialized as decimal strings; a named fixture adapter supplies ordered cumulative payment snapshots, not arbitrary client amounts or actual Zoho webhooks. The five-minute freshness policy is local-only.
+- C5: one synchronous release path creates one in-memory job per canonical fixture invoice. Original audit is frozen; later balances are joined from source invoice state. Stale/unverified/mapping uncertainty produces a hold or review flag without removing work. No persistence/worker recovery claim.
+- Warehouse projection contains source reference, customer, required items, Orders status and review flag; it omits invoice balances and release-audit reasons. This concrete local projection is for both builders to review before broader warehouse implementation.
+
+The local route/data representation and fixtures are implementation choices, not changes to approved R01-R03. Both builders review shared consumers; no new Zoho behavior, warehouse stage, stock transaction, invoice creation or external messaging contract is introduced.

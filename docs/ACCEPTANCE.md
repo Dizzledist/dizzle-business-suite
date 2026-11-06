@@ -1,6 +1,6 @@
 # First invoice-to-warehouse acceptance scenarios
 
-November 6, 2026. These are specifications for future isolated tests, **not executed application tests**. Review with [CONTRACTS C1-C5](CONTRACTS.md), [PERMISSIONS](PERMISSIONS.md) and [open questions](DECISIONS.md). No app, live connector or test harness exists in Phase 0. Both builders review shared behavior; owner/integration lead must settle unverified Zoho semantics before live acceptance.
+November 6, 2026. These are foundation acceptance specifications. The local Phase 1 demo now tests a scoped subset using synthetic HTTP/browser fixtures; [LOCAL_DEMO](LOCAL_DEMO.md) maps implemented evidence and gaps. It does not constitute live Zoho acceptance or completion of every scenario. Review with [CONTRACTS C1-C5](CONTRACTS.md), [PERMISSIONS](PERMISSIONS.md) and [open questions](DECISIONS.md). Both builders review shared behavior; owner/integration lead must settle unverified Zoho semantics before live acceptance.
 
 ## Fixture vocabulary
 
@@ -47,7 +47,7 @@ A23 requires a later approved notification sender contract (Q08); no messages ar
 
 ## Phase 0 review-follow-up scenarios
 
-Cheddr and Dizzle Sales Manager [jointly approved R01-R03 and A26-A30](DECISIONS.md) at reviewed commit 609f2ca on November 6, 2026. The scenarios below are approved specifications for later implementation; no runtime tests have been executed. Use the existing I1/J1 fixture and a second organization O2 where noted. Zoho amounts/statuses are normalized fixture facts, not verified API mappings.
+Cheddr and Dizzle Sales Manager [jointly approved R01-R03 and A26-A30](DECISIONS.md) at reviewed commit 609f2ca on November 6, 2026. The scenarios below remain the approved specifications; scoped local tests are mapped in LOCAL_DEMO, with archive/durable recovery and unimplemented resource types explicitly deferred. Use the existing I1/J1 fixture and a second organization O2 where noted. Zoho amounts/statuses are normalized fixture facts, not verified API mappings.
 
 | ID | Given / when | Required result |
 |---|---|---|
@@ -59,4 +59,4 @@ Cheddr and Dizzle Sales Manager [jointly approved R01-R03 and A26-A30](DECISIONS
 
 ## Evidence for vertical-slice completion
 
-Record isolated test results for A01-A30, concurrency/recovery evidence, role checks across retrieval paths, provider mapping verification and unresolved limitations. R01-R03 and A26-A30 are jointly approved as recorded in DECISIONS; any later policy amendments require explicit review. No live acceptance or cutover until relevant Q01-Q06/Q08 decisions are settled and staging is isolated. App scaffolding remains on hold while the Phase 0 review continues; any later fixture/UI work is a separate authorized task.
+Record isolated test results for A01-A30, concurrency/recovery evidence, role checks across retrieval paths, provider mapping verification and unresolved limitations. R01-R03 and A26-A30 are jointly approved as recorded in DECISIONS; any later policy amendments require explicit review. No live acceptance or cutover until relevant Q01-Q06/Q08 decisions are settled and staging is isolated. The user's scoped Phase 1 request authorizes the local scaffold; additional departments, live integrations and production infrastructure remain separate tasks.

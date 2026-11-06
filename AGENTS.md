@@ -4,7 +4,7 @@
 
 Read [README](README.md), [project scope](docs/PROJECT_SCOPE.md), [status](docs/PROJECT_STATUS.md) and the latest [handoff](docs/HANDOFF.md) at the start of every session. The scope is the agreed business baseline; record subsequent explicit decisions in [DECISIONS](docs/DECISIONS.md) with source, date and superseded rule. Do not silently resolve contradictions.
 
-Phase 0 is documentation and shared contracts only. No application scaffolding, dependencies, infrastructure provisioning or live integration work belongs in this task. No runtime checks exist yet. Future implementation must turn the [acceptance scenarios](docs/ACCEPTANCE.md) into meaningful isolated checks.
+Phase 0 documentation was merged in PR #1. The user's November 6 Phase 1 task authorizes a minimal local React/TypeScript app and API with synthetic invoice/payment/warehouse fixtures, API-enforced test identities, isolated tests and PR CI. This supersedes the earlier scaffolding hold for this scoped task only. No live Zoho, production infrastructure, real identity provider, outbound sends, department dashboards or marketing Assets belong in this task. See [local demo](docs/LOCAL_DEMO.md) for run commands, fixture assumptions and acceptance coverage.
 
 ## Builder responsibilities
 
@@ -22,7 +22,7 @@ Build ownership does not confer employee permissions. Review [CONTRACTS](docs/CO
 
 ## Repository and implementation conventions
 
-- Use one modular application. React/TypeScript, a Node/TypeScript API, PostgreSQL, durable worker, private storage and provider hosting are proposals pending selection, not installed infrastructure.
+- Use one modular application. The local implementation uses React/TypeScript, Vite and a Node/TypeScript API with in-memory fixtures. PostgreSQL, durable worker, private storage and provider hosting remain proposals, not installed infrastructure. Test identity selection is local-only and must never be deployed as authentication.
 - Proposed boundaries are identity, accounts, zoho-sync, finance-views, fulfillment, production, client-services, marketing, assets, ai, notifications and customer-portal. Shared contracts and UI have one maintained implementation. Directory layout is not yet approved.
 - Zoho owns invoice creation/edits, payments, accounting and inventory. Only owner and sales manager create invoices in Zoho; Dizzle admin status alone does not authorize that.
 - Enforce access on the server for APIs, files, search, reports and AI. Reps see assigned records only. Department switching grants no authority.
