@@ -8,6 +8,8 @@ Cheddr and Dizzle Sales Manager approved Phase 1 at `dac677db9a76d43118717a68d54
 
 The subsequent user request authorizes the Warehouse Fulfillment Kanban. Created **feat/warehouse-fulfillment-kanban** from fetched origin/main at that merge. Active lead: Cheddr (Marketing / Admin) with Codex. Main stays unchanged after the authorized Phase 1 merge; PR #2 remains draft and separate. Workspace file remains untracked/excluded.
 
+Published as [draft PR #4](https://github.com/Dizzledist/dizzle-business-suite/pull/4) against main. Implementation commit `caa4e69`; this publication note follows on the same branch. Local checks passed; GitHub Actions results are tracked on that PR separately from local evidence.
+
 ## Implemented local warehouse slice
 
 - Existing Phase 1 release path still creates exactly one Orders job from verified full payment or authorized terms/reason; payment replay and later payment preserve existing job/status/release audit.

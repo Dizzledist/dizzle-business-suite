@@ -106,6 +106,13 @@ Verification note: reviewed the six-file documentation diff against starting PR 
 - **Next: Cheddr:** Joint demo with sales manager: release, slip/print, cancel shipment move, save tracking, captured alert, simulated failure/retry and pickup routing. Review next quantity/pickup completion or durable foundation task separately.
 - **Next: Dizzle Sales Manager:** Validate assigned-account read-only cards/tracking and rep alert content; confirm document distinctions and remaining local fixture metadata.
 
+## Session 2026-11-06 / Warehouse publication outcome
+
+- **Commit / review:** Implementation `caa4e69`, [draft PR #4](https://github.com/Dizzledist/dizzle-business-suite/pull/4) from `feat/warehouse-fulfillment-kanban` against main. This note is a documentation-only follow-up on the same PR.
+- **Verified outcomes:** Local typecheck, 49 HTTP tests, build and 5 Chromium tests passed; 60 relative links and staged whitespace checks passed. API/runtime behavior unchanged after those checks. CI on the final pushed head is verified separately and reported in the final response.
+- **Preservation:** PR #3 verified merged at `d4afc22`; main stays at that authorized merge. PR #2 remains open/draft/unmerged at `451b6b5`. Workspace file stays untracked with original SHA-256 `4F888FE1084D2A9091583D5093693D81453C0B8D06DFD6192B096972BAE551D4`. Only the Kanban task branch was pushed after the authorized merge; no live Slack/Zoho/label/stock actions or deployment.
+- **Joint demo:** See WAREHOUSE_DEMO: release -> warehouse -> sample PDF/print -> cancel drag/button move -> enter tracking -> one captured alert; repeat with simulated failure/retry. Sales rep movement must fail. Partial quantities and pickup completion remain separate decisions.
+
 ## Template for the next session
 
 ```markdown
