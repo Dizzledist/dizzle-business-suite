@@ -22,9 +22,9 @@ Approved R01-R03 and A26-A30 are the business baseline. [DECISIONS](DECISIONS.md
 
 ## Validation and acceptance evidence
 
-`npm run check` passed locally on Node 24: typecheck, **31 HTTP integration tests**, build and **2 Chromium browser tests**. Desktop and mobile screenshots were visually inspected. The initial CSS import, raw Host-header test transport and Windows Playwright nested-server startup issues were resolved; final checks pass. No separate lint configuration exists.
+`npm run check` passed locally on Node 24: typecheck, **31 HTTP integration tests**, build and **3 Chromium browser tests**. The added automatic-payment regression starts with a fresh unpaid invoice, proves the warehouse is empty, receives full payment without a terms release, and verifies one warehouse job with unchanged ID/original audit after replay. Desktop and mobile screenshots were visually inspected in the initial implementation. No separate lint configuration exists.
 
-Implemented acceptance evidence: A02-A11; in-process concurrency portion of A12; A13-A14; draft/credit/mapping safeguards from A15-A17; invoice/job scope portion of A18/A28; active-job behavior of A26-A27; A29; missing/disputed terms hold from A30. See the precise limits in [LOCAL_DEMO](LOCAL_DEMO.md). These are fixture tests, not live provider acceptance or completed production Phase 1.
+Implemented acceptance evidence: A02-A10; denial-response/no-job portion of A11 (safe denial audit remains unimplemented); in-process concurrency portion of A12; A13-A14; draft/credit/mapping safeguards from A15-A17; invoice/job scope portion of A18/A28; active-job behavior of A26-A27; A29; missing/disputed terms hold from A30. See the precise limits in [LOCAL_DEMO](LOCAL_DEMO.md). These are fixture tests, not live provider acceptance or completed production Phase 1.
 
 ## Gaps and next steps
 

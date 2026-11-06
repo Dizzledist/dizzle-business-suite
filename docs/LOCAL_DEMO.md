@@ -72,7 +72,8 @@ npm run test:e2e
 
 | Foundation scenarios | Implemented evidence / limits |
 |---|---|
-| A02-A11 | HTTP tests cover holds, full payment/replay/order handling, authorized terms/audit, later payment, validation and unauthorized release |
+| A02-A10 | HTTP tests cover holds, full payment/replay/order handling, authorized terms/release audit, later payment and validation |
+| A11 (partial coverage) | HTTP tests assert denial responses for unauthorized release/payment controls and confirm no job is created. The safe denial audit remains unimplemented and is not asserted by these tests |
 | A12 | Concurrent in-process requests converge to one job. Durable crash/recovery and worker replay remain deferred |
 | A13-A14 | Stale/unverified fixture evidence and real clock expiry block release; mapping uncertainty blocks release |
 | A15-A17 | Strict fixture input forbids caller payment assertions; draft/credit-only holds and unmatched mapping tested. No browser payment flow, cash custody module, real mirror/alias reconciliation |
@@ -81,4 +82,4 @@ npm run test:e2e
 | A29-A30 | Existing jobs survive stale/unverified/mapping uncertainty; missing/disputed terms hold. Explicit dispute-resolution authority/UI remains open |
 | A01 / A19-A25 | Source import/mirror deduplication, reassignment workflow, amendments/reversals, shipments/notifications, migration and actual Zoho rights are not implemented; no claim of completing those scenarios |
 
-Browser tests exercise terms -> partial/full payment -> replay/retry -> stale flag -> warehouse view, plus rep isolation, disabled/revoked identity switching and a narrow viewport. The wider Phase 1 production foundation (real identity, database/files, durable jobs, search/AI and staging isolation) remains future work.
+Chromium regression tests also start from reset fixtures, verify a fresh unpaid invoice has no job, apply full payment without a manual terms release, and confirm exactly one linked job in the warehouse view. Replaying the event preserves the same job ID and complete original release audit; the test checks the manager API projection for the audit because warehouse access deliberately omits it. Other browser tests exercise terms -> partial/full payment -> replay/retry -> stale flag -> warehouse view, plus rep isolation, disabled/revoked identity switching and a narrow viewport. The wider Phase 1 production foundation (real identity, database/files, durable jobs, search/AI and staging isolation) remains future work.
