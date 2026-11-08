@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { isSalesCrmEnabled, salesCrmApiWorkspace } from '../../shared/sales-crm';
 import { reportingApi, type ReportingPage } from '../../shared/reporting';
+import { isSalesAuthEnabled } from '../../shared/sales-auth';
 
 if (!isSalesCrmEnabled(process.env)) {
   test('CRM is hidden by default and its direct entry preserves the legacy shell', async ({ page, request }) => {
@@ -12,7 +13,7 @@ if (!isSalesCrmEnabled(process.env)) {
     expect((await request.get(salesCrmApiWorkspace, { headers: { 'X-Demo-Identity': 'manager' } })).status()).toBe(404);
     expect((await request.get(reportingApi, { headers: { 'X-Demo-Identity': 'manager' } })).status()).toBe(404);
   });
-} else {
+} else if (!isSalesAuthEnabled(process.env)) {
   test('authorized rep can reach every CRM section and return to the existing workflow', async ({ page }) => {
     await page.goto('/');
     await page.getByLabel('Test identity').selectOption('rep-a');

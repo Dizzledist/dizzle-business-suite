@@ -1,0 +1,48 @@
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import { salesAuthApi, type SalesSessionView } from '../../../shared/sales-auth';
+import { reportingApi } from '../../../shared/reporting';
+import { salesCrmApiWorkspace } from '../../../shared/sales-crm';
+import { ApiError } from '../../workflow';
+import type { SyntheticReporting } from '../reporting/demo';
+import { getScopedReporting } from '../reporting/routes';
+import type { SalesIdentityStore } from './store';
+import { csrfToken, hasLogoutProtection, requestSession, sessionCookie } from './sessions';
+
+export function getAuthenticatedSalesCrm(
+  req: IncomingMessage, res: ServerResponse, url: URL, identity: SalesIdentityStore | undefined,
+  reporting: SyntheticReporting | undefined,
+) {
+  if (!identity) throw new ApiError(503, 'Company sign-in is unavailable.');
+  if (req.headers['x-demo-identity'] !== undefined) throw new ApiError(401, 'Company sign-in required.');
+  const token = requestSession(req);
+  const logout = req.method === 'POST' && url.pathname === salesAuthApi + '/logout';
+  const user = identity.resolveSession(token, !logout);
+  if (!token || !user) throw new ApiError(401, 'Company sign-in required.');
+
+  if (logout) {
+    if (url.search || req.headers['transfer-encoding'] || Number(req.headers['content-length'] ?? 0) !== 0 ||
+        !hasLogoutProtection(req, token)) throw new ApiError(403, 'Logout request could not be verified.');
+    identity.logout(token);
+    res.setHeader('Set-Cookie', sessionCookie(null));
+    return { signedOut: true };
+  }
+
+  if (req.method !== 'GET') throw new ApiError(404, 'Route not found.');
+  if (url.pathname === salesAuthApi + '/session' && !url.search) {
+    const result: SalesSessionView = {
+      displayName: user.name, role: user.role, csrfToken: csrfToken(token), expiresAt: new Date(user.expires_at).toISOString(),
+    };
+    return result;
+  }
+  if (url.pathname === salesAuthApi + '/admin' && !url.search) return identity.directory(token);
+  if (url.pathname === salesCrmApiWorkspace) {
+    return {
+      displayName: user.name,
+      integrations: { zohoInventory: 'not-configured', shipStation: 'not-configured' },
+    };
+  }
+  if (url.pathname === reportingApi || url.pathname.startsWith(reportingApi + '/invoices/')) {
+    return getScopedReporting(url, reporting, identity.reportingScope(user));
+  }
+  throw new ApiError(404, 'Route not found.');
+}

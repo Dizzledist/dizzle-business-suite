@@ -11,9 +11,12 @@ export interface SalesCrmWorkspace {
   };
 }
 
-export function isSalesCrmEnabled(env: { [name: string]: string | undefined }) {
-  return env.SALES_CRM_ENABLED === 'true' &&
-    (env.NODE_ENV === undefined || env.NODE_ENV === 'development' || env.NODE_ENV === 'test');
+export function isLocalFixtureEnabled(env: Record<string, string | undefined>) {
+  return env.NODE_ENV === 'development' || env.NODE_ENV === 'test';
+}
+
+export function isSalesCrmEnabled(env: Record<string, string | undefined>) {
+  return env.SALES_CRM_ENABLED === 'true' && (env.NODE_ENV === undefined || isLocalFixtureEnabled(env));
 }
 
 export function canAccessSalesCrm(actor: Identity) {

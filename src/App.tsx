@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DemoEvent, InvoiceView, Workspace } from '../shared/contracts';
 import { canAccessSalesCrm, salesCrmPath } from '../shared/sales-crm';
-import { rememberDemoIdentity, salesCrmDevEnabled } from './sales-crm/access';
+import { rememberDemoIdentity, salesCrmDevEnabled, salesCrmSessionEnabled } from './sales-crm/access';
 
 const identities = [
   ['manager', 'Sales manager'], ['rep-a', 'Rep A'], ['rep-b', 'Rep B'], ['warehouse', 'Warehouse'],
@@ -34,7 +34,7 @@ export function App() {
   }
   useEffect(() => {
     const version = ++generation.current;
-    if (salesCrmDevEnabled) rememberDemoIdentity(identity);
+    if (salesCrmDevEnabled && !salesCrmSessionEnabled) rememberDemoIdentity(identity);
     setData(null); setError(''); setNotice(''); setReason(''); setTermsId('');
     reload(version).catch(e => { if (generation.current === version) setError(String(e.message)); });
     return () => { generation.current++; };
@@ -63,7 +63,7 @@ export function App() {
       <a className="brand" href="/" aria-label="Dizzle home"><span className="brand-mark">d.</span> DIZZLE</a>
       <span className="sidebar-label">BUSINESS SUITE</span>
       <div className="nav-active"><span>↗</span> Invoice workflow</div>
-      {salesCrmDevEnabled && data?.identity.id === identity && canAccessSalesCrm(data.identity) &&
+      {salesCrmDevEnabled && (salesCrmSessionEnabled || (data?.identity.id === identity && canAccessSalesCrm(data.identity))) &&
         <a className="sales-crm-link" href={salesCrmPath}><span aria-hidden="true">↗</span> Sales CRM</a>}
       <div className="sidebar-note">One source of truth.<br/>A clear path to fulfillment.</div>
       <div className="local-tag"><span/> Local sample data</div>

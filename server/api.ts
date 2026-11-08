@@ -1,7 +1,10 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { z } from 'zod';
 import { demoEvents } from '../shared/contracts';
-import { isSalesCrmEnabled } from '../shared/sales-crm';
+import { isLocalFixtureEnabled, isSalesCrmEnabled } from '../shared/sales-crm';
+import { isSalesAuthEnabled } from '../shared/sales-auth';
+import { getAuthenticatedSalesCrm } from './sales-crm/auth/routes';
+import type { SalesIdentityStore } from './sales-crm/auth/store';
 import { getSalesCrmWorkspace, isSalesCrmApiPath } from './sales-crm/routes';
 import { handleZohoManagement, isZohoManagementPath, type ZohoManagement } from './sales-crm/zoho/routes';
 import { ApiError, Workflow } from './workflow';
@@ -27,8 +30,12 @@ function send(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
   res.end(JSON.stringify(data));
 }
-export function createApi(workflow = new Workflow(), zoho?: ZohoManagement, reporting?: SyntheticReporting) {
+export function createApi(
+  workflow = new Workflow(), zoho?: ZohoManagement, reporting?: SyntheticReporting, salesIdentity?: SalesIdentityStore,
+) {
   const salesCrmEnabled = isSalesCrmEnabled(process.env);
+  const salesAuthEnabled = isSalesAuthEnabled(process.env);
+  const fixtureEnabled = isLocalFixtureEnabled(process.env);
   return createServer(async (req, res) => {
     try {
       const host = new URL(`http://${req.headers.host ?? ''}`);
@@ -44,7 +51,11 @@ export function createApi(workflow = new Workflow(), zoho?: ZohoManagement, repo
         return;
       }
       const salesCrmRequest = isSalesCrmApiPath(path);
-      if (salesCrmRequest && !salesCrmEnabled) throw new ApiError(404, 'Route not found.');
+      if (salesCrmRequest) {
+        if (!salesCrmEnabled) throw new ApiError(404, 'Route not found.');
+        if (salesAuthEnabled) return send(res, 200, getAuthenticatedSalesCrm(req, res, url, salesIdentity, reporting));
+      }
+      if (!fixtureEnabled) throw new ApiError(404, 'Route not found.');
       // This header selects a SERVER-DEFINED test identity, not caller-provided roles.
       // It is deliberately not production authentication and only runs on loopback.
       const id = req.headers['x-demo-identity'];

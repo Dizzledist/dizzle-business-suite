@@ -5,7 +5,7 @@ import {
   type RangeSelection, type ReportingInvoice, type ReportingPage,
 } from '../../shared/reporting';
 import { salesCrmPath } from '../../shared/sales-crm';
-import { readDemoIdentity } from './access';
+import { requestSales } from './access';
 
 const preferenceKey = 'dizzle.synthetic-reporting.range';
 const reportsPath = salesCrmPath + '/reports';
@@ -124,13 +124,9 @@ function useReport<T>(path: string | null) {
     if (!path) return;
     const activePath = path;
     const controller = new AbortController();
-    const identity = readDemoIdentity();
     async function load() {
       try {
-        const response = await fetch(activePath, {
-          headers: identity ? { 'X-Demo-Identity': identity } : {},
-          signal: controller.signal,
-        });
+        const response = await requestSales(activePath, { signal: controller.signal });
         if (response.status === 404) {
           if (!controller.signal.aborted) setRequest({ path: activePath, state: 'missing' });
           return;

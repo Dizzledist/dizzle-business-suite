@@ -212,6 +212,47 @@
   }
 }
 
+.company-sign-in {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+}
+
+.company-sign-in .panel {
+  width: min(100%, 30rem);
+  padding: clamp(1rem, 5vw, 2rem);
+}
+
+.company-sign-in button {
+  margin: 1rem 0 .35rem;
+  min-height: 44px;
+}
+
+.company-sign-in .sales-crm-link {
+  display: flex;
+}
+
+.company-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin: .75rem 0 1rem;
+}
+
+.company-controls button {
+  min-height: 44px;
+}
+
+.company-audit {
+  padding-left: 1.25rem;
+  overflow-wrap: anywhere;
+}
+
+.company-audit li {
+  margin: .35rem 0;
+}
+
 @media (max-width: 750px) {
   .sales-crm-shell {
     grid-template-columns: minmax(0, 1fr);

@@ -11,6 +11,9 @@ import type { SyntheticReporting } from './demo';
 import { transaction } from './database';
 import { decimalAmount, demoOrganization } from './model';
 
+export type ReportingScope = { organizationId: string } &
+  ({ credit: 'all' } | { credit: 'selected'; userIds: readonly string[] });
+
 const sorts = {
   newest: 'first_email_at DESC, invoice_id',
   oldest: 'first_email_at, invoice_id',
@@ -118,20 +121,27 @@ export async function getReporting(
     const status = await zoho.connection.status();
     return { zohoConnection: status.connection, ...transaction(reporting.db, () => operatingStatus(reporting), 'read') };
   }
+  const broad = actor.roles.some(role => ['admin', 'owner', 'sales_manager'].includes(role));
+  return getScopedReporting(url, reporting, broad ? { organizationId: demoOrganization, credit: 'all' }
+    : { organizationId: demoOrganization, credit: 'selected', userIds: [actor.id] });
+}
+
+export function getScopedReporting(url: URL, reporting: SyntheticReporting | undefined, scope: ReportingScope) {
   const detailId = /^\/api\/sales-crm\/reporting\/invoices\/([1-9]\d{0,39})$/.exec(url.pathname)?.[1];
   if (url.pathname !== reportingApi && !detailId) throw new ApiError(404, 'Route not found.');
   if (!reporting) throw new ApiError(503, 'Synthetic reporting is unavailable.');
 
   const filters = query(url);
-  return transaction(reporting.db, () => report(actor, detailId, filters, reporting), 'read');
+  return transaction(reporting.db, () => report(scope, detailId, filters, reporting), 'read');
 }
 
-function report(actor: Identity, detailId: string | undefined, filters: ReturnType<typeof query>, reporting: SyntheticReporting) {
+function report(authorization: ReportingScope, detailId: string | undefined, filters: ReturnType<typeof query>, reporting: SyntheticReporting) {
   const { db, calendar, now } = reporting;
   const range = calendar.resolve(filters.range, now());
-  const broad = actor.roles.some(role => ['admin', 'owner', 'sales_manager'].includes(role));
-  const scope = 'organization_id = ?' + (broad ? '' : ' AND credited_user_id = ?');
-  const scopeArgs: SQLInputValue[] = broad ? [demoOrganization] : [demoOrganization, actor.id];
+  const scope = 'organization_id = ?' + (authorization.credit === 'all' ? ''
+    : ' AND credited_user_id IN (SELECT value FROM json_each(?))');
+  const scopeArgs: SQLInputValue[] = [authorization.organizationId];
+  if (authorization.credit === 'selected') scopeArgs.push(JSON.stringify(authorization.userIds));
   const eligible = scope + " AND verification = 'verified' AND review_reason IS NULL AND first_email_at >= ? AND first_email_at < ?";
   const selectedArgs = [...scopeArgs, range.selected.from, range.selected.until];
   const payment = paymentClause(filters.payment);

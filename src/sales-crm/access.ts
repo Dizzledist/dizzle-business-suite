@@ -1,4 +1,8 @@
+import { salesAuthApi } from '../../shared/sales-auth';
+
 export const salesCrmDevEnabled = import.meta.env.SALES_CRM_ENABLED === true;
+export const salesCrmSessionEnabled = import.meta.env.SALES_CRM_AUTH_ENABLED === true;
+export const sessionEndedEvent = 'dizzle:sales-session-ended';
 
 const selectionKey = 'dizzle.sales-crm.demo-identity';
 
@@ -12,10 +16,23 @@ export function rememberDemoIdentity(identity: string) {
   }
 }
 
-export function readDemoIdentity() {
+function readDemoIdentity() {
   try {
     return window.sessionStorage.getItem(selectionKey);
   } catch {
     return null;
   }
+}
+
+export async function requestSales(path: string, options: RequestInit = {}) {
+  const headers = new Headers(options.headers);
+  if (!salesCrmSessionEnabled) {
+    const identity = readDemoIdentity();
+    if (identity) headers.set('X-Demo-Identity', identity);
+  }
+  const response = await fetch(path, { ...options, headers, credentials: 'same-origin', cache: 'no-store' });
+  if (salesCrmSessionEnabled && response.status === 401 && path !== salesAuthApi + '/session' && !options.signal?.aborted) {
+    window.dispatchEvent(new Event(sessionEndedEvent));
+  }
+  return response;
 }

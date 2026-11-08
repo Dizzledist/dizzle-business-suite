@@ -2,6 +2,14 @@
 
 Updated: November 7, 2026 (America/Los_Angeles).
 
+## Sales CRM authentication foundation · November 7
+
+Prompt #8 authorizes the session, identity, and permissions foundation on **feature/sales-crm-authentication**, based on reporting commit 03e0fed with read-only Zoho commit 8769fec in its history. See the [authentication guide](SALES_CRM_AUTHENTICATION.md).
+
+- Session-only CRM mode uses verified-principal bindings, durable user/session records, rep and team scope, a read-only administrator directory, and audited internal role and mapping operations. The existing demo and Zoho operator flows remain separate.
+- The approved baseline passed TypeScript, build, 171 Vitest tests and 13 Chromium checks. This branch passed TypeScript, build, 188 Vitest tests and Chromium counts of 4 disabled, 9 fixture CRM and 7 session-only checks on isolated ports. The production bundle excludes fixture identity code.
+- **M1 is in progress.** Company sign-in awaits provider approval, adapter and staging validation. M5 still requires accepted identity, first-email evidence and production reconciliation. Browser reporting uses synthetic data.
+
 ## Sales CRM reporting preview · November 7
 
 Prompt #7 and its calendar addendum authorize durable synthetic invoice reporting on **feature/sales-crm-reporting**, based on approved OAuth commit 8769fec. The preceding bounded live verification confirmed the organization and refresh grant. This reporting phase uses synthetic data and mocked Zoho reads. See the [reporting guide](SALES_CRM_REPORTING.md).

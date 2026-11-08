@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import type { SalesSessionView } from '../../shared/sales-auth';
 import { salesCrmApiWorkspace, salesCrmPath, type SalesCrmWorkspace } from '../../shared/sales-crm';
-import { readDemoIdentity } from './access';
+import { requestSales, salesCrmSessionEnabled } from './access';
+import { CompanyAccess, UserDirectory } from './CompanyAccess';
 import { Dashboard, DashboardCard } from './Dashboard';
 import { sections } from './sections';
 import { SalesReporting } from './Reporting';
@@ -12,6 +14,7 @@ type Access =
   | { status: 'ready'; workspace: SalesCrmWorkspace };
 
 const integrationStatus = { 'not-configured': 'Not configured' };
+const userSection = { path: salesCrmPath + '/users', label: 'User management', icon: '◎' };
 
 function Notice({ heading }: { heading: string }) {
   return (
@@ -22,24 +25,17 @@ function Notice({ heading }: { heading: string }) {
   );
 }
 
-function Workspace({ section }: { section: typeof sections[number] }) {
+function Workspace({ section, session, controls }: {
+  section: typeof sections[number]; session?: SalesSessionView; controls?: ReactNode;
+}) {
   const [access, setAccess] = useState<Access>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
-    const identity = readDemoIdentity();
-    if (!identity) {
-      setAccess({ status: 'denied' });
-      return;
-    }
-
-    async function load(identity: string) {
+    async function load() {
       try {
-        const response = await fetch(salesCrmApiWorkspace, {
-          headers: { 'X-Demo-Identity': identity },
-          signal: controller.signal,
-        });
+        const response = await requestSales(salesCrmApiWorkspace, { signal: controller.signal });
         if ([401, 403, 404].includes(response.status)) {
           if (!controller.signal.aborted) setAccess({ status: 'denied' });
           return;
@@ -59,7 +55,7 @@ function Workspace({ section }: { section: typeof sections[number] }) {
       }
     }
 
-    void load(identity);
+    void load();
     window.addEventListener('pageshow', recheckRestoredPage);
     return () => {
       controller.abort();
@@ -80,6 +76,10 @@ function Workspace({ section }: { section: typeof sections[number] }) {
   const dashboard = section.path === salesCrmPath;
   const settings = section.path === salesCrmPath + '/settings';
   const reports = section.path === salesCrmPath + '/reports';
+  const users = section.path === userSection.path;
+  const navigation = !session ? sections : session.role === 'admin' ? [...sections, userSection]
+    : sections.filter(item => item.path !== salesCrmPath + '/settings');
+  if (session && session.role !== 'admin' && (settings || users)) return <Notice heading="Administrator access required" />;
 
   return (
     <div className="sales-crm-shell">
@@ -87,7 +87,7 @@ function Workspace({ section }: { section: typeof sections[number] }) {
         <a className="brand" href="/" aria-label="Dizzle home"><span className="brand-mark">d.</span> DIZZLE</a>
         <p className="eyebrow">SALES CRM</p>
         <nav aria-label="Sales CRM sections">
-          {sections.map(item => (
+          {navigation.map(item => (
             <a key={item.path} href={item.path} aria-current={item.path === section.path ? 'page' : undefined}>
               <span aria-hidden="true">{item.icon}</span>{item.label}
             </a>
@@ -100,6 +100,7 @@ function Workspace({ section }: { section: typeof sections[number] }) {
           <p className="eyebrow">LOCAL DEVELOPMENT</p>
           <h1>{dashboard ? 'Sales Dashboard' : section.label}</h1>
           <p>Viewing as {displayName}. This local workspace uses synthetic data.</p>
+          {controls}
         </header>
         {(dashboard || reports) && <SalesReporting dashboard={dashboard} />}
         {dashboard && <Dashboard />}
@@ -112,7 +113,8 @@ function Workspace({ section }: { section: typeof sections[number] }) {
             </div>
           </section>
         )}
-        {!dashboard && !reports && (
+        {users && <UserDirectory />}
+        {!dashboard && !reports && !users && (
           <section className="panel sales-crm-card">
             <h2>Development placeholder</h2>
             <p>{section.label} functionality is planned for a future phase.</p>
@@ -125,6 +127,9 @@ function Workspace({ section }: { section: typeof sections[number] }) {
 
 export default function SalesCrm() {
   const path = window.location.pathname.replace(/\/$/, '');
-  const section = sections.find(item => item.path === path);
-  return section ? <Workspace section={section} /> : <Notice heading="Page unavailable" />;
+  const section = sections.find(item => item.path === path) ??
+    (salesCrmSessionEnabled && path === userSection.path ? userSection : undefined);
+  if (!section) return <Notice heading="Page unavailable" />;
+  if (!salesCrmSessionEnabled) return <Workspace section={section} />;
+  return <CompanyAccess>{(session, controls) => <Workspace section={section} session={session} controls={controls} />}</CompanyAccess>;
 }

@@ -151,3 +151,12 @@ Next safe shared foundation step:
 - **Checks** · TypeScript, build, 171 Vitest tests, Chromium 4 disabled and 9 enabled, including the original warehouse suite in each mode. Chromium used isolated loopback ports. Lint is unconfigured.
 - **External actions** · Consulted official Zoho documentation. Development used synthetic data and mocked provider transport. Live import, invoice history, GitHub publication and deployment are separate actions.
 - **Open work** · Approve genuine authentication and production database migration. Separately authorize a restricted invoice history verification against known sends and original revisions. Confirm settlement exceptions, attribution and business timezone, then reconcile a bounded import before enabling live reports. M5 remains blocked.
+
+## Session 2026-11-07 / Codex: Sales CRM authentication foundation
+
+- **Task and lead** · Codex implemented Prompt #8 as an additive local CRM capability. The owner/admin and shared foundation reviewer own provider and production acceptance.
+- **Git reference** · feature/sales-crm-authentication in its own worktree, based on approved reporting commit 03e0fed. The prior worktrees continue to serve their separate local previews.
+- **Contracts and schema** · Separate versioned SQLite identity store, secure session cookies and revocation, organization and team scoping, audited internal user and mapping commands, and a read-only admin directory. The previously restricted Zoho operator boundary is unchanged. [Authentication guide](SALES_CRM_AUTHENTICATION.md)
+- **Checks** · Baseline typecheck, build, 171 Vitest and 13 Chromium checks. Final typecheck, build, 188 Vitest and 20 Chromium checks across three modes. The production bundle excludes the fixture selector and client identity header code. No lint script exists.
+- **External actions** · Consulted official OIDC and security guidance. Synthetic test identities exercised the verified-principal boundary. No identity provider was provisioned or contacted and no live financial data was read.
+- **Open work** · Approve an identity provider and review the production database and origin configuration. Implement and validate a server-side OIDC adapter with genuine employee sessions in staging. M1 remains in progress and M5 remains blocked.
