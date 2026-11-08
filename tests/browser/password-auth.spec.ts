@@ -8,6 +8,47 @@ async function signIn(page: Page, email = samplePasswordEmail, password = sample
 }
 
 if (process.env.DIZZLE_E2E_PASSWORD === 'true') {
+  test('opens all invoice tabs and shows a private synthetic PDF on mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/sales');
+    await signIn(page);
+    await page.getByRole('link', { name: 'View recognized invoices' }).click();
+    await page.getByRole('button', { name: 'DEMO-1001', exact: true }).click();
+    const detail = page.getByRole('region', { name: 'Invoice details' });
+    await expect(detail.getByRole('heading', { name: 'Invoice DEMO-1001' })).toBeVisible();
+    await expect(detail.getByRole('region', { name: 'Invoice line items' })).toContainText('SAMPLE-JUNIPER');
+    const lines = detail.getByRole('tab', { name: 'Line Items' });
+    await lines.focus();
+    const pdfResponse = page.waitForResponse(response => response.url().includes('/invoices/1001/pdf?'));
+    await lines.press('ArrowRight');
+    const pdf = await pdfResponse;
+    expect(pdf.status()).toBe(200);
+    expect(pdf.headers()['cache-control']).toBe('private, no-store');
+    await expect(detail.getByTitle('Synthetic invoice PDF')).toBeVisible();
+    await detail.getByRole('tab', { name: 'Activity' }).click();
+    await expect(detail.getByRole('tabpanel')).toContainText('First successful email verified');
+    await detail.getByRole('tab', { name: 'Payments' }).click();
+    await expect(detail.getByRole('tabpanel')).toContainText('Individual payment transactions are unavailable');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await detail.getByRole('button', { name: 'Close invoice detail' }).click();
+    await page.getByRole('button', { name: 'DEMO-1009', exact: true }).click();
+    await detail.getByRole('tab', { name: 'Invoice PDF' }).click();
+    await expect(detail.getByRole('alert')).toContainText('This sample invoice has no PDF');
+  });
+
+  test('labels pre-October coverage and resets to Month to Date', async ({ page }) => {
+    await page.goto('/sales');
+    await signIn(page);
+    await expect(page.getByLabel('Reporting date range')).toHaveValue('mtd');
+    await page.getByLabel('Reporting date range').selectOption('custom');
+    await page.getByLabel('Start date').fill('2026-09-10');
+    await page.getByLabel('End date').fill('2026-09-30');
+    await page.getByRole('button', { name: 'Apply dates' }).click();
+    await expect(page.getByText('Incomplete reporting coverage.', { exact: false })).toContainText('2026-10-01');
+    await expect(page.getByText('Outside initial coverage', { exact: true }).first()).toBeVisible();
+    await page.getByRole('button', { name: 'Reset dates' }).click();
+    await expect(page.getByLabel('Reporting date range')).toHaveValue('mtd');
+  });
   test('company sign-in is mobile-friendly and keeps forgot-password responses generic', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 780 });
     await page.goto('/sales');

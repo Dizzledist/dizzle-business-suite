@@ -2,11 +2,15 @@ import type { DatabaseSync } from 'node:sqlite';
 import { openSqliteDatabase } from '../../sqlite';
 import type { ZohoInvoice } from '../zoho/invoice';
 import { exactInstant, moneyUnits, settlement, type RecognitionEvidence } from './model';
+import { saveInvoiceDetails } from './invoice-details';
 
 export { transaction } from '../../sqlite';
 
 export function openReportingDatabase(path: string) {
-  return openSqliteDatabase(path, [new URL('./migrations/001-invoice-reporting.sql', import.meta.url)]);
+  return openSqliteDatabase(path, [
+    new URL('./migrations/001-invoice-reporting.sql', import.meta.url),
+    new URL('./migrations/002-invoice-details.sql', import.meta.url),
+  ]);
 }
 
 export function saveSalesperson(db: DatabaseSync, organization: string, source: string, user: string, name: string) {
@@ -108,4 +112,5 @@ export function upsertInvoice(db: DatabaseSync, invoice: ZohoInvoice, evidence: 
     evidenceSource, evidenceId, evidenceSalesperson, verification, payment.payment, moneyUnits(invoice.balance), invoice.status,
     reviewReason, sourceModified, now,
   );
+  saveInvoiceDetails(db, invoice, evidence, verification === 'verified', now);
 }

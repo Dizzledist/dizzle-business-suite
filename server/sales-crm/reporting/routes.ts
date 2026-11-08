@@ -3,13 +3,17 @@ import type { SQLInputValue } from 'node:sqlite';
 import type { Identity } from '../../../shared/contracts';
 import { canAccessSalesCrm } from '../../../shared/sales-crm';
 import {
-  parseRange, reportingApi, type CurrencyTotal, type InvoiceSort, type PaymentFilter, type ReportingInvoice, type ReportingPage,
+  parseRange, reportingApi, type CurrencyTotal, type InvoiceSort, type PaymentFilter, type CoverageState, type LineSnapshotState, type ReportingInvoice, type ReportingInvoiceDetail, type ReportingPage,
 } from '../../../shared/reporting';
 import { ApiError } from '../../workflow';
 import { requireZohoOperator, type ZohoManagement } from '../zoho/routes';
+import { zohoOrganizationId } from '../zoho/config';
 import type { SyntheticReporting } from './demo';
 import { transaction } from './database';
 import { decimalAmount, demoOrganization } from './model';
+import { currentInvoiceLines } from './invoice-details';
+import { syntheticInvoicePdf } from './invoice-pdf';
+import { productReporting } from './products';
 
 export type ReportingScope = { organizationId: string } &
   ({ credit: 'all' } | { credit: 'selected'; userIds: readonly string[] });
@@ -29,6 +33,11 @@ type InvoiceRow = {
   invoice_id: string; invoice_number: string; customer_name: string | null; credited_name: string | null;
   first_email_at: number; evidence_source: string; currency: string; amount: string; payment: ReportingInvoice['payment'];
   balance: string; invoice_status: string; created_at: string | null; last_sync_at: number;
+};
+type DetailRow = InvoiceRow & {
+  invoice_date: string | null; current_subtotal: string; line_state: LineSnapshotState;
+  subtotal_difference: string | null; invoice_discount: string | null; invoice_adjustment: string | null;
+  shipping_charge: string | null; payment_made: string | null; source_total: string | null;
 };
 type TotalsRow = Pick<InvoiceRow, 'currency' | 'amount' | 'first_email_at' | 'payment'>;
 
@@ -126,36 +135,78 @@ export async function getReporting(
     : { organizationId: demoOrganization, credit: 'selected', userIds: [actor.id] });
 }
 
-export function getScopedReporting(url: URL, reporting: SyntheticReporting | undefined, scope: ReportingScope) {
-  const detailId = /^\/api\/sales-crm\/reporting\/invoices\/([1-9]\d{0,39})$/.exec(url.pathname)?.[1];
-  if (url.pathname !== reportingApi && !detailId) throw new ApiError(404, 'Route not found.');
+export function getScopedReporting(
+  url: URL, reporting: SyntheticReporting | undefined, scope: ReportingScope, passwordAuthenticated = false,
+) {
+  const detail = /^\/api\/sales-crm\/reporting\/invoices\/([1-9]\d{0,39})(\/pdf)?$/.exec(url.pathname);
+  const products = url.pathname === reportingApi + '/products';
+  if ((!detail && !products && url.pathname !== reportingApi) || ((detail?.[2] || products) && !passwordAuthenticated)) {
+    throw new ApiError(404, 'Route not found.');
+  }
   if (!reporting) throw new ApiError(503, 'Synthetic reporting is unavailable.');
 
   const filters = query(url);
-  return transaction(reporting.db, () => report(scope, detailId, filters, reporting), 'read');
+  return transaction(reporting.db, () => report(scope, filters, reporting, {
+    detailId: detail?.[1], pdf: !!detail?.[2], products, passwordAuthenticated,
+  }), 'read');
 }
 
-function report(authorization: ReportingScope, detailId: string | undefined, filters: ReturnType<typeof query>, reporting: SyntheticReporting) {
-  const { db, calendar, now } = reporting;
-  const range = calendar.resolve(filters.range, now());
-  const scope = 'organization_id = ?' + (authorization.credit === 'all' ? ''
+function coverageState(range: { from: number; until: number }, coverageFrom: number): CoverageState {
+  if (range.until <= coverageFrom) return 'before-baseline';
+  return range.from < coverageFrom ? 'partial' : 'within-baseline';
+}
+
+function report(
+  authorization: ReportingScope, filters: ReturnType<typeof query>, reporting: SyntheticReporting,
+  view: { detailId?: string; pdf: boolean; products: boolean; passwordAuthenticated: boolean },
+) {
+  const { db, calendar, now, coverageFrom, coverageStart } = reporting;
+  const asOf = now();
+  const range = calendar.resolve(filters.range, asOf);
+  // No live tenant bindings are enabled. The external organization ID cannot act as a CRM tenant.
+  const scope = 'organization_id = ? AND organization_id <> ?' + (authorization.credit === 'all' ? ''
     : ' AND credited_user_id IN (SELECT value FROM json_each(?))');
-  const scopeArgs: SQLInputValue[] = [authorization.organizationId];
+  const scopeArgs: SQLInputValue[] = [authorization.organizationId, zohoOrganizationId];
   if (authorization.credit === 'selected') scopeArgs.push(JSON.stringify(authorization.userIds));
   const eligible = scope + " AND verification = 'verified' AND review_reason IS NULL AND first_email_at >= ? AND first_email_at < ?";
-  const selectedArgs = [...scopeArgs, range.selected.from, range.selected.until];
+  const selectedArgs = [...scopeArgs, Math.max(range.selected.from, coverageFrom), Math.min(range.selected.until, asOf + 1)];
   const payment = paymentClause(filters.payment);
 
-  if (detailId) {
-    const invoice = db.prepare('SELECT ' + projection + ' FROM reporting_invoices WHERE ' + eligible + payment +
-      ' AND invoice_id = ?').get(...selectedArgs, detailId) as InvoiceRow | undefined;
+  if (view.detailId) {
+    const invoice = db.prepare('SELECT ' + projection + `, invoice_date, CAST(subtotal AS TEXT) AS current_subtotal,
+      line_state, subtotal_difference, invoice_discount, invoice_adjustment, shipping_charge, payment_made, source_total
+      FROM reporting_invoices WHERE ` + eligible + payment + ' AND invoice_id = ?')
+      .get(...selectedArgs, view.detailId) as DetailRow | undefined;
     if (!invoice) throw new ApiError(404, 'Invoice report record not found.');
-    return project(invoice);
+    if (view.pdf) {
+      const pdf = authorization.organizationId === demoOrganization && syntheticInvoicePdf(view.detailId);
+      if (!pdf) throw new ApiError(404, 'Invoice PDF is unavailable.');
+      return pdf;
+    }
+    const result: ReportingInvoiceDetail = {
+      ...project(invoice),
+      invoiceDate: invoice.invoice_date,
+      currentSubtotal: decimalAmount(BigInt(invoice.current_subtotal)),
+      lineState: invoice.line_state,
+      lineItems: invoice.line_state === 'unavailable' || invoice.line_state === 'invalid'
+        ? [] : currentInvoiceLines(db, authorization.organizationId, invoice.invoice_id),
+      subtotalDifference: invoice.subtotal_difference,
+      invoiceDiscount: invoice.invoice_discount,
+      invoiceAdjustment: invoice.invoice_adjustment,
+      shippingCharge: invoice.shipping_charge,
+      paymentMade: invoice.payment_made,
+      currentTotal: invoice.source_total,
+      pdfAccess: view.passwordAuthenticated && authorization.organizationId === demoOrganization,
+    };
+    return result;
   }
+
+  if (view.products) return productReporting(db, eligible + payment, selectedArgs);
 
   const totalSql = 'SELECT currency, CAST(recognized_subtotal AS TEXT) AS amount, first_email_at, payment FROM reporting_invoices WHERE ' + eligible;
   const current = db.prepare(totalSql).all(...selectedArgs) as TotalsRow[];
-  const previous = db.prepare(totalSql).all(...scopeArgs, range.previous.from, range.previous.until) as TotalsRow[];
+  const previous = db.prepare(totalSql).all(...scopeArgs, Math.max(range.previous.from, coverageFrom),
+    Math.min(range.previous.until, asOf + 1)) as TotalsRow[];
   const days = new Map<string, TotalsRow[]>();
   for (const row of current) {
     const date = calendar.localDate(row.first_email_at);
@@ -182,6 +233,8 @@ function report(authorization: ReportingScope, detailId: string | undefined, fil
       selected: { start: range.selected.start, end: range.selected.end },
       previous: { start: range.previous.start, end: range.previous.end },
     },
+    coverage: { from: coverageStart, selected: coverageState(range.selected, coverageFrom),
+      previous: coverageState(range.previous, coverageFrom) },
     sales: totals(current),
     previousSales: totals(previous),
     invoiceTotals: totals(selection),

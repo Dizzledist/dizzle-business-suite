@@ -2,6 +2,14 @@
 
 Updated: November 8, 2026 (America/Los_Angeles).
 
+## Sales CRM invoice details · November 8
+
+Prompt #9 adds invoice detail and product reporting on **feature/sales-crm-invoice-details**, based on password commit `a0455ed`. The [invoice details guide](SALES_CRM_INVOICE_DETAILS.md) documents the October baseline, structured snapshots, protected synthetic PDF, Management source access limit and next bounded test.
+
+- The report surfaces incomplete historical coverage and keeps Month to Date as its default. Current line snapshots and original sales attribution are stored separately.
+- Employee password sessions and existing invoice scope gate the PDF and product routes. CRM tenant `demo-o1` has no binding to external Zoho organization `821729823`.
+- **M5 remains blocked for live reporting.** First-success history, original invoice revisions and the approved live tenant binding still require verification. Profit and samples remain deferred. No production milestone credit was added.
+
 ## Sales CRM email and password sign-in · November 8
 
 The corrective prompt authorizes company email and password sign-in on **feature/sales-crm-email-password**, based on authentication commit 680e432. Google OIDC is deferred on its separate branch at ac9d842. See the [local password guide](SALES_CRM_EMAIL_PASSWORD.md).

@@ -126,3 +126,7 @@ User authorized a local implementation on November 6; this does not resolve prov
 - Warehouse projection contains source reference, customer, required items, Orders status and review flag; it omits invoice balances and release-audit reasons. This concrete local projection is for both builders to review before broader warehouse implementation.
 
 The local route/data representation and fixtures are implementation choices, not changes to approved R01-R03. Both builders review shared consumers; no new Zoho behavior, warehouse stage, stock transaction, invoice creation or external messaging contract is introduced.
+
+## Sales reporting detail and document contracts
+
+[shared/reporting.ts](../shared/reporting.ts) adds initial coverage metadata to the existing report and current line, reconciliation, and payment fields to invoice detail. An active employee password session and the existing tenant and credited-user invoice scope guard the synthetic PDF and product endpoints. The Sales CRM report and detail are the UI consumers. The finance and identity reviewers must approve the original-revision evidence and server-owned provider binding before live use. [Invoice details guide](SALES_CRM_INVOICE_DETAILS.md)

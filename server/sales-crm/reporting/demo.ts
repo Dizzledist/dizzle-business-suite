@@ -2,6 +2,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { calendarDayMs } from '../../../shared/reporting';
 import type { ZohoInvoice } from '../zoho/invoice';
+import { normalizeInvoiceLines } from '../zoho/invoice-lines';
 import { defaultReportingTimeZone, reportingCalendar } from './dates';
 import { openReportingDatabase, saveSalesperson, transaction } from './database';
 import { demoOrganization, type RecognitionEvidence } from './model';
@@ -11,9 +12,11 @@ import { ReportingSync } from './sync';
 export async function createSyntheticReporting({
   path = resolve('.sales-reporting-demo', 'invoices.sqlite'),
   timeZone = defaultReportingTimeZone,
+  coverageStart = '2026-10-01',
   now = Date.now,
 } = {}) {
   const calendar = reportingCalendar(timeZone);
+  const coverageFrom = calendar.startOfDay(coverageStart);
   if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
   const db = openReportingDatabase(path);
   try {
@@ -26,16 +29,25 @@ export async function createSyntheticReporting({
       status = 'sent', verified = true, currency = 'USD') => {
       const name = owner === '1' ? 'Juniper Sample Store' : 'Cedar Sample Store';
       const date = new Date(first - calendarDayMs).toISOString();
+      const originalLineRevision = new Date(first).toISOString();
+      const lineItems = normalizeInvoiceLines([{
+        line_item_id: id + '1', item_id: owner,
+        sku: owner === '1' ? 'SAMPLE-JUNIPER' : 'SAMPLE-CEDAR',
+        name: owner === '1' ? 'Juniper case' : 'Cedar case',
+        quantity: '1', unit: 'case', rate: amount, item_total: amount,
+        discount: '0%', category_id: '1', category_name: 'Sample catalog',
+      }]);
       invoices.set(id, {
         organizationId: demoOrganization, invoiceId: id, invoiceNumber: 'DEMO-' + id, customerId: owner,
         customerName: name, sourceSalespersonId: owner, sourceSalespersonName: null, currency,
         subtotal: amount, total: amount, balance, status, emailed: status !== 'draft',
-        invoiceDate: date.slice(0, 10), createdAt: date, sourceModifiedAt: new Date(start).toISOString(),
+        invoiceDate: date.slice(0, 10), createdAt: date, sourceModifiedAt: originalLineRevision,
+        lineItems, discountType: 'item_level', inclusiveTax: false,
         paymentMade: paid, creditsApplied: '0', writeOffAmount: '0',
       });
       evidence.set(id, verified ? {
         status: 'verified', firstEmailAt: new Date(first).toISOString(), source: 'Synthetic send receipt',
-        id: 'demo-send-' + id, subtotal: amount, salespersonId: owner, currency,
+        id: 'demo-send-' + id, subtotal: amount, salespersonId: owner, currency, originalLineRevision,
       } : { status: 'pending' });
     };
 
@@ -73,7 +85,7 @@ export async function createSyntheticReporting({
     if ((!checkpoint?.initial_done || checkpoint.queued) && await sync.run('initial') !== 'complete') {
       throw new Error('Synthetic sync did not finish.');
     }
-    return { db, calendar, now };
+    return { db, calendar, now, coverageStart, coverageFrom };
   } catch (error) {
     db.close();
     throw error;

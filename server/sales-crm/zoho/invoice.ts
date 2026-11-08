@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeInvoiceLines, optionalLineAmount } from './invoice-lines';
 
 export const zohoId = z.union([
   z.string().regex(/^[1-9]\d*$/),
@@ -39,6 +40,12 @@ export const invoiceDetail = z.object({
     payment_made: optionalDecimal,
     credits_applied: optionalDecimal,
     write_off_amount: optionalDecimal,
+    line_items: z.unknown().optional(),
+    discount_type: z.unknown().optional(),
+    discount_amount: z.unknown().optional(),
+    adjustment: z.unknown().optional(),
+    shipping_charge: z.unknown().optional(),
+    is_inclusive_tax: z.unknown().optional(),
   }),
 });
 
@@ -76,6 +83,14 @@ export function mirrorInvoice(organizationId: string, source: InvoiceDetail) {
     paymentMade: source.payment_made,
     creditsApplied: source.credits_applied,
     writeOffAmount: source.write_off_amount,
+    ...(source.line_items === undefined ? {} : {
+      lineItems: normalizeInvoiceLines(source.line_items),
+      discountType: typeof source.discount_type === 'string' ? source.discount_type.trim() : null,
+      invoiceDiscount: optionalLineAmount(source.discount_amount),
+      invoiceAdjustment: optionalLineAmount(source.adjustment),
+      shippingCharge: optionalLineAmount(source.shipping_charge),
+      inclusiveTax: typeof source.is_inclusive_tax === 'boolean' ? source.is_inclusive_tax : null,
+    }),
   };
 }
 

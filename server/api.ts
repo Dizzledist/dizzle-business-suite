@@ -14,6 +14,7 @@ import { handleZohoManagement, isZohoManagementPath, type ZohoManagement } from 
 import { ApiError, Workflow } from './workflow';
 import { reportingApi } from '../shared/reporting';
 import { getReporting } from './sales-crm/reporting/routes';
+import { sendInvoicePdf } from './sales-crm/reporting/invoice-pdf';
 import type { SyntheticReporting } from './sales-crm/reporting/demo';
 
 const releaseSchema = z.object({
@@ -55,7 +56,14 @@ export function createApi(
         if (!salesCrmEnabled) throw new ApiError(404, 'Route not found.');
         if (salesAuthEnabled) {
           if (isPublicPasswordPath(path)) return send(res, 200, await handlePublicPassword(req, res, url, passwords, origins));
-          return send(res, 200, await getAuthenticatedSalesCrm(req, res, url, salesIdentity, reporting, origins, passwordMode, passwords));
+          const result = await getAuthenticatedSalesCrm(req, res, url, salesIdentity, reporting, origins, passwordMode, passwords);
+          if (Buffer.isBuffer(result)) {
+            await sendInvoicePdf(res, new Response(new Uint8Array(result), {
+              headers: { 'Content-Type': 'application/pdf' },
+            }));
+            return;
+          }
+          return send(res, 200, result);
         }
       }
       if (!fixtureEnabled) throw new ApiError(404, 'Route not found.');

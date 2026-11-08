@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import {
   datePresets, defaultRange, parseRange, rangeParams, reportingApi, validateCustomDates,
   type CalendarRange, type CurrencyTotal, type DatePreset, type InvoiceSort, type PaymentFilter,
-  type RangeSelection, type ReportingInvoice, type ReportingPage,
+  type RangeSelection, type ReportingInvoiceDetail, type ReportingPage,
 } from '../../shared/reporting';
 import { salesCrmPath } from '../../shared/sales-crm';
 import { requestSales } from './access';
@@ -173,9 +173,11 @@ function Performance({ data, filter, onFilter, selection }: {
       <article className="panel sales-crm-card">
         <h3>{salesTitle}</h3>
         {data && <>
-          <strong>{amounts(data.sales)}</strong>
+          <strong>{data.coverage.selected === 'before-baseline' ? 'Outside initial coverage' : amounts(data.sales)}</strong>
           <p>Verified first-email subtotal</p>
-          <p>Previous period ({rangeLabel(data.range.previous)}). {amounts(data.previousSales)}</p>
+          <p>Previous period ({rangeLabel(data.range.previous)}). {data.coverage.previous === 'before-baseline'
+            ? 'Outside initial coverage' : amounts(data.previousSales)}
+            {data.coverage.previous === 'partial' && ' · Incomplete coverage'}</p>
           <a className="sales-crm-link" href={reportsPath + '?' + rangeParams(selection)}>View recognized invoices</a>
         </>}
       </article>
@@ -183,8 +185,10 @@ function Performance({ data, filter, onFilter, selection }: {
         <h3>{invoiceTitle}</h3>
         <PaymentToggle selected={filter} onChange={onFilter} />
         {data && <>
-          <p><strong>{count} {count === 1 ? 'invoice' : 'invoices'}</strong></p>
-          <p>Recognized subtotal · {amounts(data.invoiceTotals)}</p>
+          {data.coverage.selected === 'before-baseline' ? <p>Outside initial coverage</p> : <>
+            <p><strong>{count} {count === 1 ? 'invoice' : 'invoices'}</strong></p>
+            <p>Recognized subtotal · {amounts(data.invoiceTotals)}</p>
+          </>}
           <a className="sales-crm-link" href={reportsPath + '?' + invoiceQuery}>View filtered invoices</a>
         </>}
       </article>
@@ -192,16 +196,118 @@ function Performance({ data, filter, onFilter, selection }: {
         <h3>Sales Trends</h3>
         {data && (data.trend.length ? <ul aria-label="Verified daily subtotals">
           {data.trend.map(point => <li key={point.date}><time dateTime={point.date}>{point.date}</time><span>{amounts(point.totals)}</span></li>)}
-        </ul> : <p>No verified sales in this range.</p>)}
+        </ul> : <p>{data.coverage.selected === 'before-baseline' ? 'Outside initial coverage' : 'No verified sales in this range.'}</p>)}
       </article>
     </div>
   </section>;
 }
 
+const invoiceTabs = ['Line Items', 'Invoice PDF', 'Activity', 'Payments'] as const;
+
+function InvoicePdf({ path }: { path: string }) {
+  const [document, setDocument] = useState<string>();
+  const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    let objectUrl: string | undefined;
+    async function load() {
+      try {
+        const response = await requestSales(path, { signal: controller.signal });
+        if (response.status === 404) {
+          if (!controller.signal.aborted) setError('This sample invoice has no PDF.');
+          return;
+        }
+        if (!response.ok || response.headers.get('content-type') !== 'application/pdf') throw new Error();
+        const blob = await response.blob();
+        if (!controller.signal.aborted) {
+          objectUrl = URL.createObjectURL(blob);
+          setDocument(objectUrl);
+        }
+      } catch {
+        if (!controller.signal.aborted) setError('The invoice PDF could not load.');
+      }
+    }
+    void load();
+    return () => {
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [path, attempt]);
+
+  if (error) return <p role="alert">{error} <button type="button" onClick={() => {
+    setError('');
+    setAttempt(value => value + 1);
+  }}>Retry PDF</button></p>;
+  return document
+    ? <iframe className="reporting-pdf" title="Synthetic invoice PDF" src={document} referrerPolicy="no-referrer" />
+    : <p role="status">Loading invoice PDF…</p>;
+}
+
+function InvoiceTabs({ row, path, timeZone }: { row: ReportingInvoiceDetail; path: string; timeZone: string }) {
+  const [active, setActive] = useState(0);
+  const priced = (value: string | null) => value === null ? 'Unavailable' : money(row.currency, value);
+  return <>
+    <div className="reporting-toggle invoice-tabs" role="tablist" aria-label="Invoice detail views"
+      onKeyDown={event => {
+        const next = { ArrowLeft: (active + 3) % 4, ArrowRight: (active + 1) % 4, Home: 0, End: 3 }[event.key];
+        if (next === undefined) return;
+        event.preventDefault();
+        setActive(next);
+        event.currentTarget.querySelectorAll('button')[next]?.focus();
+      }}>
+      {invoiceTabs.map((label, index) => <button type="button" key={label} role="tab" id={'invoice-tab-' + index}
+        aria-controls="invoice-tab-panel" aria-selected={active === index} tabIndex={active === index ? 0 : -1}
+        onClick={() => setActive(index)}>{label}</button>)}
+    </div>
+    <div id="invoice-tab-panel" role="tabpanel" aria-labelledby={'invoice-tab-' + active} tabIndex={0}>
+      {active === 0 && <>
+        {(row.lineState === 'unavailable' || row.lineState === 'invalid') && <p>The current line-item snapshot is unavailable.</p>}
+        {row.lineState === 'difference' && <p role="status">{row.subtotalDifference === null
+          ? 'The current line totals could not be reconciled with the invoice subtotal.'
+          : 'Difference between the invoice subtotal and supported line totals: ' + priced(row.subtotalDifference)}</p>}
+        {row.lineItems.length > 0 && <div className="reporting-table" tabIndex={0} role="region" aria-label="Invoice line items">
+          <table><thead><tr>
+            {['Product', 'SKU', 'Quantity', 'Unit price', 'Discount', 'Line total'].map(label => <th key={label} scope="col">{label}</th>)}
+          </tr></thead><tbody>{row.lineItems.map((line, index) => <tr key={line.lineId ?? 'position-' + index}>
+            <th scope="row">{line.name ?? 'Unnamed product'}{line.description && <small>{line.description}</small>}</th>
+            <td>{line.sku ?? 'Unknown'}</td><td>{line.quantity} {line.unit}</td><td>{priced(line.unitPrice)}</td>
+            <td>{line.discountAmount === null ? line.discount ?? 'Unavailable' : priced(line.discountAmount)}</td>
+            <td>{priced(line.amount)}</td>
+          </tr>)}</tbody></table>
+        </div>}
+        {row.lineState === 'reconciled' && row.lineItems.length === 0 && <p>This invoice has no line items.</p>}
+        <p>Current invoice subtotal · {priced(row.currentSubtotal)}
+          {row.invoiceDiscount !== null && <> · Invoice discount {priced(row.invoiceDiscount)}</>}
+          {row.invoiceAdjustment !== null && <> · Adjustment {priced(row.invoiceAdjustment)}</>}
+          {row.shippingCharge !== null && <> · Shipping {priced(row.shippingCharge)}</>}
+        </p>
+      </>}
+      {active === 1 && <><p>Synthetic invoice PDF preview.</p>{row.pdfAccess
+        ? <InvoicePdf key={path} path={path} />
+        : <p>PDF preview requires an eligible employee password session.</p>}</>}
+      {active === 2 && <ol aria-label="Invoice activity">
+        <li><time dateTime={row.firstEmailAt}>{dateLabel(row.firstEmailAt, timeZone, true)}</time> ·
+          First successful email verified by {row.evidenceSource}.</li>
+        <li><time dateTime={row.lastSyncAt}>{dateLabel(row.lastSyncAt, timeZone, true)}</time> · Reporting copy synchronized.</li>
+      </ol>}
+      {active === 3 && <>
+        <dl>
+          <dt>Current total</dt><dd>{priced(row.currentTotal)}</dd>
+          <dt>Payment recorded</dt><dd>{priced(row.paymentMade)}</dd>
+          <dt>Open balance</dt><dd>{priced(row.balance)}</dd>
+        </dl>
+        <p>Individual payment transactions are unavailable in this preview.</p>
+      </>}
+    </div>
+  </>;
+}
+
 function InvoiceDetail({ id, params, timeZone, onClose }: {
   id: string; params: URLSearchParams; timeZone: string; onClose: () => void;
 }) {
-  const { request, retry } = useReport<ReportingInvoice>(reportingApi + '/invoices/' + encodeURIComponent(id) + '?' + params);
+  const invoicePath = reportingApi + '/invoices/' + encodeURIComponent(id);
+  const { request, retry } = useReport<ReportingInvoiceDetail>(invoicePath + '?' + params);
   return (
     <section className="panel sales-crm-card reporting-detail" aria-label="Invoice details">
       <button type="button" onClick={onClose}>Close invoice detail</button>
@@ -215,6 +321,9 @@ function InvoiceDetail({ id, params, timeZone, onClose }: {
           <dl>
             <dt>Customer</dt><dd>{row.customer}</dd>
             <dt>Credited salesperson</dt><dd>{row.salesperson}</dd>
+            <dt>Invoice date</dt><dd>{row.invoiceDate ?? 'Unavailable'}</dd>
+            <dt>Line items</dt><dd>{row.lineState === 'unavailable' || row.lineState === 'invalid'
+              ? 'Unavailable' : row.lineItems.length}</dd>
             <dt>First verified email</dt><dd>{dateLabel(row.firstEmailAt, timeZone, true)} · {timeZone}</dd>
             <dt>Evidence</dt><dd>{row.evidenceSource}</dd>
             <dt>Recognized subtotal</dt><dd>{money(row.currency, row.subtotal)}</dd>
@@ -223,6 +332,7 @@ function InvoiceDetail({ id, params, timeZone, onClose }: {
             <dt>Invoice status</dt><dd>{row.status}</dd>
             <dt>Last sync</dt><dd>{dateLabel(row.lastSyncAt, timeZone, true)}</dd>
           </dl>
+          <InvoiceTabs key={invoicePath + '?' + params} row={row} path={invoicePath + '/pdf?' + params} timeZone={timeZone} />
         </>;
       })()}
     </section>
@@ -297,6 +407,10 @@ export function SalesReporting({ dashboard }: { dashboard: boolean }) {
     <section id={dashboard ? undefined : 'invoice-reporting'} className="sales-crm-group" aria-label={dashboard ? 'Dashboard reporting' : 'Invoice reporting'}>
       {!dashboard && <h2>Invoice reporting</h2>}
       <FilterDates selection={range} loaded={data?.range} onChange={changeRange} />
+      {data && data.coverage.selected !== 'within-baseline' && <p role="status" className="reporting-notice">
+        Incomplete reporting coverage. The initial baseline starts {data.coverage.from}.
+        {data.coverage.selected === 'before-baseline' && ' The selected range is before the baseline.'}
+      </p>}
       {!dashboard && <div className="panel sales-crm-card reporting-filters">
         <PaymentToggle selected={payment} onChange={changePayment} />
         <form onSubmit={event => { event.preventDefault(); setAppliedSearch(search.trim()); setPage(1); setDetail(null); }}>
@@ -314,9 +428,11 @@ export function SalesReporting({ dashboard }: { dashboard: boolean }) {
       {dashboard ? <Performance data={data} filter={payment} onFilter={changePayment} selection={range} /> : data &&
         <>
           <ReportingNotice count={data.reconciliationCount} />
-          <p>Recognized subtotal for {paymentLabels[payment].toLowerCase()} invoices · {amounts(data.invoiceTotals)}</p>
+          {data.coverage.selected !== 'before-baseline' && <p>Recognized subtotal for {paymentLabels[payment].toLowerCase()}
+            {' '}invoices · {amounts(data.invoiceTotals)}</p>}
           {detail && <InvoiceDetail id={detail} params={params} timeZone={data.range.timeZone} onClose={() => setDetail(null)} />}
-          <InvoiceTable data={data} onDetail={setDetail} onPage={next => { setPage(next); setDetail(null); }} />
+          {data.coverage.selected !== 'before-baseline' &&
+            <InvoiceTable data={data} onDetail={setDetail} onPage={next => { setPage(next); setDetail(null); }} />}
         </>
       }
     </section>

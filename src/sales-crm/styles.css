@@ -121,7 +121,8 @@
   min-height: 44px;
 }
 
-.reporting-toggle button[aria-pressed="true"] {
+.reporting-toggle button[aria-pressed="true"],
+.invoice-tabs button[aria-selected="true"] {
   border-color: #ef404f;
   color: #ffb1b8;
   background: #ef404f25;
@@ -200,6 +201,26 @@
 .reporting-detail dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.reporting-detail .reporting-table table {
+  min-width: 40rem;
+}
+
+.reporting-detail .reporting-table small {
+  display: block;
+  color: #c3c3ce;
+}
+
+.invoice-tabs {
+  margin: 1rem 0;
+}
+
+.reporting-pdf {
+  width: 100%;
+  height: clamp(22rem, 65vh, 52rem);
+  border: 1px solid #33333c;
+  border-radius: 8px;
 }
 
 @media (max-width: 460px) {

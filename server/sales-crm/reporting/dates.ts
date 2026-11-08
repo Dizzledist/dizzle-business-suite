@@ -83,7 +83,7 @@ export function reportingCalendar(timeZone: string) {
         return comparable(calendarDay(selection.start), calendarDay(selection.end) + day);
     }
   }
-  return { localDate, resolve, timeZone };
+  return { localDate, resolve, timeZone, startOfDay: (date: string) => startOfDay(calendarDay(date)) };
 }
 
 export type ReportingCalendar = ReturnType<typeof reportingCalendar>;

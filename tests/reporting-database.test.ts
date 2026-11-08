@@ -8,6 +8,7 @@ import { decimalAmount, moneyUnits, settlement, type RecognitionEvidence } from 
 import { ReportingSync } from '../server/sales-crm/reporting/sync';
 import { invoiceDetail, mirrorInvoice } from '../server/sales-crm/zoho/invoice';
 import { ZohoReadError } from '../server/sales-crm/zoho/reader';
+import { openSqliteDatabase } from '../server/sqlite';
 import { invoicePayload, invoiceResponse, mockZoho, pageResponse, testOrganizationId } from './fixtures/zoho-invoices';
 
 const now = Date.parse('2026-11-05T18:00:00Z');
@@ -38,6 +39,32 @@ function row() {
 }
 
 describe('Reporting persistence and recognition', () => {
+  it('upgrades a version-one copy without changing its existing recognized invoice', () => {
+    const oldFile = join(folder, 'legacy.sqlite');
+    const old = openSqliteDatabase(oldFile,
+      [new URL('../server/sales-crm/reporting/migrations/001-invoice-reporting.sql', import.meta.url)]);
+    try {
+      old.prepare(`INSERT INTO reporting_invoices (
+        organization_id, invoice_id, invoice_number, customer_id, currency, subtotal, recognized_subtotal,
+        first_email_at, evidence_source, evidence_id, verification, payment, open_balance, invoice_status, last_sync_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+        'demo-o1', '701', 'LEGACY-701', '1', 'USD', 5000000, 5000000, now, 'Fixture proof', 'proof-701',
+        'verified', 'paid', 0, 'paid', now,
+      );
+    } finally {
+      old.close();
+    }
+    const upgraded = openReportingDatabase(oldFile);
+    try {
+      expect(upgraded.prepare(`SELECT verification, first_email_at, recognized_subtotal, line_state
+        FROM reporting_invoices WHERE invoice_id = '701'`).get()).toMatchObject({
+        verification: 'verified', first_email_at: now, recognized_subtotal: 5000000, line_state: 'unavailable',
+      });
+      expect(upgraded.prepare('SELECT COUNT(*) AS count FROM reporting_invoice_lines').get()).toMatchObject({ count: 0 });
+    } finally {
+      upgraded.close();
+    }
+  });
   it('migrates once and persists one invoice after replay, payment and customer/salesperson reassignment', () => {
     saveSalesperson(db, testOrganizationId, '301', 'rep-a', 'Rep A');
     transaction(db, () => upsertInvoice(db, invoice(), evidence, now));
@@ -49,7 +76,7 @@ describe('Reporting persistence and recognition', () => {
     upsertInvoice(db, invoice(), { status: 'pending' }, now); // older snapshot cannot roll back settlement
     db.close();
     db = openReportingDatabase(file);
-    expect(db.prepare('PRAGMA user_version').get()).toMatchObject({ user_version: 1 });
+    expect(db.prepare('PRAGMA user_version').get()).toMatchObject({ user_version: 2 });
     expect(db.prepare('SELECT COUNT(*) AS count FROM reporting_invoices').get()).toMatchObject({ count: 1 });
     expect(row()).toMatchObject({ verification: 'verified', credited_user_id: 'rep-a', customer_id: '803',
       first_email_at: Date.parse(evidence.firstEmailAt), amount: '100230000', balance: '60250000', payment: 'partial' });

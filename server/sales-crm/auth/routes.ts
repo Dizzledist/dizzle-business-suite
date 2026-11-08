@@ -52,8 +52,9 @@ export async function getAuthenticatedSalesCrm(
       integrations: { zohoInventory: 'not-configured', shipStation: 'not-configured' },
     };
   }
-  if (url.pathname === reportingApi || url.pathname.startsWith(reportingApi + '/invoices/')) {
-    return getScopedReporting(url, reporting, identity.reportingScope(user));
+  if (url.pathname === reportingApi || url.pathname === reportingApi + '/products' ||
+      url.pathname.startsWith(reportingApi + '/invoices/')) {
+    return getScopedReporting(url, reporting, identity.reportingScope(user), passwordMode);
   }
   throw new ApiError(404, 'Route not found.');
 }

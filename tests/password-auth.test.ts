@@ -72,8 +72,8 @@ async function start(options: { clock?: () => number; enabled?: boolean; configu
     const cookie = response.headers['set-cookie']?.[0].split(';')[0];
     return { ...response, cookie };
   }
-  async function administrator() {
-    const approved = identity.bootstrapPasswordAdministrator(tenant, admin);
+  async function administrator(organizationId = tenant) {
+    const approved = identity.bootstrapPasswordAdministrator(organizationId, admin);
     expect((await redeem(adminEmail, approved.code)).status).toBe(200);
     const signed = await login(adminEmail);
     expect(signed.status).toBe(200);
@@ -107,6 +107,42 @@ afterEach(async () => {
 });
 
 describe('Company email and password authentication', () => {
+  it('serves synthetic PDFs only to an authenticated employee with matching invoice scope', async () => {
+    const { administrator, createEmployee, identity, reporting, redeem, login, send, cookieHeader } = await start();
+    const token = await administrator('demo-o1');
+    const employee = await createEmployee(token, 'Invoice Sample Rep', null);
+    await redeem(employee.email, employee.code);
+    identity.setZohoMapping(token.split('=')[1], employee.id, { salespersonId: '1', verificationReference: 'fixture-1' });
+    reporting.db.prepare("UPDATE reporting_invoices SET credited_user_id = ? WHERE organization_id = 'demo-o1' AND invoice_id = '1001'")
+      .run(employee.id);
+    const rep = (await login(employee.email)).cookie!;
+    const path = reportingApi + '/invoices/1001/pdf';
+    expect((await send(path)).status).toBe(401);
+    expect((await send(path, 'GET', { 'X-Demo-Identity': 'admin' })).status).toBe(401);
+    const allowed = await send(path, 'GET', cookieHeader(rep));
+    expect(allowed.status).toBe(200);
+    expect(allowed.headers).toMatchObject({ 'content-type': 'application/pdf', 'cache-control': 'private, no-store' });
+    expect(allowed.body).toMatch(/^%PDF-/);
+    expect(allowed.body).not.toContain(rep);
+    expect((await send(reportingApi + '/invoices/1003/pdf', 'GET',
+      { ...cookieHeader(rep), 'X-Role': 'admin' })).status).toBe(404);
+    expect((await send(reportingApi + '/invoices/01001/pdf', 'GET', cookieHeader(token))).status).toBe(404);
+    expect((await send(reportingApi + '/invoices/1009/pdf', 'GET', cookieHeader(token))).status).toBe(404);
+    expect((await send(path + '?organizationId=821729823', 'GET', cookieHeader(token))).status).toBe(400);
+    expect((await send(path, 'POST', cookieHeader(token))).status).toBe(404);
+    const products = await send(reportingApi + '/products', 'GET', cookieHeader(rep));
+    expect(products.status).toBe(200);
+    expect(JSON.parse(products.body).purchaseHistory.map((row: { invoiceId: string }) => row.invoiceId)).toEqual(['1001']);
+  });
+
+  it('denies invoice PDFs and aggregate rows from a different CRM tenant', async () => {
+    const { administrator, send, cookieHeader } = await start();
+    const token = await administrator();
+    expect((await send(reportingApi + '/invoices/1001/pdf', 'GET', cookieHeader(token))).status).toBe(404);
+    const products = await send(reportingApi + '/products', 'GET', cookieHeader(token));
+    expect(products.status).toBe(200);
+    expect(JSON.parse(products.body).purchaseHistory).toEqual([]);
+  });
   it('requires a trusted first-administrator setup, uses salted Argon2id, and issues a secure CRM cookie', async () => {
     const { identity, login, redeem, send, cookieHeader, createEmployee } = await start();
     const approved = identity.bootstrapPasswordAdministrator(tenant, admin);

@@ -4,7 +4,7 @@ import type { ZohoInvoice } from '../zoho/invoice';
 export type RecognitionEvidence =
   | { status: 'pending' | 'unavailable' | 'conflicting' }
   | { status: 'verified'; firstEmailAt: string; source: string; id: string; subtotal: string;
-      salespersonId: string | null; currency: string };
+      salespersonId: string | null; currency: string; originalLineRevision?: string };
 
 export const demoOrganization = 'demo-o1';
 const scale = 1_000_000n;

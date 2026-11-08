@@ -26,6 +26,7 @@ if (isSalesCrmEnabled(process.env)) {
     reporting = await createSyntheticReporting({
       path: process.env.NODE_ENV === 'test' ? ':memory:' : undefined,
       timeZone: process.env.SALES_REPORTING_TIME_ZONE,
+      coverageStart: process.env.INITIAL_SALES_RECOGNITION_DATE,
     });
   } catch {
     console.warn('Synthetic Sales CRM reporting is unavailable. Check the reporting timezone and local database.');

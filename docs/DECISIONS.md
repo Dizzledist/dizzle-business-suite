@@ -109,3 +109,7 @@ Prompt #8 authorizes durable local users, verified-session and role boundaries, 
 ## Corrective authentication decision, November 8, 2026
 
 The user approved company email and password for the current employee pilot, superseding the initial Google sign-in direction. The implementation starts from the prior identity foundation at 680e432. Google commit ac9d842 stays isolated and disabled. Credential verification belongs to the existing user and session boundary. Approved administrators manage enrollment, access and reset codes, and the trusted local operator establishes or recovers the first administrator. Automatic email delivery and live financial data require separate approval. [Password sign-in guide](SALES_CRM_EMAIL_PASSWORD.md)
+
+## Prompt #9 invoice detail decisions, November 8, 2026
+
+The user approved October 1, 2026 as the initial reporting baseline with later historical backfill supported. It extends the Prompt #7 reporting rules while retaining the verified first-email date, original subtotal and captured sales credit. The user also approved structured synthetic line snapshots and a protected synthetic PDF viewer. Live binding, live reads, actual PDF retrieval, cost and profit calculations remain separate approval and evidence gates. [Invoice details guide](SALES_CRM_INVOICE_DETAILS.md)

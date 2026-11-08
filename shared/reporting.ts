@@ -34,9 +34,49 @@ export interface ReportingInvoice {
   createdAt: string | null;
   lastSyncAt: string;
 }
+export interface InvoiceLine {
+  lineId: string | null;
+  productId: string | null;
+  sku: string | null;
+  name: string | null;
+  description: string | null;
+  quantity: string;
+  unit: string | null;
+  unitPrice: string;
+  discount: string | null;
+  discountAmount: string | null;
+  amount: string;
+  taxId: string | null;
+  taxName: string | null;
+  taxType: string | null;
+  taxPercentage: string | null;
+  taxAmount: string | null;
+  categoryId: string | null;
+  category: string | null;
+}
+export interface StoredInvoiceLine extends InvoiceLine {
+  sourceRevision: string | null;
+  synchronizedAt: string;
+}
+export type LineSnapshotState = 'unavailable' | 'invalid' | 'reconciled' | 'difference';
+export interface ReportingInvoiceDetail extends ReportingInvoice {
+  invoiceDate: string | null;
+  currentSubtotal: string;
+  lineState: LineSnapshotState;
+  lineItems: StoredInvoiceLine[];
+  subtotalDifference: string | null;
+  invoiceDiscount: string | null;
+  invoiceAdjustment: string | null;
+  shippingCharge: string | null;
+  paymentMade: string | null;
+  currentTotal: string | null;
+  pdfAccess: boolean;
+}
+export type CoverageState = 'within-baseline' | 'partial' | 'before-baseline';
 export interface ReportingPage {
   source: 'synthetic';
   range: ReportRange;
+  coverage: { from: string; selected: CoverageState; previous: CoverageState };
   sales: CurrencyTotal[];
   previousSales: CurrencyTotal[];
   invoiceTotals: CurrencyTotal[];

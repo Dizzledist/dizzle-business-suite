@@ -169,3 +169,12 @@ Next safe shared foundation step:
 - **Checks** · Baseline typecheck, build and 188 Vitest tests. Final typecheck, build, 202 Vitest and 25 Chromium checks across four modes. The production dependency audit reported zero vulnerabilities. Lint is unconfigured.
 - **External actions** · Installed the pinned Argon2 dependency and checked the npm advisory feed. The pilot uses synthetic reports and an empty employee directory. Google remains disabled, and the original Zoho operator status remains read-only.
 - **Open work** · Establish the first administrator and verify the local employee pilot. Approve any future email delivery service and production hosting and migration. M1 remains in progress and M5 remains blocked for live reporting.
+
+## Session 2026-11-08 / Codex: Sales CRM invoice details
+
+- **Task and lead** · Codex implemented Prompt #9 using synthetic data and a separate worktree. Sales and shared identity/integration owners review the reporting rules and access checks.
+- **Git reference** · `feature/sales-crm-invoice-details` based on the clean password branch at `a0455ed`. The existing password worktree and administrator were preserved.
+- **Contracts and schema** · Additive reporting migration 002, normalized current and original line snapshots, initial coverage, scoped product results and protected PDF response. Configuration adds `INITIAL_SALES_RECOGNITION_DATE`. [Invoice details guide](SALES_CRM_INVOICE_DETAILS.md)
+- **Checks** · TypeScript and build passed, with 218 Vitest tests and 27 Chromium checks across four isolated modes. The synthetic PDF was rendered and inspected. Lint is unconfigured.
+- **External actions** · Consulted official Zoho documentation and attempted read-only access to Dizzle Management source. The connector returned 404 and local GitHub authentication was invalid. No live Zoho requests, financial imports or publication ran.
+- **Open work** · Owner and sales manager select independently documented invoice cases and review the proposed bounded read. Shared foundation review must approve the real tenant binding and original invoice revision evidence. M5 remains blocked for live reporting.
