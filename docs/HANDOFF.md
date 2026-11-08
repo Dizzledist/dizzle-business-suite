@@ -178,3 +178,11 @@ Next safe shared foundation step:
 - **Checks** · TypeScript and build passed, with 218 Vitest tests and 27 Chromium checks across four isolated modes. The synthetic PDF was rendered and inspected. Lint is unconfigured.
 - **External actions** · Consulted official Zoho documentation and attempted read-only access to Dizzle Management source. The connector returned 404 and local GitHub authentication was invalid. No live Zoho requests, financial imports or publication ran.
 - **Open work** · Owner and sales manager select independently documented invoice cases and review the proposed bounded read. Shared foundation review must approve the real tenant binding and original invoice revision evidence. M5 remains blocked for live reporting.
+
+## Session 2026-11-08 / Codex: Sales CRM Management parity
+
+- **Task and lead** · Codex implemented the revised Prompt #10 on `feature/sales-crm-management-parity` from `42006fb`. Sales and shared reporting owners review the reconciliation evidence.
+- **Source access** · The owner made Management accessible during the session. Reviewed a local clone at `f8da43c` with no changes to the reference checkout or deployment. [Source audit](SALES_CRM_MANAGEMENT_PARITY.md)
+- **Changes** · Invoice name fallback, reusable synthetic cost and profit formulas, and a pinned fixture runner comparing the original implementation with Business Suite. No new API or database schema is needed.
+- **Checks** · TypeScript, build, 224 Vitest and 27 Chromium checks passed, including six new parity cases. The reference capture uses a fake provider and database.
+- **Open work** · Sales verifies first-send evidence and original invoice values. Shared integration review approves the tenant binding and the cost source, currency and effective-date rules before live reporting. Samples integration stays deferred.

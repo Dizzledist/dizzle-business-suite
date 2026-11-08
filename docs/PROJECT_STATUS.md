@@ -2,6 +2,14 @@
 
 Updated: November 8, 2026 (America/Los_Angeles).
 
+## Sales CRM Management parity · November 8
+
+The revised Prompt #10 was implemented on **feature/sales-crm-management-parity**, based on invoice details commit `42006fb`. The [source audit and parity report](SALES_CRM_MANAGEMENT_PARITY.md) pins Dizzle Management to `f8da43c`.
+
+- Reused the invoice line name fallback in the CRM and extracted Management cost matching and weighted profit formulas for synthetic comparison. The fixture tests preserve the differences in invoice dates, eligibility and final totals versus original subtotals.
+- TypeScript, the build, 224 Vitest tests and 27 Chromium checks passed. The audit used local source and simulated provider and database responses.
+- **M5 remains blocked for live reporting.** First-send evidence, original invoice revisions, tenant binding and cost catalog approval remain open. Samples integration is deferred.
+
 ## Sales CRM invoice details · November 8
 
 Prompt #9 adds invoice detail and product reporting on **feature/sales-crm-invoice-details**, based on password commit `a0455ed`. The [invoice details guide](SALES_CRM_INVOICE_DETAILS.md) documents the October baseline, structured snapshots, protected synthetic PDF, Management source access limit and next bounded test.

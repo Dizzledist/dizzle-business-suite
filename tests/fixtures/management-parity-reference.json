@@ -1,0 +1,197 @@
+{
+  "revision": "f8da43c294545cd3f04bcc063fc9c84ad64223c3",
+  "filters": {
+    "all": {
+      "ids": [
+        "5002",
+        "5003",
+        "5004",
+        "5005"
+      ],
+      "sales": 414,
+      "knownSales": 314,
+      "cost": 20,
+      "profit": 294,
+      "margin": 93.63057324840764,
+      "count": 4,
+      "matchedCount": 3
+    },
+    "open": {
+      "ids": [
+        "5003",
+        "5004",
+        "5005"
+      ],
+      "sales": 288,
+      "knownSales": 188,
+      "cost": 4,
+      "profit": 184,
+      "margin": 97.87234042553192,
+      "count": 3,
+      "matchedCount": 2
+    },
+    "closed": {
+      "ids": [
+        "5002"
+      ],
+      "sales": 126,
+      "knownSales": 126,
+      "cost": 16,
+      "profit": 110,
+      "margin": 87.3015873015873,
+      "count": 1,
+      "matchedCount": 1
+    }
+  },
+  "rows": [
+    {
+      "id": "5002",
+      "sales": 126,
+      "cost": 16,
+      "lines": [
+        {
+          "sku": "SKU-A",
+          "quantity": 2,
+          "itemId": "921",
+          "name": "Exact override",
+          "description": "",
+          "unit": "case",
+          "reference": "INV-FIX-5002:9201"
+        },
+        {
+          "sku": "CATALOG-SKU",
+          "quantity": 1.5,
+          "itemId": "922",
+          "name": "Item fallback",
+          "description": "",
+          "unit": "case",
+          "reference": "INV-FIX-5002:9202"
+        },
+        {
+          "sku": "FRESH-CATALOG-SKU",
+          "quantity": 2,
+          "itemId": "990",
+          "name": "Description-only product",
+          "description": "Description-only product",
+          "unit": "case",
+          "reference": "INV-FIX-5002:9203"
+        },
+        {
+          "sku": "",
+          "quantity": 3,
+          "name": "Named   product",
+          "description": "Batch A",
+          "unit": "case",
+          "reference": "INV-FIX-5002:9204"
+        }
+      ]
+    },
+    {
+      "id": "5003",
+      "sales": 108,
+      "cost": 2,
+      "lines": [
+        {
+          "sku": "SKU-A",
+          "quantity": 1,
+          "itemId": "901",
+          "name": "Fixture product",
+          "description": "",
+          "unit": "case",
+          "reference": "INV-FIX-5003:9001"
+        }
+      ]
+    },
+    {
+      "id": "5004",
+      "sales": 100,
+      "cost": null,
+      "lines": [
+        {
+          "sku": "UNMATCHED",
+          "quantity": 1,
+          "itemId": "941",
+          "name": "Fixture no cost",
+          "description": "",
+          "unit": "case",
+          "reference": "INV-FIX-5004:9401"
+        }
+      ]
+    },
+    {
+      "id": "5005",
+      "sales": 80,
+      "cost": 2,
+      "lines": [
+        {
+          "sku": "SKU-A",
+          "quantity": 1,
+          "name": "Fixture product",
+          "description": "",
+          "unit": "case",
+          "reference": "INV-FIX-5005:9501"
+        }
+      ]
+    }
+  ],
+  "costCases": {
+    "override": 6,
+    "item": 12,
+    "sku": 4,
+    "exactName": 1.5,
+    "unknownSku": null,
+    "empty": null,
+    "negativeQuantity": null,
+    "roundOnce": 0.67
+  },
+  "statusLabels": [
+    "unknown",
+    "paid",
+    "open",
+    "open",
+    "open",
+    "open"
+  ],
+  "invoiceEndDate": "2026-11-07",
+  "dateEligibility": [
+    false,
+    true,
+    true,
+    false
+  ],
+  "productKey": "[\"named product\",\"batch a\",\"case\"]",
+  "samples": [
+    [
+      {
+        "name": "Fixture item A",
+        "quantity": 6,
+        "key": "fixture item a",
+        "source": "2 x Fixture item A"
+      },
+      {
+        "name": "Fixture item B",
+        "quantity": 1.5,
+        "key": "fixture item b",
+        "source": "Fixture item B × 0.5"
+      },
+      {
+        "name": "No quantity",
+        "quantity": null,
+        "key": "no quantity",
+        "source": "No quantity"
+      }
+    ],
+    [
+      {
+        "name": "Fixture sample pack",
+        "quantity": 2,
+        "key": "fixture sample pack",
+        "source": "Sample display"
+      }
+    ],
+    []
+  ],
+  "providerItemReads": [
+    "items/990"
+  ]
+}

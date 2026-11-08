@@ -5,6 +5,7 @@ import {
   type RangeSelection, type ReportingInvoiceDetail, type ReportingPage,
 } from '../../shared/reporting';
 import { salesCrmPath } from '../../shared/sales-crm';
+import { managementInvoiceLineName } from '../../shared/management-invoice-line';
 import { requestSales } from './access';
 
 const preferenceKey = 'dizzle.synthetic-reporting.range';
@@ -270,7 +271,10 @@ function InvoiceTabs({ row, path, timeZone }: { row: ReportingInvoiceDetail; pat
           <table><thead><tr>
             {['Product', 'SKU', 'Quantity', 'Unit price', 'Discount', 'Line total'].map(label => <th key={label} scope="col">{label}</th>)}
           </tr></thead><tbody>{row.lineItems.map((line, index) => <tr key={line.lineId ?? 'position-' + index}>
-            <th scope="row">{line.name ?? 'Unnamed product'}{line.description && <small>{line.description}</small>}</th>
+            <th scope="row">
+              {managementInvoiceLineName(line.name, line.description)}
+              {line.name && line.description && <small>{line.description}</small>}
+            </th>
             <td>{line.sku ?? 'Unknown'}</td><td>{line.quantity} {line.unit}</td><td>{priced(line.unitPrice)}</td>
             <td>{line.discountAmount === null ? line.discount ?? 'Unavailable' : priced(line.discountAmount)}</td>
             <td>{priced(line.amount)}</td>

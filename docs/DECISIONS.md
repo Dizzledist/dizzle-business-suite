@@ -113,3 +113,7 @@ The user approved company email and password for the current employee pilot, sup
 ## Prompt #9 invoice detail decisions, November 8, 2026
 
 The user approved October 1, 2026 as the initial reporting baseline with later historical backfill supported. It extends the Prompt #7 reporting rules while retaining the verified first-email date, original subtotal and captured sales credit. The user also approved structured synthetic line snapshots and a protected synthetic PDF viewer. Live binding, live reads, actual PDF retrieval, cost and profit calculations remain separate approval and evidence gates. [Invoice details guide](SALES_CRM_INVOICE_DETAILS.md)
+
+## Revised Prompt #10 Management reuse, November 8, 2026
+
+The user approved a source audit and compatible reuse of Dizzle Management calculations in an isolated Business Suite worktree. The first successful email instant and original invoice subtotal remain the Sales CRM recognition rules. Management's invoice date and final total are preserved as a separate test reference. Its cost precedence and weighted margin are approved for synthetic implementation and comparison. Live cost sources, product profit allocation and samples integration remain separate decisions. [Management parity report](SALES_CRM_MANAGEMENT_PARITY.md)
