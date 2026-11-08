@@ -6,9 +6,14 @@ import { isSalesCrmEnabled } from '../shared/sales-crm';
 import type { SyntheticReporting } from './sales-crm/reporting/demo';
 import { isSalesAuthEnabled } from '../shared/sales-auth';
 import type { SalesIdentityStore } from './sales-crm/auth/store';
+import type { GoogleLogin } from './sales-crm/auth/google/routes';
+import { loadGoogleConfig } from './sales-crm/auth/google/config';
+import { loadSessionPolicy } from './sales-crm/auth/sessions';
+import { localPorts } from '../shared/local-ports';
 
 if (process.env.NODE_ENV === 'production') throw new Error('Local fixture API cannot run in production mode.');
 process.env.NODE_ENV ??= 'development';
+const ports = localPorts(process.env);
 let zoho: ZohoManagement | undefined;
 try {
   const config = loadZohoConfig(process.env);
@@ -32,15 +37,25 @@ let salesIdentity: SalesIdentityStore | undefined;
 if (isSalesCrmEnabled(process.env) && isSalesAuthEnabled(process.env)) {
   try {
     const { openSalesIdentity } = await import('./sales-crm/auth/store');
-    salesIdentity = openSalesIdentity(process.env.NODE_ENV === 'test' ? ':memory:' : undefined);
+    salesIdentity = openSalesIdentity(process.env.NODE_ENV === 'test' ? ':memory:' : undefined, Date.now, loadSessionPolicy(process.env));
   } catch {
     console.warn('Company sign-in is unavailable. Check the local identity database.');
   }
 }
-const server = createApi(undefined, zoho, reporting, salesIdentity);
+let google: GoogleLogin | undefined;
+try {
+  const config = loadGoogleConfig(process.env);
+  if (config && salesIdentity) {
+    const { createGoogleLogin } = await import('./sales-crm/auth/google/routes');
+    google = createGoogleLogin(config);
+  }
+} catch {
+  console.warn('Google sign-in is unavailable. Check the private configuration and loopback callback.');
+}
+const server = createApi(undefined, zoho, reporting, salesIdentity, { google, ports });
 server.once('close', () => {
   reporting?.db.close();
   salesIdentity?.close();
 });
-server.listen(3001, '127.0.0.1', () => console.log('Dizzle fixture API: http://127.0.0.1:3001'));
+server.listen(ports.api, '127.0.0.1', () => console.log('Dizzle fixture API: http://127.0.0.1:' + ports.api));
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => server.close(() => process.exit(0)));

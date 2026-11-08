@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { createApi } from '../../server/api';
+import { localPorts } from '../../shared/local-ports';
 import { isSalesAuthEnabled } from '../../shared/sales-auth';
 import { isSalesCrmEnabled } from '../../shared/sales-crm';
 import { requireE2eIdentityPath, salesAuthFixture } from '../fixtures/sales-auth';
@@ -11,6 +12,6 @@ const path = requireE2eIdentityPath(process.env.DIZZLE_E2E_IDENTITY_DB);
 if (existsSync(path)) throw new Error('Use a fresh synthetic identity database.');
 const fixture = await salesAuthFixture({ path, now: Date.now });
 const server = createApi(undefined, undefined, fixture.reporting, fixture.store);
-server.listen(3001, '127.0.0.1');
+server.listen(localPorts(process.env).api, '127.0.0.1');
 server.once('close', () => fixture.close());
 for (const signal of ['SIGTERM', 'SIGINT'] as const) process.on(signal, () => server.close());

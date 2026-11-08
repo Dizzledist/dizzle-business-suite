@@ -2,6 +2,14 @@
 
 Updated: November 7, 2026 (America/Los_Angeles).
 
+## Google employee sign-in · November 7
+
+Prompt #8B authorizes the local Google OIDC adapter on **feature/sales-crm-google-oidc**, based on authentication commit 680e432. See the [Google setup and approval guide](SALES_CRM_GOOGLE_OIDC.md).
+
+- Google discovery, signed token verification, approved employee enrollment, role and team scoping, and administrator changes passed mock verification. The login adapter requests only identity scopes and reuses the existing session and identity store.
+- TypeScript, build, 208 Vitest tests, and Chromium counts of 4 disabled, 9 fixture CRM, 7 session-only, and 5 mock Google passed. The production bundle excludes fixture and mock code. The npm production dependency audit reported zero vulnerabilities.
+- **M1 remains in progress.** Google Cloud credentials and a real employee sign-in have not been verified. Browser reporting uses synthetic records. The separate read-only Zoho operator workflow remains available.
+
 ## Sales CRM authentication foundation · November 7
 
 Prompt #8 authorizes the session, identity, and permissions foundation on **feature/sales-crm-authentication**, based on reporting commit 03e0fed with read-only Zoho commit 8769fec in its history. See the [authentication guide](SALES_CRM_AUTHENTICATION.md).

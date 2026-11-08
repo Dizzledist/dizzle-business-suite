@@ -1,6 +1,7 @@
 import { isLocalFixtureEnabled } from './sales-crm.ts';
 
 export const salesAuthApi = '/api/sales-crm/auth';
+export const googleAuthApi = salesAuthApi + '/google';
 export const salesRoles = ['sales_rep', 'sales_manager', 'admin'] as const;
 export const accountStatuses = ['pending', 'active', 'disabled'] as const;
 export type SalesRole = typeof salesRoles[number];
@@ -22,6 +23,7 @@ export interface SalesSessionView {
   role: SalesRole;
   csrfToken: string;
   expiresAt: string;
+  email?: string;
 }
 
 export interface SalesDirectory {
@@ -35,6 +37,7 @@ export interface SalesDirectory {
     status: AccountStatus;
     zohoSalespersonId: string | null;
     lastLogin: string | null;
+    googleLinked?: boolean;
   }[];
   audit: {
     action: string;

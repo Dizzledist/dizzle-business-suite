@@ -113,7 +113,7 @@ function Workspace({ section, session, controls }: {
             </div>
           </section>
         )}
-        {users && <UserDirectory />}
+        {users && session && <UserDirectory session={session} />}
         {!dashboard && !reports && !users && (
           <section className="panel sales-crm-card">
             <h2>Development placeholder</h2>

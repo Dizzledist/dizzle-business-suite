@@ -160,3 +160,12 @@ Next safe shared foundation step:
 - **Checks** · Baseline typecheck, build, 171 Vitest and 13 Chromium checks. Final typecheck, build, 188 Vitest and 20 Chromium checks across three modes. The production bundle excludes the fixture selector and client identity header code. No lint script exists.
 - **External actions** · Consulted official OIDC and security guidance. Synthetic test identities exercised the verified-principal boundary. No identity provider was provisioned or contacted and no live financial data was read.
 - **Open work** · Approve an identity provider and review the production database and origin configuration. Implement and validate a server-side OIDC adapter with genuine employee sessions in staging. M1 remains in progress and M5 remains blocked.
+
+## Session 2026-11-07 / Codex: Google employee sign-in
+
+- **Task and lead** · Codex implemented the approved Google OIDC continuation. The local operator controls cloud configuration and the first administrator; the owner/admin and shared reviewer control acceptance.
+- **Git reference** · feature/sales-crm-google-oidc in its own worktree, based on verified authentication commit 680e432, reporting commit 03e0fed, and read-only Zoho commit 8769fec.
+- **Contracts and schema** · Pinned openid-client, exact loopback callback, verified Google claims, administrator-approved enrollment, session policy binding, CSRF-protected employee management, and an additive migration in the existing local identity database. [Setup guide](SALES_CRM_GOOGLE_OIDC.md)
+- **Checks** · TypeScript, build, 208 Vitest, and 25 Chromium checks across four modes. Signed mock tokens exercised the actual callback, signature checks, denial and session issuance. npm audit reported zero production dependency vulnerabilities. Lint is unconfigured.
+- **External actions** · Read official Google guidance and installed the pinned OIDC dependency. Mock provider transport covered all login calls. No cloud resources, live employee login, mailbox access or Zoho business-data reads were initiated.
+- **Open work** · Configure the approved local Google Cloud client in the private environment, establish the first administrator, and verify one named employee sign-in before accepting M1. Production hosting and live financial reporting remain separate.

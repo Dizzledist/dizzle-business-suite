@@ -1,16 +1,21 @@
 import { defineConfig } from '@playwright/test';
 import { isSalesAuthEnabled } from './shared/sales-auth';
+import { localPorts } from './shared/local-ports';
 
 const authFixtures = isSalesAuthEnabled(process.env) && !!process.env.DIZZLE_E2E_IDENTITY_DB;
+const googleFixtures = isSalesAuthEnabled(process.env) && process.env.DIZZLE_E2E_GOOGLE === 'true';
+const { web, api } = localPorts(process.env);
+const webOrigin = 'http://127.0.0.1:' + web;
 export default defineConfig({
   testDir: './tests/browser', workers: 1, fullyParallel: false,
-  use: { baseURL: 'http://127.0.0.1:5173', trace: 'retain-on-failure' },
+  use: { baseURL: webOrigin, trace: 'retain-on-failure' },
   webServer: [
     {
-      command: authFixtures ? 'node --import tsx tests/browser/auth-server.ts' : 'npm run dev:api',
-      url: 'http://127.0.0.1:3001/api/health', env: { NODE_ENV: 'test' },
+      command: googleFixtures ? 'node --import tsx tests/browser/google-server.ts'
+        : authFixtures ? 'node --import tsx tests/browser/auth-server.ts' : 'npm run dev:api',
+      url: 'http://127.0.0.1:' + api + '/api/health', env: { NODE_ENV: 'test' },
       reuseExistingServer: false, timeout: 60_000,
     },
-    { command: 'npm run dev:web', url: 'http://127.0.0.1:5173/api/health', env: { CI: 'true' }, reuseExistingServer: false, timeout: 60_000 },
+    { command: 'npm run dev:web', url: webOrigin + '/api/health', env: { CI: 'true' }, reuseExistingServer: false, timeout: 60_000 },
   ],
 });

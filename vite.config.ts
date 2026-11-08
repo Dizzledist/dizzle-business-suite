@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { isLocalFixtureEnabled, isSalesCrmEnabled } from './shared/sales-crm.ts';
 import { isSalesAuthEnabled } from './shared/sales-auth.ts';
+import { localPorts } from './shared/local-ports.ts';
 
 export default defineConfig(({ command }) => ({
   plugins: [react()],
@@ -11,7 +12,9 @@ export default defineConfig(({ command }) => ({
     'import.meta.env.DIZZLE_LOCAL_FIXTURES': JSON.stringify(command === 'serve' && isLocalFixtureEnabled(process.env)),
   },
   server: {
-    proxy: { '/api': 'http://127.0.0.1:3001' },
+    port: localPorts(process.env).web,
+    // Preserve the browser Host for exact-origin auth checks on the backend.
+    proxy: { '/api': { target: 'http://127.0.0.1:' + localPorts(process.env).api, changeOrigin: false } },
     fs: {
       // Keep Vite's default exclusions when adding the private reporting directory.
       deny: [

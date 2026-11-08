@@ -105,3 +105,7 @@ The local SQLite store and 366-day custom limit are implementation choices. The 
 ## Prompt #8 identity decisions, November 7, 2026
 
 Prompt #8 authorizes durable local users, verified-session and role boundaries, administrator-attested Zoho mappings, and a protected review UI. It keeps the prior fixture selector in explicit local mode. Browser-accessible reporting remains synthetic. This supersedes the placeholder-only identity design for local verification. Google Workspace OIDC with a maintained client is a recommendation pending provider approval. Employee onboarding, production rollout, and live customer data remain separate decisions. [Authentication guide](SALES_CRM_AUTHENTICATION.md)
+
+## Prompt #8B Google sign-in decisions, November 7, 2026
+
+Prompt #8B authorizes Google OIDC for local employee sign-in. Individual Google accounts are supported and the Workspace hosted-domain claim is optional. The existing employee must be explicitly approved. A one-time invitation and exact verified email establish the stable Google subject, then subsequent sign-ins use the bound subject and active status. The local operator establishes the initial administrator. The Google Cloud client, credential entry, and named employee pilot remain separate setup steps. [Google sign-in guide](SALES_CRM_GOOGLE_OIDC.md)

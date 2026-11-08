@@ -253,6 +253,34 @@
   margin: .35rem 0;
 }
 
+.employee-management {
+  margin-bottom: 1rem;
+}
+
+.employee-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .65rem;
+  margin-block: .65rem;
+}
+
+.employee-form label {
+  display: grid;
+  min-width: 0;
+  gap: .3rem;
+}
+
+.employee-form :is(input, select, button) {
+  min-height: 44px;
+  max-width: 100%;
+}
+
+.employee-form code,
+.employee-management code {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 750px) {
   .sales-crm-shell {
     grid-template-columns: minmax(0, 1fr);

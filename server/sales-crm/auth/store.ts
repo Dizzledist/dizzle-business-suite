@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { closeSync, mkdirSync, openSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
@@ -7,7 +7,8 @@ import { accountStatuses, salesRoles, type AccountStatus, type SalesDirectory, t
 import { openSqliteDatabase, transaction } from '../../sqlite';
 import { ApiError } from '../../workflow';
 import type { ReportingScope } from '../reporting/routes';
-import { absoluteLifetime, idleLifetime, isSessionToken, newSessionToken, sessionDigest } from './sessions';
+import { defaultSessionPolicy, isSessionToken, newSessionToken, sessionDigest, type SalesSessionPolicy } from './sessions';
+import { googleIssuer } from './google/config';
 
 const slug = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}$/);
 const principal = z.object({
@@ -22,7 +23,12 @@ const account = principal.extend({
   role: z.enum(salesRoles),
   status: z.enum(accountStatuses),
 });
-const access = account.pick({ status: true, role: true, team: true }).strict();
+const access = account.pick({ status: true, role: true, team: true }).extend({ department: slug.optional() }).strict();
+const inviteEmployee = account.pick({ name: true, email: true, role: true, team: true, department: true }).strict();
+const verifiedGoogle = principal.extend({ issuer: z.literal(googleIssuer), email: account.shape.email });
+const unboundIssuer = 'https://unbound.google.dizzle.invalid';
+const inviteLifetime = 24 * 60 * 60_000;
+const invitationDigest = (secret: string) => createHash('sha256').update('google-enrollment\0' + secret).digest('hex');
 const mapping = z.object({
   salespersonId: z.string().regex(/^[1-9]\d{0,39}$/),
   verificationReference: z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$/),
@@ -32,25 +38,34 @@ export type VerifiedPrincipal = Readonly<z.input<typeof principal>>;
 export type NewSalesUser = z.input<typeof account>;
 type AccessChange = z.input<typeof access>;
 type VerifiedMapping = z.input<typeof mapping>;
+export type GoogleInviteEmployee = z.input<typeof inviteEmployee>;
 
 type UserRow = {
   id: string; organization_id: string; name: string; role: SalesRole; status: AccountStatus; team_id: string | null;
+  issuer: string; email: string; department: string;
 };
-type SessionRow = UserRow & { expires_at: number };
+type SessionRow = UserRow & { expires_at: number; google_policy: string | null };
 type DirectoryRow = UserRow & { email: string; department: string; last_login_at: number | null; zoho_salesperson_id: string | null };
 
-export function openSalesIdentity(path = resolve('.sales-auth-private', 'identity.sqlite'), now = Date.now) {
+export function openSalesIdentity(
+  path = resolve('.sales-auth-private', 'identity.sqlite'), now = Date.now, policy = defaultSessionPolicy,
+) {
   if (path !== ':memory:') {
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
     try { closeSync(openSync(path, 'wx', 0o600)); }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error; }
   }
-  const db = openSqliteDatabase(path, [new URL('./migrations/001-identity.sql', import.meta.url)]);
-  return new SalesIdentityStore(db, now);
+  const db = openSqliteDatabase(path, [
+    new URL('./migrations/001-identity.sql', import.meta.url),
+    new URL('./migrations/002-google-enrollments.sql', import.meta.url),
+  ]);
+  return new SalesIdentityStore(db, now, policy);
 }
 
 export class SalesIdentityStore {
-  constructor(private readonly db: DatabaseSync, private readonly now: () => number) {}
+  constructor(
+    private readonly db: DatabaseSync, private readonly now: () => number, readonly policy: SalesSessionPolicy,
+  ) {}
 
   close() { this.db.close(); }
 
@@ -90,19 +105,101 @@ export class SalesIdentityStore {
       const user = this.db.prepare(`SELECT id, organization_id FROM sales_users
         WHERE issuer = ? AND subject = ? AND status = 'active'`).get(issuer, subject);
       if (!user) throw new ApiError(401, 'Company sign-in is unavailable for this account.');
-      const at = this.now();
-      const token = newSessionToken();
-      const id = String(user.id);
-      this.db.prepare('DELETE FROM sales_sessions WHERE expires_at <= ? OR last_seen_at <= ?').run(at, at - idleLifetime);
-      if (isSessionToken(previousToken)) {
-        this.db.prepare('DELETE FROM sales_sessions WHERE token_digest = ? AND user_id = ?').run(sessionDigest(previousToken), id);
+      return this.issueSession(String(user.id), String(user.organization_id), previousToken);
+    });
+  }
+
+  private issueSession(id: string, organization: string, previousToken?: string, googlePolicy?: string) {
+    const at = this.now();
+    const token = newSessionToken();
+    this.db.prepare('DELETE FROM sales_sessions WHERE expires_at <= ? OR last_seen_at <= ?').run(at, at - this.policy.idle);
+    if (isSessionToken(previousToken)) this.db.prepare('DELETE FROM sales_sessions WHERE token_digest = ?').run(sessionDigest(previousToken));
+    this.db.prepare(`INSERT INTO sales_sessions (token_digest, user_id, issued_at, last_seen_at, expires_at, google_policy)
+      VALUES (?, ?, ?, ?, ?, ?)`).run(sessionDigest(token), id, at, at, at + this.policy.absolute, googlePolicy ?? null,
+    );
+    this.db.prepare('UPDATE sales_users SET last_login_at = ? WHERE id = ?').run(at, id);
+    this.audit(organization, id, id, 'signed-in');
+    return token;
+  }
+
+  private issueInvitation(userId: string, organization: string, actor: string | null) {
+    const invitation = newSessionToken();
+    const expires = this.now() + inviteLifetime;
+    this.db.prepare(`INSERT INTO sales_google_enrollments VALUES (?, ?, ?)
+      ON CONFLICT (user_id) DO UPDATE SET secret_digest = excluded.secret_digest, expires_at = excluded.expires_at`)
+      .run(userId, invitationDigest(invitation), expires);
+    this.audit(organization, actor, userId, 'google-invitation-issued');
+    return { invitation, expiresAt: new Date(expires).toISOString() };
+  }
+
+  // Local operator command. An existing initial invitation can be replaced only
+  // for the same unbound administrator in an otherwise empty directory.
+  bootstrapGoogleAdministrator(organization: string, input: Omit<GoogleInviteEmployee, 'role'>) {
+    const tenant = slug.parse(organization);
+    const employee = inviteEmployee.parse({ ...input, role: 'admin' });
+    return transaction(this.db, () => {
+      const users = this.db.prepare('SELECT id, organization_id, email, issuer, role, status FROM sales_users LIMIT 2').all();
+      if (!users.length) {
+        const id = this.addUser(tenant, { ...employee, issuer: unboundIssuer, subject: randomUUID(), status: 'pending' }, null);
+        return this.issueInvitation(id, tenant, null);
       }
-      this.db.prepare('INSERT INTO sales_sessions VALUES (?, ?, ?, ?, ?)').run(
-        sessionDigest(token), id, at, at, at + absoluteLifetime,
-      );
-      this.db.prepare('UPDATE sales_users SET last_login_at = ? WHERE id = ?').run(at, id);
-      this.audit(String(user.organization_id), id, id, 'signed-in');
-      return token;
+      const [initial] = users;
+      if (users.length !== 1 || initial.organization_id !== tenant || initial.email !== employee.email ||
+          initial.issuer !== unboundIssuer || initial.role !== 'admin' || initial.status !== 'pending') {
+        throw new ApiError(409, 'The initial administrator has already been established.');
+      }
+      return this.issueInvitation(String(initial.id), tenant, null);
+    });
+  }
+
+  inviteGoogleEmployee(token: string, input: GoogleInviteEmployee) {
+    const employee = inviteEmployee.parse(input);
+    return transaction(this.db, () => {
+      const actor = this.googleAdministrator(token);
+      if (this.db.prepare('SELECT 1 FROM sales_users WHERE organization_id = ? AND email = ?').get(actor.organization_id, employee.email)) {
+        throw new ApiError(409, 'This employee is already in the directory.');
+      }
+      const id = this.addUser(actor.organization_id, {
+        ...employee, issuer: unboundIssuer, subject: randomUUID(), status: 'pending',
+      }, actor.id);
+      return this.issueInvitation(id, actor.organization_id, actor.id);
+    });
+  }
+
+  renewGoogleInvitation(token: string, userId: string) {
+    return transaction(this.db, () => {
+      const actor = this.googleAdministrator(token);
+      const user = this.target(actor, userId);
+      if (user.issuer !== unboundIssuer || user.status !== 'pending') throw new ApiError(409, 'This employee cannot be invited.');
+      return this.issueInvitation(user.id, actor.organization_id, actor.id);
+    });
+  }
+
+  // Only the Google adapter may call this after signature and claim verification.
+  // A stable subject is never replaced. Invitation claim and session issuance
+  // commit together against the preapproved employee record.
+  startGoogleSession(verified: z.input<typeof verifiedGoogle>, invitation: string | undefined, googlePolicy: string, previousToken?: string) {
+    const { email, subject } = verifiedGoogle.parse(verified);
+    return transaction(this.db, () => {
+      const deny = () => new ApiError(403, 'Google employee access is unavailable.');
+      const existing = this.db.prepare(`SELECT id, organization_id, email, status FROM sales_users
+        WHERE issuer = ? AND subject = ?`).get(googleIssuer, subject);
+      if (invitation === undefined) {
+        if (!existing || existing.status !== 'active' || existing.email !== email) throw deny();
+        return this.issueSession(String(existing.id), String(existing.organization_id), previousToken, googlePolicy);
+      }
+      if (existing || !isSessionToken(invitation)) throw deny();
+      const approved = this.db.prepare(`SELECT u.id, u.organization_id FROM sales_google_enrollments e
+        JOIN sales_users u ON u.id = e.user_id
+        WHERE e.secret_digest = ? AND e.expires_at > ? AND u.issuer = ? AND u.email = ? AND u.status = 'pending'`)
+        .get(invitationDigest(invitation), this.now(), unboundIssuer, email);
+      if (!approved) throw deny();
+      const id = String(approved.id);
+      const organization = String(approved.organization_id);
+      this.db.prepare("UPDATE sales_users SET issuer = ?, subject = ?, status = 'active' WHERE id = ?").run(googleIssuer, subject, id);
+      this.db.prepare('DELETE FROM sales_google_enrollments WHERE user_id = ?').run(id);
+      this.audit(organization, id, id, 'google-identity-bound');
+      return this.issueSession(id, organization, previousToken, googlePolicy);
     });
   }
 
@@ -110,10 +207,10 @@ export class SalesIdentityStore {
     if (!isSessionToken(token)) return undefined;
     const at = this.now();
     const digest = sessionDigest(token);
-    const row = this.db.prepare(`SELECT u.id, u.organization_id, u.name, u.role, u.status, u.team_id, s.expires_at
+    const row = this.db.prepare(`SELECT u.id, u.organization_id, u.name, u.role, u.status, u.team_id, u.issuer, u.email, u.department, s.expires_at, s.google_policy
       FROM sales_sessions s JOIN sales_users u ON u.id = s.user_id
       WHERE s.token_digest = ? AND s.expires_at > ? AND s.last_seen_at > ? AND u.status = 'active'`)
-      .get(digest, at, at - idleLifetime) as SessionRow | undefined;
+      .get(digest, at, at - this.policy.idle) as SessionRow | undefined;
     if (row && touch) this.db.prepare('UPDATE sales_sessions SET last_seen_at = MAX(last_seen_at, ?) WHERE token_digest = ?').run(at, digest);
     return row;
   }
@@ -134,8 +231,14 @@ export class SalesIdentityStore {
     return actor;
   }
 
+  private googleAdministrator(token: string) {
+    const actor = this.administrator(token);
+    if (actor.issuer !== googleIssuer) throw new ApiError(403, 'Google administrator access required.');
+    return actor;
+  }
+
   private target(actor: UserRow, id: string) {
-    const user = this.db.prepare('SELECT id, organization_id, name, role, status, team_id FROM sales_users WHERE id = ? AND organization_id = ?')
+    const user = this.db.prepare('SELECT id, organization_id, name, role, status, team_id, issuer, email, department FROM sales_users WHERE id = ? AND organization_id = ?')
       .get(id, actor.organization_id) as UserRow | undefined;
     if (!user) throw new ApiError(404, 'User not found.');
     return user;
@@ -153,15 +256,19 @@ export class SalesIdentityStore {
     transaction(this.db, () => {
       const actor = this.administrator(token);
       const user = this.target(actor, userId);
-      if (next.role === user.role && next.status === user.status && next.team === user.team_id) return;
+      const department = next.department ?? user.department;
+      if (user.issuer === unboundIssuer && next.status === 'active') throw new ApiError(409, 'The employee must complete Google enrollment.');
+      if (next.role === user.role && next.status === user.status && next.team === user.team_id && department === user.department) return;
       if (user.role === 'admin' && user.status === 'active' && (next.role !== 'admin' || next.status !== 'active') &&
-          !this.db.prepare(`SELECT 1 FROM sales_users WHERE organization_id = ? AND id <> ? AND role = 'admin' AND status = 'active' LIMIT 1`)
-            .get(actor.organization_id, userId)) throw new ApiError(409, 'At least one active administrator is required.');
-      this.db.prepare('UPDATE sales_users SET role = ?, status = ?, team_id = ? WHERE id = ?')
-        .run(next.role, next.status, next.team, userId);
+          !this.db.prepare(`SELECT 1 FROM sales_users WHERE organization_id = ? AND id <> ? AND role = 'admin' AND status = 'active'
+            AND (? IS NULL OR issuer = ?) LIMIT 1`)
+            .get(actor.organization_id, userId, actor.issuer === googleIssuer ? googleIssuer : null, googleIssuer)) throw new ApiError(409, 'At least one active administrator is required.');
+      this.db.prepare('UPDATE sales_users SET role = ?, status = ?, team_id = ?, department = ? WHERE id = ?')
+        .run(next.role, next.status, next.team, department, userId);
+      if (next.status === 'disabled') this.db.prepare('DELETE FROM sales_google_enrollments WHERE user_id = ?').run(userId);
       this.db.prepare('DELETE FROM sales_sessions WHERE user_id = ?').run(userId);
       this.audit(actor.organization_id, actor.id, userId, 'access-changed', {
-        before: { role: user.role, status: user.status, team: user.team_id }, after: next,
+        before: { role: user.role, status: user.status, team: user.team_id, department: user.department }, after: { ...next, department },
       });
     });
   }
@@ -203,10 +310,10 @@ export class SalesIdentityStore {
     return { organizationId: user.organization_id, credit: 'selected', userIds: scopedUsers.map(row => String(row.id)) };
   }
 
-  directory(token: string): SalesDirectory {
+  directory(token: string, google = false): SalesDirectory {
     return transaction(this.db, () => {
       const actor = this.administrator(token);
-      const users = this.db.prepare(`SELECT u.id, u.name, u.email, u.role, u.department, u.team_id, u.status, u.last_login_at,
+      const users = this.db.prepare(`SELECT u.id, u.name, u.email, u.role, u.department, u.team_id, u.status, u.issuer, u.last_login_at,
         m.zoho_salesperson_id FROM sales_users u LEFT JOIN sales_user_zoho_mappings m
         ON m.organization_id = u.organization_id AND m.user_id = u.id
         WHERE u.organization_id = ? ORDER BY u.name, u.id LIMIT 250`).all(actor.organization_id) as DirectoryRow[];
@@ -217,6 +324,7 @@ export class SalesIdentityStore {
           id: row.id, name: row.name, email: row.email, role: row.role, department: row.department,
           team: row.team_id, status: row.status, zohoSalespersonId: row.zoho_salesperson_id,
           lastLogin: row.last_login_at === null ? null : new Date(row.last_login_at).toISOString(),
+          ...(google ? { googleLinked: row.issuer === googleIssuer } : {}),
         })),
         audit: audit.map(row => ({
           action: String(row.action), at: new Date(Number(row.at)).toISOString(),
