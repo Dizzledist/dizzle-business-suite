@@ -1,6 +1,15 @@
 # Project status
 
-Updated: November 6, 2026 (America/Los_Angeles).
+Updated: November 7, 2026 (America/Los_Angeles).
+
+## Sales CRM foundation · November 7
+
+Master Prompt #3 authorizes the local navigation and dashboard shell. The dedicated branch is **feature/sales-crm-foundation**, based on the clean main checkout at `d4afc223`. Status is **in progress, ready for shared review**. See the [local CRM guide](SALES_CRM_FOUNDATION.md) and [handoff](HANDOFF.md#session-2026-11-07--codex-sales-crm-foundation).
+
+- Added a disabled-by-default development flag, a scoped read-only shell endpoint, and nine responsive Sales CRM routes. The workspace shows placeholders and unconfigured source states. Access reuses the existing fixture identity and read checks, with a CRM-only sales-role and organization allowlist.
+- The existing invoice-to-warehouse routes, contracts, workflow and permission definitions were preserved. The pinned baseline has in-memory fixtures and no database or live provider adapters. This task adds no migration or provider configuration.
+- Baseline passed typecheck, build, 31 HTTP tests and three Chromium tests. Branch passed typecheck, build, 46 HTTP tests, four Chromium tests with the flag unset and seven with the flag enabled. Each Chromium pass included the three original workflow tests. No separate lint task exists.
+- Next review is the shell access matrix and disabled behavior. Durable customer accounts and shared record permissions are the next scoped implementation task after the business access policy is approved.
 
 ## Verified starting state and current task
 

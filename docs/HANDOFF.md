@@ -111,3 +111,14 @@ Next task: sales manager:
 Next task: user / marketing lead:
 Next safe shared foundation step:
 ```
+
+## Session 2026-11-07 / Codex: Sales CRM foundation
+
+- **Task and lead:** User's Master Prompt #3 authorizes the first local Sales CRM shell. Codex implemented this scoped task for the user. Both builders review the identity boundary and sales navigation before integration.
+- **Starting state and stable reference:** Fresh clean clone of origin/main at `d4afc223d7313274ecea75f3655d2188abbbbbd6`. Local branch `feature/sales-crm-foundation`. Review takes place on the local branch.
+- **Changes and contracts:** Added /sales and eight subroutes with responsive navigation, placeholders, and a reusable dashboard card. Added read-only GET /api/sales-crm/workspace with server flag and CRM-only access checks after existing fixture authentication. Legacy request/response contracts and C1–C5 business policy are preserved. The browser carries the existing fixture selector ID across CRM links in the current tab. See the [local CRM guide](SALES_CRM_FOUNDATION.md).
+- **Checks:** Node 24 baseline passed typecheck, build, 31 HTTP tests and three Chromium tests. Branch passed typecheck, build, 46 HTTP tests, four Chromium tests with the flag unset and seven with it enabled. Both browser runs used isolated loopback ports to avoid the existing demo and included the three original workflow tests. Lint is unconfigured.
+- **Schema and environment:** No schema changes. New opt-in flag name is SALES_CRM_ENABLED. Existing default dependencies and environment setup were reused.
+- **External actions:** Read and cloned GitHub main, installed the locked local packages and the pinned Chromium test binary, and ran isolated tests. The branch is local. Provider accounts and data were outside the execution scope.
+- **Incomplete work:** Shared builder and user review. The local selector remains a fixture mechanism. Customer data, real sessions, persistent records, finance, AI, maps and live connectors are later work.
+- **Next:** Sales manager reviews navigation and pending states. The user and both builders review the CRM-only scope and approve shared customer access before the durable account/reassignment slice. Update the approved policy and acceptance matrix through that later task.

@@ -1,6 +1,8 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { z } from 'zod';
 import { demoEvents } from '../shared/contracts';
+import { isSalesCrmEnabled } from '../shared/sales-crm';
+import { getSalesCrmWorkspace, isSalesCrmApiPath } from './sales-crm/routes';
 import { ApiError, Workflow } from './workflow';
 
 const releaseSchema = z.object({
@@ -22,6 +24,7 @@ function send(res: ServerResponse, status: number, data: unknown) {
   res.end(JSON.stringify(data));
 }
 export function createApi(workflow = new Workflow()) {
+  const salesCrmEnabled = isSalesCrmEnabled(process.env);
   return createServer(async (req, res) => {
     try {
       const host = new URL(`http://${req.headers.host ?? ''}`);
@@ -30,10 +33,13 @@ export function createApi(workflow = new Workflow()) {
         throw new ApiError(403, 'Local demo origin required.');
       const path = new URL(req.url ?? '/', host).pathname;
       if (path === '/api/health' && req.method === 'GET') return send(res, 200, { status: 'local-fixture-only' });
+      const salesCrmRequest = isSalesCrmApiPath(path);
+      if (salesCrmRequest && !salesCrmEnabled) throw new ApiError(404, 'Route not found.');
       // This header selects a SERVER-DEFINED test identity, not caller-provided roles.
       // It is deliberately not production authentication and only runs on loopback.
       const id = req.headers['x-demo-identity'];
       const actor = workflow.authenticate(typeof id === 'string' ? id : undefined);
+      if (salesCrmRequest) return send(res, 200, getSalesCrmWorkspace(actor, req.method, path));
       if (req.method === 'GET' && path === '/api/workspace') return send(res, 200, workflow.workspace(actor));
       const invoiceMatch = /^\/api\/invoices\/([a-z0-9-]+)$/.exec(path);
       if (req.method === 'GET' && invoiceMatch) return send(res, 200, workflow.getInvoice(actor, invoiceMatch[1]));
