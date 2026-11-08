@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { demoEvents } from '../shared/contracts';
 import { isSalesCrmEnabled } from '../shared/sales-crm';
 import { getSalesCrmWorkspace, isSalesCrmApiPath } from './sales-crm/routes';
+import { handleZohoManagement, isZohoManagementPath, type ZohoManagement } from './sales-crm/zoho/routes';
 import { ApiError, Workflow } from './workflow';
 
 const releaseSchema = z.object({
@@ -23,7 +24,7 @@ function send(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
   res.end(JSON.stringify(data));
 }
-export function createApi(workflow = new Workflow()) {
+export function createApi(workflow = new Workflow(), zoho?: ZohoManagement) {
   const salesCrmEnabled = isSalesCrmEnabled(process.env);
   return createServer(async (req, res) => {
     try {
@@ -31,8 +32,14 @@ export function createApi(workflow = new Workflow()) {
       if (!['127.0.0.1', 'localhost', '[::1]'].includes(host.hostname)) throw new ApiError(403, 'Local host required.');
       if (req.headers.origin && !['http://127.0.0.1:5173', 'http://localhost:5173', 'http://127.0.0.1:3001'].includes(req.headers.origin))
         throw new ApiError(403, 'Local demo origin required.');
-      const path = new URL(req.url ?? '/', host).pathname;
+      const url = new URL(req.url ?? '/', host);
+      const path = url.pathname;
       if (path === '/api/health' && req.method === 'GET') return send(res, 200, { status: 'local-fixture-only' });
+      if (isZohoManagementPath(path)) {
+        if (!salesCrmEnabled || !zoho) throw new ApiError(404, 'Route not found.');
+        await handleZohoManagement(req, res, url, workflow, zoho);
+        return;
+      }
       const salesCrmRequest = isSalesCrmApiPath(path);
       if (salesCrmRequest && !salesCrmEnabled) throw new ApiError(404, 'Route not found.');
       // This header selects a SERVER-DEFINED test identity, not caller-provided roles.

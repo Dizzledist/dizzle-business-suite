@@ -132,3 +132,13 @@ Next safe shared foundation step:
 - **Schema and environment:** No schema changes, dependency changes, or new runtime configuration. SALES_CRM_ENABLED continues to guard the local CRM.
 - **External actions:** Read public Zoho docs. Installed the existing lockfile from local cache and ran tests with synthetic data. Work is local.
 - **Decision and next task:** M5 remains blocked. Validate first-success evidence, revisions and supported history in a separately approved sandbox. Confirm the timezone, credit mapping and adjustment policy before durable reporting or live reads.
+
+## Session 2026-11-07 / Codex: Zoho Inventory read-only OAuth
+
+- **Task and lead:** Prompt #5 authorized a secure local backend with mocked verification. Codex performed the scoped work. Shared security and sales review precede live activation.
+- **Starting reference:** Clean reporting branch at `9c336ea9395b49ebd736589e1c1d639848ef30af`. Isolated checkout on `feature/zoho-readonly-integration`. Running localhost remains on the foundation checkout.
+- **Changes:** OAuth code exchange and refresh, local operator authorization, secure refresh store, fixed organization and GET allowlist, and an explicitly initiated one-record-per-resource sample. CRM settings stay fixture-only. Existing C1–C5 behavior is preserved. See the [setup guide](ZOHO_READONLY_OAUTH.md).
+- **Checks:** Baseline passed 76 Vitest tests, typecheck, build and Chromium four disabled/eight enabled. Branch passed 106 Vitest tests, typecheck, build and the same Chromium counts on isolated ports. Lint is unconfigured.
+- **Schema and environment:** No migrations or dependency changes. Example configuration documents SALES_CRM_ENABLED, ZOHO_ENABLED, ZOHO_ORGANIZATION_ID, ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET, ZOHO_REDIRECT_URI, ZOHO_ACCOUNTS_URL, ZOHO_API_BASE_URL, ZOHO_LOCAL_ADMIN_KEY, ZOHO_TOKEN_ENCRYPTION_KEY and ZOHO_TOKEN_STORE_PATH.
+- **External actions:** Read official public documentation and ran synthetic tests. No live grants, reads, or writes were executed.
+- **Next:** Owner rotates the exposed credential and confirms Console region and redirect. Run the separately approved limited connection test. Sales manager reviews existing historical email evidence before authorizing financial reports.

@@ -1,11 +1,13 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 import { z } from 'zod';
 import { invoiceDetail, invoiceHistory, invoicePage, mirrorInvoice, zohoId } from './invoice';
+import { inventoryOrigin, inventoryRegions, type InventoryRegion } from './config';
+import { contactDetail, contactPage, invoicePayments, itemDetail, itemPage, organizations } from './records';
 
-const regions = ['com', 'eu', 'in', 'com.au', 'jp', 'ca', 'com.cn', 'sa'] as const;
 const envelope = z.object({ code: z.number() });
 const maxRetries = 2;
 const maxRetryDelayMs = 30_000;
+const allowedReadPath = /^\/(?:organizations|contacts(?:\/[1-9]\d*)?|items(?:\/[1-9]\d*)?|invoices(?:\/[1-9]\d*(?:\/(?:comments|payments))?)?)$/;
 
 export type ZohoReadFailure = 'authorization' | 'rate-limited' | 'unavailable' |
   'rejected' | 'not-found' | 'invalid-response' | 'scan-limit';
@@ -18,7 +20,7 @@ export class ZohoReadError extends Error {
 }
 
 interface ReaderOptions {
-  region: typeof regions[number];
+  region: InventoryRegion;
   organizationId: string;
   transport: typeof fetch;
   accessToken: (forceRefresh: boolean) => Promise<string>;
@@ -38,11 +40,11 @@ function retryAfter(header: string | null) {
   return Number.isFinite(date) ? Math.max(0, date - Date.now()) : 0;
 }
 
-export function createZohoInvoiceReader(options: ReaderOptions) {
+export function createZohoInventoryReader(options: ReaderOptions) {
   const organizationId = checkedId(options.organizationId);
-  if (!regions.includes(options.region)) throw new ZohoReadError('rejected');
+  if (!inventoryRegions.includes(options.region)) throw new ZohoReadError('rejected');
 
-  const origin = 'https://www.zohoapis.' + options.region;
+  const origin = inventoryOrigin(options.region);
   const wait = options.wait ?? sleep;
 
   async function accessToken(forceRefresh: boolean) {
@@ -56,8 +58,9 @@ export function createZohoInvoiceReader(options: ReaderOptions) {
   }
 
   async function read<T>(path: string, schema: z.ZodType<T>, query: Record<string, string> = {}): Promise<T> {
-    const url = new URL('/inventory/v1/invoices' + path, origin);
-    url.search = new URLSearchParams({ ...query, organization_id: organizationId }).toString();
+    if (!allowedReadPath.test(path)) throw new ZohoReadError('rejected');
+    const url = new URL('/inventory/v1' + path, origin);
+    url.search = new URLSearchParams(path === '/organizations' ? {} : { ...query, organization_id: organizationId }).toString();
     let token = await accessToken(false);
     let refreshed = false;
     let retries = 0;
@@ -107,27 +110,74 @@ export function createZohoInvoiceReader(options: ReaderOptions) {
     }
   }
 
+  function pagination(page: number, perPage: number) {
+    if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(perPage) || perPage < 1 || perPage > 200) {
+      throw new ZohoReadError('rejected');
+    }
+    return { page: String(page), per_page: String(perPage) };
+  }
+
+  function hasMore(context: { page: number; has_more_page: boolean }, page: number, perPage: number, length: number) {
+    if (context.page !== page || length > perPage || (context.has_more_page && length === 0)) {
+      throw new ZohoReadError('invalid-response');
+    }
+    return context.has_more_page;
+  }
+
   return {
     organizationId,
-    async listInvoicePage(page: number) {
-      if (!Number.isSafeInteger(page) || page < 1) throw new ZohoReadError('rejected');
-      const result = await read('', invoicePage, { page: String(page), per_page: '200', filter_by: 'Status.All' });
-      if (result.page_context.page !== page || (result.page_context.has_more_page && !result.invoices.length)) {
-        throw new ZohoReadError('invalid-response');
-      }
-      return { invoiceIds: result.invoices.map(row => row.invoice_id), hasMore: result.page_context.has_more_page };
+    async getOrganization() {
+      const result = await read('/organizations', organizations);
+      const organization = result.organizations.find(row => row.organization_id === organizationId);
+      if (!organization || organization.is_org_active === false) throw new ZohoReadError('not-found');
+      return { id: organization.organization_id, name: organization.name };
+    },
+    async listContacts(page: number, perPage = 200) {
+      const result = await read('/contacts', contactPage, { ...pagination(page, perPage), contact_type: 'customer' });
+      return { contacts: result.contacts, hasMore: hasMore(result.page_context, page, perPage, result.contacts.length) };
+    },
+    async getContact(contactId: string) {
+      const id = checkedId(contactId);
+      const { contact } = await read('/contacts/' + id, contactDetail);
+      if (contact.contact_id !== id) throw new ZohoReadError('invalid-response');
+      return contact;
+    },
+    async listItems(page: number, perPage = 200) {
+      const result = await read('/items', itemPage, pagination(page, perPage));
+      return { items: result.items, hasMore: hasMore(result.page_context, page, perPage, result.items.length) };
+    },
+    async getItem(itemId: string) {
+      const id = checkedId(itemId);
+      const { item } = await read('/items/' + id, itemDetail);
+      if (item.item_id !== id) throw new ZohoReadError('invalid-response');
+      return item;
+    },
+    async listInvoicePage(page: number, perPage = 200) {
+      const result = await read('/invoices', invoicePage, { ...pagination(page, perPage), filter_by: 'Status.All' });
+      return {
+        invoiceIds: result.invoices.map(row => row.invoice_id),
+        hasMore: hasMore(result.page_context, page, perPage, result.invoices.length),
+      };
     },
     async getInvoice(invoiceId: string) {
       const id = checkedId(invoiceId);
-      const { invoice } = await read('/' + id, invoiceDetail);
+      const { invoice } = await read('/invoices/' + id, invoiceDetail);
       if (invoice.invoice_id !== id || (invoice.organization_id && invoice.organization_id !== organizationId)) {
         throw new ZohoReadError('invalid-response');
       }
       return mirrorInvoice(organizationId, invoice);
     },
+    async getInvoicePayments(invoiceId: string) {
+      const id = checkedId(invoiceId);
+      const { payments } = await read('/invoices/' + id + '/payments', invoicePayments);
+      if (payments.some(payment => payment.invoice_id && payment.invoice_id !== id)) {
+        throw new ZohoReadError('invalid-response');
+      }
+      return payments;
+    },
     async getInvoiceHistory(invoiceId: string) {
       const id = checkedId(invoiceId);
-      const { comments } = await read('/' + id + '/comments', invoiceHistory);
+      const { comments } = await read('/invoices/' + id + '/comments', invoiceHistory);
       if (comments.some(event => event.invoice_id && event.invoice_id !== id)) {
         throw new ZohoReadError('invalid-response');
       }
@@ -136,4 +186,6 @@ export function createZohoInvoiceReader(options: ReaderOptions) {
   };
 }
 
-export type ZohoInvoiceReader = ReturnType<typeof createZohoInvoiceReader>;
+export const createZohoInvoiceReader = createZohoInventoryReader;
+export type ZohoInvoiceReader = Pick<ReturnType<typeof createZohoInventoryReader>,
+  'organizationId' | 'listInvoicePage' | 'getInvoice' | 'getInvoiceHistory'>;

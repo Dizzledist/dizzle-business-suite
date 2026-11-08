@@ -2,6 +2,15 @@
 
 Updated: November 7, 2026 (America/Los_Angeles).
 
+## Zoho Inventory read-only OAuth · November 7
+
+Prompt #5 adds a mock-verified local OAuth backend on **feature/zoho-readonly-integration**, based on clean reporting commit `9c336ea`. See the [local setup and security guide](ZOHO_READONLY_OAUTH.md).
+
+- Fixed four read scopes, the organization boundary, server-side state and PKCE, encrypted refresh-grant storage, and a GET-only Inventory allowlist. Admin management uses the existing fixture role plus a separate local operator key. Live credentials and authorization are pending explicit approval.
+- Default app routes, CRM UI and invoice-to-warehouse behavior are preserved. The default server does not contact Zoho. A bounded sample is available as a separately initiated local admin command.
+- Baseline passed 76 Vitest tests, typecheck, build, and Chromium counts of four disabled and eight enabled. The branch passed 106 Vitest tests, typecheck, build, and the same Chromium counts. Lint is unconfigured. No live OAuth or data reads ran.
+- Next steps are to rotate the exposed client secret, confirm the Console region and callback, and approve the limited connection and sample. M5 remains blocked on historical first-email evidence.
+
 ## Zoho Inventory sales reporting · November 7
 
 Master Prompt #4 authorizes read-only preparation on **feature/sales-crm-zoho-reporting**, based on clean CRM foundation commit `ebfe961`. **M5 is blocked on verified first-email evidence.** The [Zoho reporting guide](SALES_CRM_ZOHO_REPORTING.md) records the evidence gap, scope, tested checklist, and sandbox plan.

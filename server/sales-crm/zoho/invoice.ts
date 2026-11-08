@@ -5,12 +5,12 @@ export const zohoId = z.union([
   z.number().int().positive().refine(Number.isSafeInteger).transform(String),
 ]);
 
-const optionalId = z.union([zohoId, z.string().trim().length(0).transform(() => null)])
+export const optionalId = z.union([zohoId, z.string().trim().length(0).transform(() => null)])
   .nullish().transform(value => value ?? null);
-const optionalText = z.string().trim().nullish().transform(value => value || null);
+export const optionalText = z.string().trim().nullish().transform(value => value || null);
 const decimal = z.union([z.string().trim(), z.number().transform(String)])
   .pipe(z.string().regex(/^-?\d+(?:\.\d+)?$/));
-const optionalDecimal = z.union([decimal, z.string().trim().length(0).transform(() => null)])
+export const optionalDecimal = z.union([decimal, z.string().trim().length(0).transform(() => null)])
   .nullish().transform(value => value ?? null);
 
 export const invoicePage = z.object({
