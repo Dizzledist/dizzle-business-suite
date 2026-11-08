@@ -2,6 +2,15 @@
 
 Updated: November 7, 2026 (America/Los_Angeles).
 
+## Sales CRM reporting preview · November 7
+
+Prompt #7 and its calendar addendum authorize durable synthetic invoice reporting on **feature/sales-crm-reporting**, based on approved OAuth commit 8769fec. The preceding bounded live verification confirmed the organization and refresh grant. This reporting phase uses synthetic data and mocked Zoho reads. See the [reporting guide](SALES_CRM_REPORTING.md).
+
+- Tested SQLite persistence, exact per-currency amounts, first-email evidence states, historical credit, bounded initial sync, incremental replay, retry recovery, and scoped reporting APIs.
+- Dashboard and invoice reports share 14 date choices, default Month to Date, and retain their range across drill-down. The operator endpoint reports the existing OAuth status alongside synthetic sync counts when locally configured.
+- TypeScript, build, and 171 Vitest tests passed. Chromium passed 4 tests with Sales CRM disabled and 9 enabled on isolated loopback ports, including the original warehouse workflows in both modes. Lint is unconfigured.
+- **M5 remains blocked.** First-success history and original invoice revisions need approved verification. Live browser data requires trusted authentication and production authorization. The local preview earns no production milestone credit.
+
 ## Zoho Inventory read-only OAuth · November 7
 
 Prompt #5 adds a mock-verified local OAuth backend on **feature/zoho-readonly-integration**, based on clean reporting commit `9c336ea`. See the [local setup and security guide](ZOHO_READONLY_OAUTH.md).

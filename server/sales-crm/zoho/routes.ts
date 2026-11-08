@@ -16,9 +16,7 @@ export function isZohoManagementPath(path: string) {
   return path === zohoIntegrationPath || path.startsWith(zohoIntegrationPath + '/');
 }
 
-function admin(req: IncomingMessage, workflow: Workflow, key: Buffer) {
-  const identity = req.headers['x-demo-identity'];
-  const actor = workflow.authenticate(typeof identity === 'string' ? identity : undefined);
+export function requireZohoOperator(req: IncomingMessage, actor: ReturnType<Workflow['authenticate']>, key: Buffer) {
   const supplied = req.headers['x-zoho-local-admin-key'];
   if (req.headers.origin || !canAccessSalesCrm(actor) || !actor.roles.includes('admin') ||
       typeof supplied !== 'string' || !/^[0-9a-f]{64}$/i.test(supplied) ||
@@ -82,7 +80,9 @@ export async function handleZohoManagement(
     const authorize = req.method === 'POST' && route === '/authorize';
     const sample = req.method === 'POST' && route === '/sample';
     if (!status && !authorize && !sample) throw new ApiError(404, 'Route not found.');
-    admin(req, workflow, config.adminKey);
+    const identity = req.headers['x-demo-identity'];
+    const actor = workflow.authenticate(typeof identity === 'string' ? identity : undefined);
+    requireZohoOperator(req, actor, config.adminKey);
     if (url.search || req.headers['transfer-encoding'] || Number(req.headers['content-length'] ?? 0) !== 0) {
       throw new ApiError(400, 'This Zoho operation accepts no inputs.');
     }

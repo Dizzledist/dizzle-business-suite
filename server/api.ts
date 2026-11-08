@@ -5,6 +5,9 @@ import { isSalesCrmEnabled } from '../shared/sales-crm';
 import { getSalesCrmWorkspace, isSalesCrmApiPath } from './sales-crm/routes';
 import { handleZohoManagement, isZohoManagementPath, type ZohoManagement } from './sales-crm/zoho/routes';
 import { ApiError, Workflow } from './workflow';
+import { reportingApi } from '../shared/reporting';
+import { getReporting } from './sales-crm/reporting/routes';
+import type { SyntheticReporting } from './sales-crm/reporting/demo';
 
 const releaseSchema = z.object({
   reason: z.string().trim().min(1).max(500), termsId: z.string().min(1).max(100),
@@ -24,7 +27,7 @@ function send(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
   res.end(JSON.stringify(data));
 }
-export function createApi(workflow = new Workflow(), zoho?: ZohoManagement) {
+export function createApi(workflow = new Workflow(), zoho?: ZohoManagement, reporting?: SyntheticReporting) {
   const salesCrmEnabled = isSalesCrmEnabled(process.env);
   return createServer(async (req, res) => {
     try {
@@ -46,6 +49,9 @@ export function createApi(workflow = new Workflow(), zoho?: ZohoManagement) {
       // It is deliberately not production authentication and only runs on loopback.
       const id = req.headers['x-demo-identity'];
       const actor = workflow.authenticate(typeof id === 'string' ? id : undefined);
+      if (path === reportingApi || path.startsWith(reportingApi + '/')) {
+        return send(res, 200, await getReporting(actor, req, url, reporting, zoho));
+      }
       if (salesCrmRequest) return send(res, 200, getSalesCrmWorkspace(actor, req.method, path));
       if (req.method === 'GET' && path === '/api/workspace') return send(res, 200, workflow.workspace(actor));
       const invoiceMatch = /^\/api\/invoices\/([a-z0-9-]+)$/.exec(path);

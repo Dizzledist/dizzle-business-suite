@@ -1,22 +1,16 @@
-import { salesCrmPath } from '../../shared/sales-crm';
-
-const invoiceReportingPath = salesCrmPath + '/reports#invoice-reporting';
-
 const groups = [
   {
     title: 'Performance',
     cards: [
-      { title: 'Monthly Sales', status: 'Not configured', detail: 'Waiting for verified first-email evidence.', href: invoiceReportingPath },
-      { title: 'Monthly Commission', status: 'Coming Soon', detail: 'Commission calculation coming soon.' },
-      { title: 'Monthly Invoices', status: 'Not configured', detail: 'Verified invoice data will appear here.', href: invoiceReportingPath },
+      { title: 'Monthly Commission', status: 'Coming Soon', detail: 'Commission Calculation Coming Soon' },
       { title: 'New Customers', status: 'No data yet', detail: 'Customer records are pending.' },
     ],
   },
   {
     title: 'Goal Tracking',
     cards: [
-      { title: 'Weekly Goal', status: 'Not configured', detail: 'Weekly goal tracking is pending.' },
-      { title: 'Monthly Goal', status: 'Not configured', detail: 'Monthly goal tracking is pending.' },
+      { title: 'Weekly Sales Goal', status: 'Not configured', detail: 'Weekly goal tracking is pending.' },
+      { title: 'Monthly Sales Goal', status: 'Not configured', detail: 'Monthly goal tracking is pending.' },
     ],
   },
   {
@@ -24,7 +18,7 @@ const groups = [
     cards: [
       { title: 'Today’s Follow-Ups', status: 'No data yet', detail: 'Follow-up tracking is pending.' },
       { title: 'Overdue Follow-Ups', status: 'No data yet', detail: 'Overdue tasks will appear here.' },
-      { title: 'AI Recommended Actions', status: 'Coming Soon', detail: 'Recommendations are pending.' },
+      { title: 'AI Sales Recommendations', status: 'Coming Soon', detail: 'Recommendations are pending.' },
     ],
   },
   {
@@ -33,20 +27,18 @@ const groups = [
       { title: 'Sales Pipeline', status: 'No data yet', detail: 'Pipeline records are pending.' },
       { title: 'Reorder Opportunities', status: 'Not configured', detail: 'Verified purchase history is pending.' },
       { title: 'At-Risk Customers', status: 'Not configured', detail: 'Customer activity data is pending.' },
-      { title: 'Sales Trends', status: 'Not configured', detail: 'Verified sales history is pending.' },
     ],
   },
 ];
 
-export function DashboardCard({ title, status, detail, href }: {
-  title: string; status: string; detail: string; href?: string;
+export function DashboardCard({ title, status, detail }: {
+  title: string; status: string; detail: string;
 }) {
   return (
     <article className="panel sales-crm-card">
       <h3>{title}</h3>
       <strong>{status}</strong>
       <p>{detail}</p>
-      {href && <a className="sales-crm-link" href={href} aria-label={title + ' reporting status'}>Reporting status</a>}
     </article>
   );
 }

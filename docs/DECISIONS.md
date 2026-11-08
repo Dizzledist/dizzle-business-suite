@@ -95,3 +95,9 @@ Source: user's explicit request to build the local invoice-to-warehouse demo aft
 | L05 | HTTP integration tests + Playwright Chromium user flows; PR Actions run typecheck/tests/build/browser checks | No deployment permissions or live credentials; approved acceptance specs have only the scoped coverage documented in LOCAL_DEMO |
 
 See [LOCAL_DEMO](LOCAL_DEMO.md) for reproducible behavior and [CONTRACTS](CONTRACTS.md) for consumer boundaries. Owner/admin and sales manager release permissions remain distinct from fixture simulation grants; price lists, COAs and marketing are outside this branch.
+
+## Prompt #7 reporting decisions, November 7, 2026
+
+The user's Prompt #7 and calendar addendum authorize the local durable synthetic reporting slice. They make the first verified successful Zoho email instant the recognition date, the original subtotal the sales amount, and the captured salesperson the historical credit. Monday-based weeks, the configured business timezone, Month to Date default, and inclusive custom calendar days apply across the dashboard and invoice report. These rules supersede the earlier placeholder-only reporting stage. The provider proof, settlement exceptions and production security gates remain open.
+
+The local SQLite store and 366-day custom limit are implementation choices. The preview uses America/Los_Angeles unless a reporting timezone is supplied. The proposed production path uses PostgreSQL and genuine server-verified identity. The user reserved live sync and invoice-history reads for separate approval. [Reporting guide](SALES_CRM_REPORTING.md)

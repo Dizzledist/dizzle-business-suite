@@ -142,3 +142,12 @@ Next safe shared foundation step:
 - **Schema and environment:** No migrations or dependency changes. Example configuration documents SALES_CRM_ENABLED, ZOHO_ENABLED, ZOHO_ORGANIZATION_ID, ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET, ZOHO_REDIRECT_URI, ZOHO_ACCOUNTS_URL, ZOHO_API_BASE_URL, ZOHO_LOCAL_ADMIN_KEY, ZOHO_TOKEN_ENCRYPTION_KEY and ZOHO_TOKEN_STORE_PATH.
 - **External actions:** Read official public documentation and ran synthetic tests. No live grants, reads, or writes were executed.
 - **Next:** Owner rotates the exposed credential and confirms Console region and redirect. Run the separately approved limited connection test. Sales manager reviews existing historical email evidence before authorizing financial reports.
+
+## Session 2026-11-07 / Codex: Durable Sales CRM reporting preview
+
+- **Task and lead** · Codex implemented the scoped local reporting module from Prompt #7 and its calendar addendum. Sales manager, owner and the shared foundation reviewer own business acceptance.
+- **Git reference** · feature/sales-crm-reporting, based on approved OAuth commit 8769fec. The feature worktree isolates this scope from the original running Zoho checkout.
+- **Contracts and schema** · Versioned synthetic SQLite migration, organization-scoped invoice mirror, rep mapping, sync state and queue. Browser reporting reads fixture data through the existing local identity mechanism. The status endpoint reuses the private Zoho operator gate. See the [reporting guide](SALES_CRM_REPORTING.md).
+- **Checks** · TypeScript, build, 171 Vitest tests, Chromium 4 disabled and 9 enabled, including the original warehouse suite in each mode. Chromium used isolated loopback ports. Lint is unconfigured.
+- **External actions** · Consulted official Zoho documentation. Development used synthetic data and mocked provider transport. Live import, invoice history, GitHub publication and deployment are separate actions.
+- **Open work** · Approve genuine authentication and production database migration. Separately authorize a restricted invoice history verification against known sends and original revisions. Confirm settlement exceptions, attribution and business timezone, then reconcile a bounded import before enabling live reports. M5 remains blocked.

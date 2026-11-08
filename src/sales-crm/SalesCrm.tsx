@@ -3,6 +3,7 @@ import { salesCrmApiWorkspace, salesCrmPath, type SalesCrmWorkspace } from '../.
 import { readDemoIdentity } from './access';
 import { Dashboard, DashboardCard } from './Dashboard';
 import { sections } from './sections';
+import { SalesReporting } from './Reporting';
 
 type Access =
   | { status: 'loading' }
@@ -78,6 +79,7 @@ function Workspace({ section }: { section: typeof sections[number] }) {
   const { displayName, integrations } = access.workspace;
   const dashboard = section.path === salesCrmPath;
   const settings = section.path === salesCrmPath + '/settings';
+  const reports = section.path === salesCrmPath + '/reports';
 
   return (
     <div className="sales-crm-shell">
@@ -97,16 +99,10 @@ function Workspace({ section }: { section: typeof sections[number] }) {
         <header className="sales-crm-header">
           <p className="eyebrow">LOCAL DEVELOPMENT</p>
           <h1>{dashboard ? 'Sales Dashboard' : section.label}</h1>
-          <p>Viewing as {displayName}. This workspace contains development placeholders.</p>
+          <p>Viewing as {displayName}. This local workspace uses synthetic data.</p>
         </header>
+        {(dashboard || reports) && <SalesReporting dashboard={dashboard} />}
         {dashboard && <Dashboard />}
-        {section.path === salesCrmPath + '/reports' && (
-          <section id="invoice-reporting" className="panel sales-crm-card" aria-labelledby="invoice-reporting-title">
-            <h2 id="invoice-reporting-title">Invoice reporting</h2>
-            <p>Waiting for verified first-email timestamps from Zoho Inventory.</p>
-            <p>Last successful sync: None recorded.</p>
-          </section>
-        )}
         {settings && (
           <section className="sales-crm-group" aria-label="Integrations">
             <h2>Integrations</h2>
@@ -116,7 +112,7 @@ function Workspace({ section }: { section: typeof sections[number] }) {
             </div>
           </section>
         )}
-        {!dashboard && (
+        {!dashboard && !reports && (
           <section className="panel sales-crm-card">
             <h2>Development placeholder</h2>
             <p>{section.label} functionality is planned for a future phase.</p>
