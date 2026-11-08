@@ -3,6 +3,7 @@ import type { SalesSessionView } from '../../shared/sales-auth';
 import { salesCrmApiWorkspace, salesCrmPath, type SalesCrmWorkspace } from '../../shared/sales-crm';
 import { requestSales, salesCrmSessionEnabled } from './access';
 import { CompanyAccess, UserDirectory } from './CompanyAccess';
+import { AccountPassword } from './PasswordAccess';
 import { Dashboard, DashboardCard } from './Dashboard';
 import { sections } from './sections';
 import { SalesReporting } from './Reporting';
@@ -15,6 +16,7 @@ type Access =
 
 const integrationStatus = { 'not-configured': 'Not configured' };
 const userSection = { path: salesCrmPath + '/users', label: 'User management', icon: '◎' };
+const accountSection = { path: salesCrmPath + '/account', label: 'Account settings', icon: '⚙' };
 
 function Notice({ heading }: { heading: string }) {
   return (
@@ -77,8 +79,11 @@ function Workspace({ section, session, controls }: {
   const settings = section.path === salesCrmPath + '/settings';
   const reports = section.path === salesCrmPath + '/reports';
   const users = section.path === userSection.path;
-  const navigation = !session ? sections : session.role === 'admin' ? [...sections, userSection]
+  const account = section.path === accountSection.path;
+  const standardNavigation = !session ? sections : session.role === 'admin' ? [...sections, userSection]
     : sections.filter(item => item.path !== salesCrmPath + '/settings');
+  const navigation = session?.email ? [...standardNavigation, accountSection] : standardNavigation;
+  if (account && !session?.email) return <Notice heading="Account settings unavailable" />;
   if (session && session.role !== 'admin' && (settings || users)) return <Notice heading="Administrator access required" />;
 
   return (
@@ -113,8 +118,9 @@ function Workspace({ section, session, controls }: {
             </div>
           </section>
         )}
-        {users && <UserDirectory />}
-        {!dashboard && !reports && !users && (
+        {users && session && <UserDirectory session={session} />}
+        {account && session && <AccountPassword session={session} />}
+        {!dashboard && !reports && !users && !account && (
           <section className="panel sales-crm-card">
             <h2>Development placeholder</h2>
             <p>{section.label} functionality is planned for a future phase.</p>
@@ -128,7 +134,7 @@ function Workspace({ section, session, controls }: {
 export default function SalesCrm() {
   const path = window.location.pathname.replace(/\/$/, '');
   const section = sections.find(item => item.path === path) ??
-    (salesCrmSessionEnabled && path === userSection.path ? userSection : undefined);
+    (salesCrmSessionEnabled ? [userSection, accountSection].find(item => item.path === path) : undefined);
   if (!section) return <Notice heading="Page unavailable" />;
   if (!salesCrmSessionEnabled) return <Workspace section={section} />;
   return <CompanyAccess>{(session, controls) => <Workspace section={section} session={session} controls={controls} />}</CompanyAccess>;

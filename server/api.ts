@@ -1,8 +1,12 @@
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { createServer, type ServerResponse } from 'node:http';
 import { z } from 'zod';
 import { demoEvents } from '../shared/contracts';
 import { isLocalFixtureEnabled, isSalesCrmEnabled } from '../shared/sales-crm';
-import { isSalesAuthEnabled } from '../shared/sales-auth';
+import { isSalesAuthEnabled, isSalesPasswordEnabled } from '../shared/sales-auth';
+import { localPorts, type LocalPorts } from '../shared/local-ports';
+import { readJsonBody } from './http-body';
+import { handlePublicPassword, isPublicPasswordPath } from './sales-crm/auth/password-routes';
+import type { PasswordAuth } from './sales-crm/auth/passwords';
 import { getAuthenticatedSalesCrm } from './sales-crm/auth/routes';
 import type { SalesIdentityStore } from './sales-crm/auth/store';
 import { getSalesCrmWorkspace, isSalesCrmApiPath } from './sales-crm/routes';
@@ -17,30 +21,26 @@ const releaseSchema = z.object({
   requestKey: z.string().min(1).max(150), expectedRevision: z.number().int().positive(),
 }).strict();
 const eventSchema = z.object({ event: z.enum(demoEvents) }).strict();
-async function body(req: IncomingMessage): Promise<unknown> {
-  if (!req.headers['content-type']?.startsWith('application/json')) throw new ApiError(415, 'JSON body required.');
-  let content = '';
-  for await (const chunk of req) {
-    content += String(chunk);
-    if (Buffer.byteLength(content) > 16_384) throw new ApiError(413, 'Request too large.');
-  }
-  try { return JSON.parse(content); } catch { throw new ApiError(400, 'Invalid JSON.'); }
-}
 function send(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
   res.end(JSON.stringify(data));
 }
 export function createApi(
   workflow = new Workflow(), zoho?: ZohoManagement, reporting?: SyntheticReporting, salesIdentity?: SalesIdentityStore,
+  options: { passwords?: PasswordAuth; ports?: LocalPorts } = {},
 ) {
+  const { web, api } = options.ports ?? localPorts(process.env);
+  const origins = ['http://127.0.0.1:' + web, 'http://localhost:' + web, 'http://127.0.0.1:' + api];
   const salesCrmEnabled = isSalesCrmEnabled(process.env);
   const salesAuthEnabled = isSalesAuthEnabled(process.env);
+  const passwordMode = isSalesPasswordEnabled(process.env);
+  const passwords = passwordMode ? options.passwords : undefined;
   const fixtureEnabled = isLocalFixtureEnabled(process.env);
   return createServer(async (req, res) => {
     try {
       const host = new URL(`http://${req.headers.host ?? ''}`);
       if (!['127.0.0.1', 'localhost', '[::1]'].includes(host.hostname)) throw new ApiError(403, 'Local host required.');
-      if (req.headers.origin && !['http://127.0.0.1:5173', 'http://localhost:5173', 'http://127.0.0.1:3001'].includes(req.headers.origin))
+      if (req.headers.origin && !origins.includes(req.headers.origin))
         throw new ApiError(403, 'Local demo origin required.');
       const url = new URL(req.url ?? '/', host);
       const path = url.pathname;
@@ -53,7 +53,10 @@ export function createApi(
       const salesCrmRequest = isSalesCrmApiPath(path);
       if (salesCrmRequest) {
         if (!salesCrmEnabled) throw new ApiError(404, 'Route not found.');
-        if (salesAuthEnabled) return send(res, 200, getAuthenticatedSalesCrm(req, res, url, salesIdentity, reporting));
+        if (salesAuthEnabled) {
+          if (isPublicPasswordPath(path)) return send(res, 200, await handlePublicPassword(req, res, url, passwords, origins));
+          return send(res, 200, await getAuthenticatedSalesCrm(req, res, url, salesIdentity, reporting, origins, passwordMode, passwords));
+        }
       }
       if (!fixtureEnabled) throw new ApiError(404, 'Route not found.');
       // This header selects a SERVER-DEFINED test identity, not caller-provided roles.
@@ -71,12 +74,12 @@ export function createApi(
       if (req.method === 'GET' && jobMatch) return send(res, 200, workflow.getJob(actor, jobMatch[1]));
       const releaseMatch = /^\/api\/invoices\/([a-z0-9-]+)\/release$/.exec(path);
       if (req.method === 'POST' && releaseMatch) {
-        const result = workflow.release(actor, releaseMatch[1], releaseSchema.parse(await body(req)));
+        const result = workflow.release(actor, releaseMatch[1], releaseSchema.parse(await readJsonBody(req)));
         return send(res, result.created ? 201 : 200, result);
       }
       const eventMatch = /^\/api\/demo\/invoices\/([a-z0-9-]+)\/events$/.exec(path);
       if (req.method === 'POST' && eventMatch) {
-        const { event } = eventSchema.parse(await body(req));
+        const { event } = eventSchema.parse(await readJsonBody(req));
         return send(res, 200, workflow.simulate(actor, eventMatch[1], event));
       }
       if (req.method === 'POST' && path === '/api/demo/reset') {

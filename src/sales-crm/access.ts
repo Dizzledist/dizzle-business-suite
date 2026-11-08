@@ -1,4 +1,4 @@
-import { salesAuthApi } from '../../shared/sales-auth';
+import { passwordAuthApi, salesAuthApi } from '../../shared/sales-auth';
 
 export const salesCrmDevEnabled = import.meta.env.SALES_CRM_ENABLED === true;
 export const salesCrmSessionEnabled = import.meta.env.SALES_CRM_AUTH_ENABLED === true;
@@ -31,7 +31,8 @@ export async function requestSales(path: string, options: RequestInit = {}) {
     if (identity) headers.set('X-Demo-Identity', identity);
   }
   const response = await fetch(path, { ...options, headers, credentials: 'same-origin', cache: 'no-store' });
-  if (salesCrmSessionEnabled && response.status === 401 && path !== salesAuthApi + '/session' && !options.signal?.aborted) {
+  if (salesCrmSessionEnabled && response.status === 401 && path !== salesAuthApi + '/session' &&
+      path !== passwordAuthApi + '/login' && !options.signal?.aborted) {
     window.dispatchEvent(new Event(sessionEndedEvent));
   }
   return response;

@@ -1,6 +1,14 @@
 # Project status
 
-Updated: November 7, 2026 (America/Los_Angeles).
+Updated: November 8, 2026 (America/Los_Angeles).
+
+## Sales CRM email and password sign-in · November 8
+
+The corrective prompt authorizes company email and password sign-in on **feature/sales-crm-email-password**, based on authentication commit 680e432. Google OIDC is deferred on its separate branch at ac9d842. See the [local password guide](SALES_CRM_EMAIL_PASSWORD.md).
+
+- The existing CRM identity database and session boundary now support Argon2id credentials, administrator-approved enrollment, single-use setup and reset codes, password changes, and session revocation. The employee directory shows pending reset requests and credential status.
+- TypeScript, the build, 202 Vitest tests, and Chromium counts of 4 disabled, 9 fixture CRM, 7 session-only, and 5 password checks passed. The npm production dependency audit reported zero vulnerabilities. The production bundle excludes fixture identity and synthetic accounts.
+- **M1 remains in progress.** The local pilot requires first-administrator setup and real employee acceptance. Reset and setup codes support manual handoff; automated email delivery is pending. Browser reporting remains synthetic and the original Zoho operator service stays read-only.
 
 ## Sales CRM authentication foundation · November 7
 

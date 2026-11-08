@@ -1,40 +1,51 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { salesAuthApi, type SalesSessionView } from '../../../shared/sales-auth';
+import { passwordAuthApi, salesAuthApi, type SalesSessionView } from '../../../shared/sales-auth';
 import { reportingApi } from '../../../shared/reporting';
 import { salesCrmApiWorkspace } from '../../../shared/sales-crm';
 import { ApiError } from '../../workflow';
 import type { SyntheticReporting } from '../reporting/demo';
 import { getScopedReporting } from '../reporting/routes';
 import type { SalesIdentityStore } from './store';
-import { csrfToken, hasLogoutProtection, requestSession, sessionCookie } from './sessions';
+import { csrfToken, hasSessionMutationProtection, requestSession, sessionCookie } from './sessions';
+import { changeOwnPassword, managePasswordEmployee } from './password-routes';
+import type { PasswordAuth } from './passwords';
 
-export function getAuthenticatedSalesCrm(
+export async function getAuthenticatedSalesCrm(
   req: IncomingMessage, res: ServerResponse, url: URL, identity: SalesIdentityStore | undefined,
-  reporting: SyntheticReporting | undefined,
+  reporting: SyntheticReporting | undefined, origins: readonly string[],
+  passwordMode: boolean, passwords?: PasswordAuth,
 ) {
   if (!identity) throw new ApiError(503, 'Company sign-in is unavailable.');
   if (req.headers['x-demo-identity'] !== undefined) throw new ApiError(401, 'Company sign-in required.');
   const token = requestSession(req);
   const logout = req.method === 'POST' && url.pathname === salesAuthApi + '/logout';
   const user = identity.resolveSession(token, !logout);
-  if (!token || !user) throw new ApiError(401, 'Company sign-in required.');
+  if (!token || !user || user.password_authenticated !== Number(passwordMode)) throw new ApiError(401, 'Company sign-in required.');
 
   if (logout) {
     if (url.search || req.headers['transfer-encoding'] || Number(req.headers['content-length'] ?? 0) !== 0 ||
-        !hasLogoutProtection(req, token)) throw new ApiError(403, 'Logout request could not be verified.');
+        !hasSessionMutationProtection(req, token, origins)) throw new ApiError(403, 'Logout request could not be verified.');
     identity.logout(token);
     res.setHeader('Set-Cookie', sessionCookie(null));
     return { signedOut: true };
   }
 
+  if (passwords && req.method === 'POST' && url.pathname === passwordAuthApi + '/change') {
+    return changeOwnPassword(req, res, url, token, passwords, origins);
+  }
+  if (passwords && req.method !== 'GET' && url.pathname.startsWith(salesAuthApi + '/admin/users')) {
+    if (user.role !== 'admin') throw new ApiError(403, 'Administrator access required.');
+    return managePasswordEmployee(req, url, token, identity, origins);
+  }
   if (req.method !== 'GET') throw new ApiError(404, 'Route not found.');
   if (url.pathname === salesAuthApi + '/session' && !url.search) {
     const result: SalesSessionView = {
       displayName: user.name, role: user.role, csrfToken: csrfToken(token), expiresAt: new Date(user.expires_at).toISOString(),
+      ...(passwordMode ? { email: user.email } : {}),
     };
     return result;
   }
-  if (url.pathname === salesAuthApi + '/admin' && !url.search) return identity.directory(token);
+  if (url.pathname === salesAuthApi + '/admin' && !url.search) return identity.directory(token, passwordMode);
   if (url.pathname === salesCrmApiWorkspace) {
     return {
       displayName: user.name,

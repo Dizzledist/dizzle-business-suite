@@ -253,6 +253,51 @@
   margin: .35rem 0;
 }
 
+.password-form {
+  display: grid;
+  justify-items: start;
+  gap: .65rem;
+  margin-block: .8rem;
+  width: min(100%, 30rem);
+}
+
+.password-form label {
+  width: 100%;
+}
+
+.password-form label,
+.employee-form label {
+  display: grid;
+  gap: .3rem;
+  min-width: 0;
+}
+
+.password-form input {
+  width: 100%;
+}
+
+.password-form :is(input, button),
+.employee-form :is(input, select, button) {
+  min-height: 44px;
+  max-width: 100%;
+}
+
+.employee-management {
+  margin-bottom: 1rem;
+}
+
+.employee-management code {
+  overflow-wrap: anywhere;
+}
+
+.employee-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .65rem;
+  margin-block: .8rem;
+}
+
 @media (max-width: 750px) {
   .sales-crm-shell {
     grid-template-columns: minmax(0, 1fr);

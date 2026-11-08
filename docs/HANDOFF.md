@@ -160,3 +160,12 @@ Next safe shared foundation step:
 - **Checks** · Baseline typecheck, build, 171 Vitest and 13 Chromium checks. Final typecheck, build, 188 Vitest and 20 Chromium checks across three modes. The production bundle excludes the fixture selector and client identity header code. No lint script exists.
 - **External actions** · Consulted official OIDC and security guidance. Synthetic test identities exercised the verified-principal boundary. No identity provider was provisioned or contacted and no live financial data was read.
 - **Open work** · Approve an identity provider and review the production database and origin configuration. Implement and validate a server-side OIDC adapter with genuine employee sessions in staging. M1 remains in progress and M5 remains blocked.
+
+## Session 2026-11-08 / Codex: Company email and password sign-in
+
+- **Task and lead** · Codex implemented the corrective local password workflow. The owner/admin retains control of first-administrator enrollment and acceptance.
+- **Git reference** · feature/sales-crm-email-password in a separate worktree at base 680e432. Verified ancestry includes reporting 03e0fed and Zoho 8769fec. Google commit ac9d842 and its disabled preview were preserved.
+- **Contracts and schema** · Additive local password credentials and one-time actions within the existing user and session store. Admin-only enrollment, reset codes, role and session management. Reused bounded request parsing and exact-origin proxy behavior from the separate Google branch. [Setup guide](SALES_CRM_EMAIL_PASSWORD.md)
+- **Checks** · Baseline typecheck, build and 188 Vitest tests. Final typecheck, build, 202 Vitest and 25 Chromium checks across four modes. The production dependency audit reported zero vulnerabilities. Lint is unconfigured.
+- **External actions** · Installed the pinned Argon2 dependency and checked the npm advisory feed. The pilot uses synthetic reports and an empty employee directory. Google remains disabled, and the original Zoho operator status remains read-only.
+- **Open work** · Establish the first administrator and verify the local employee pilot. Approve any future email delivery service and production hosting and migration. M1 remains in progress and M5 remains blocked for live reporting.

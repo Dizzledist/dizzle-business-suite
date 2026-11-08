@@ -105,3 +105,7 @@ The local SQLite store and 366-day custom limit are implementation choices. The 
 ## Prompt #8 identity decisions, November 7, 2026
 
 Prompt #8 authorizes durable local users, verified-session and role boundaries, administrator-attested Zoho mappings, and a protected review UI. It keeps the prior fixture selector in explicit local mode. Browser-accessible reporting remains synthetic. This supersedes the placeholder-only identity design for local verification. Google Workspace OIDC with a maintained client is a recommendation pending provider approval. Employee onboarding, production rollout, and live customer data remain separate decisions. [Authentication guide](SALES_CRM_AUTHENTICATION.md)
+
+## Corrective authentication decision, November 8, 2026
+
+The user approved company email and password for the current employee pilot, superseding the initial Google sign-in direction. The implementation starts from the prior identity foundation at 680e432. Google commit ac9d842 stays isolated and disabled. Credential verification belongs to the existing user and session boundary. Approved administrators manage enrollment, access and reset codes, and the trusted local operator establishes or recovers the first administrator. Automatic email delivery and live financial data require separate approval. [Password sign-in guide](SALES_CRM_EMAIL_PASSWORD.md)

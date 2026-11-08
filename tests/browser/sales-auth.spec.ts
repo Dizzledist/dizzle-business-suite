@@ -23,7 +23,7 @@ async function authenticate(context: BrowserContext, url: string, subject: strin
   }
 }
 
-if (isSalesCrmEnabled(process.env) && isSalesAuthEnabled(process.env)) {
+if (process.env.DIZZLE_E2E_PASSWORD !== 'true' && isSalesCrmEnabled(process.env) && isSalesAuthEnabled(process.env)) {
   test('company sign-in is explicit, responsive, and unaffected by the fixture selector', async ({ page, request }) => {
     await page.setViewportSize({ width: 320, height: 780 });
     await page.goto('/');

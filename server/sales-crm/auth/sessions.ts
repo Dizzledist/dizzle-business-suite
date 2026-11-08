@@ -24,10 +24,10 @@ export function sessionCookie(token: string | null) {
   return sessionCookieName + '=' + (token ?? '') + '; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=' + maxAge;
 }
 
-export function hasLogoutProtection(req: IncomingMessage, token: string) {
+export function hasSessionMutationProtection(req: IncomingMessage, token: string, allowed: readonly string[]) {
   const origin = req.headers.origin;
   const header = req.headers['x-csrf-token'];
   return typeof origin === 'string' && origin === 'http://' + req.headers.host &&
-    ['http://127.0.0.1:5173', 'http://localhost:5173', 'http://127.0.0.1:3001'].includes(origin) &&
+    allowed.includes(origin) &&
     isSessionToken(header) && timingSafeEqual(Buffer.from(header), Buffer.from(csrfToken(token)));
 }

@@ -1,6 +1,7 @@
 import { isLocalFixtureEnabled } from './sales-crm.ts';
 
 export const salesAuthApi = '/api/sales-crm/auth';
+export const passwordAuthApi = salesAuthApi + '/password';
 export const salesRoles = ['sales_rep', 'sales_manager', 'admin'] as const;
 export const accountStatuses = ['pending', 'active', 'disabled'] as const;
 export type SalesRole = typeof salesRoles[number];
@@ -17,11 +18,16 @@ export function isSalesAuthEnabled(env: Record<string, string | undefined>) {
     isLocalFixtureEnabled(env);
 }
 
+export function isSalesPasswordEnabled(env: Record<string, string | undefined>) {
+  return env.SALES_CRM_PASSWORD_ENABLED === 'true' && isSalesAuthEnabled(env);
+}
+
 export interface SalesSessionView {
   displayName: string;
   role: SalesRole;
   csrfToken: string;
   expiresAt: string;
+  email?: string;
 }
 
 export interface SalesDirectory {
@@ -35,6 +41,8 @@ export interface SalesDirectory {
     status: AccountStatus;
     zohoSalespersonId: string | null;
     lastLogin: string | null;
+    passwordStatus?: 'unenrolled' | 'setup-required' | 'ready';
+    resetRequestedAt?: string | null;
   }[];
   audit: {
     action: string;
