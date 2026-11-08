@@ -2,6 +2,15 @@
 
 Updated: November 7, 2026 (America/Los_Angeles).
 
+## Zoho Inventory sales reporting · November 7
+
+Master Prompt #4 authorizes read-only preparation on **feature/sales-crm-zoho-reporting**, based on clean CRM foundation commit `ebfe961`. **M5 is blocked on verified first-email evidence.** The [Zoho reporting guide](SALES_CRM_ZOHO_REPORTING.md) records the evidence gap, scope, tested checklist, and sandbox plan.
+
+- Added a server-side invoice reader with mocked transport, normalized source snapshots, and bounded reconciliation. No live credentials, sync job, storage migration, or reporting data endpoint is wired. Current source salesperson remains distinct from historical credit.
+- CRM cards link to the invoice reporting status and keep values unavailable. Existing fulfillment, role meanings, API contracts and feature-flag enforcement are preserved.
+- Pre-change typecheck, build, 46 Vitest tests and Chromium passes of four disabled and seven enabled tests succeeded. Branch checks passed with 76 Vitest tests, four disabled and eight enabled Chromium tests, plus typecheck and build. Both browser modes included the original workflow tests. Lint is unconfigured.
+- Next gate is restricted sandbox verification of supported send paths and historical coverage. Owners must approve reporting timezone, original revision attribution and settlement before connecting authorized persistent data.
+
 ## Sales CRM foundation · November 7
 
 Master Prompt #3 authorizes the local navigation and dashboard shell. The dedicated branch is **feature/sales-crm-foundation**, based on the clean main checkout at `d4afc223`. Status is **in progress, ready for shared review**. See the [local CRM guide](SALES_CRM_FOUNDATION.md) and [handoff](HANDOFF.md#session-2026-11-07--codex-sales-crm-foundation).

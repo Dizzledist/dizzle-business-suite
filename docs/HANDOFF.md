@@ -122,3 +122,13 @@ Next safe shared foundation step:
 - **External actions:** Read and cloned GitHub main, installed the locked local packages and the pinned Chromium test binary, and ran isolated tests. The branch is local. Provider accounts and data were outside the execution scope.
 - **Incomplete work:** Shared builder and user review. The local selector remains a fixture mechanism. Customer data, real sessions, persistent records, finance, AI, maps and live connectors are later work.
 - **Next:** Sales manager reviews navigation and pending states. The user and both builders review the CRM-only scope and approve shared customer access before the durable account/reassignment slice. Update the approved policy and acceptance matrix through that later task.
+
+## Session 2026-11-07 / Codex: Zoho Inventory reporting preparation
+
+- **Task and lead:** Master Prompt #4 authorized a read-only invoice adapter and synthetic verification. Codex performed this isolated slice. Both builders review the reporting boundary with the sales manager and finance.
+- **Starting state and stable reference:** Clean local CRM foundation at `ebfe961baca29be770b7157ec268079f2c63d8ce`. Created local branch `feature/sales-crm-zoho-reporting` in a separate checkout. Existing localhost remained on the foundation checkout.
+- **Changes and contracts:** CRM-only Zoho reads and in-memory reconciliation are exercised through a mocked server transport. The dashboard links to status explaining the evidence gate. There are no new data routes or changes to C1–C5, API payloads, or legacy workflow behavior. See the [Zoho reporting guide](SALES_CRM_ZOHO_REPORTING.md).
+- **Checks:** Baseline passed typecheck, build, 46 Vitest tests and four disabled/seven enabled Chromium tests. Branch passed typecheck, build, 76 Vitest tests and four disabled/eight enabled Chromium tests. Browser harness used separate loopback ports. Lint is unconfigured.
+- **Schema and environment:** No schema changes, dependency changes, or new runtime configuration. SALES_CRM_ENABLED continues to guard the local CRM.
+- **External actions:** Read public Zoho docs. Installed the existing lockfile from local cache and ran tests with synthetic data. Work is local.
+- **Decision and next task:** M5 remains blocked. Validate first-success evidence, revisions and supported history in a separately approved sandbox. Confirm the timezone, credit mapping and adjustment policy before durable reporting or live reads.

@@ -100,6 +100,13 @@ function Workspace({ section }: { section: typeof sections[number] }) {
           <p>Viewing as {displayName}. This workspace contains development placeholders.</p>
         </header>
         {dashboard && <Dashboard />}
+        {section.path === salesCrmPath + '/reports' && (
+          <section id="invoice-reporting" className="panel sales-crm-card" aria-labelledby="invoice-reporting-title">
+            <h2 id="invoice-reporting-title">Invoice reporting</h2>
+            <p>Waiting for verified first-email timestamps from Zoho Inventory.</p>
+            <p>Last successful sync: None recorded.</p>
+          </section>
+        )}
         {settings && (
           <section className="sales-crm-group" aria-label="Integrations">
             <h2>Integrations</h2>

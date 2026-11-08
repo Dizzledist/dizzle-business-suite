@@ -73,4 +73,15 @@ describe('Sales CRM API boundary', () => {
     expect((await request('manager', 'POST')).status).toBe(404);
     expect((await request('manager', 'GET', '/api/sales-crm/reports')).status).toBe(404);
   });
+
+  it('keeps cross-rep reports and invoice detail unavailable while evidence is unverified', async () => {
+    const request = await start('true');
+    expect((await request('rep-a', 'GET', '/api/sales-crm/reports?repId=rep-b')).status).toBe(404);
+    expect((await request('rep-a', 'GET', '/api/sales-crm/invoices/1001')).status).toBe(404);
+    const workspace = await request('rep-a', 'GET', salesCrmApiWorkspace + '?repId=rep-b');
+    expect(await workspace.json()).toEqual({
+      displayName: 'Rep A · Juniper accounts',
+      integrations: { zohoInventory: 'not-configured', shipStation: 'not-configured' },
+    });
+  });
 });

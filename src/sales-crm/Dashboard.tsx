@@ -1,10 +1,14 @@
+import { salesCrmPath } from '../../shared/sales-crm';
+
+const invoiceReportingPath = salesCrmPath + '/reports#invoice-reporting';
+
 const groups = [
   {
     title: 'Performance',
     cards: [
-      { title: 'Monthly Sales', status: 'Not configured', detail: 'Zoho Inventory is not configured.' },
-      { title: 'Monthly Commission', status: 'Coming Soon', detail: 'Commission rules are pending.' },
-      { title: 'Monthly Invoices', status: 'Not configured', detail: 'Verified invoice data will appear here.' },
+      { title: 'Monthly Sales', status: 'Not configured', detail: 'Waiting for verified first-email evidence.', href: invoiceReportingPath },
+      { title: 'Monthly Commission', status: 'Coming Soon', detail: 'Commission calculation coming soon.' },
+      { title: 'Monthly Invoices', status: 'Not configured', detail: 'Verified invoice data will appear here.', href: invoiceReportingPath },
       { title: 'New Customers', status: 'No data yet', detail: 'Customer records are pending.' },
     ],
   },
@@ -34,12 +38,15 @@ const groups = [
   },
 ];
 
-export function DashboardCard({ title, status, detail }: { title: string; status: string; detail: string }) {
+export function DashboardCard({ title, status, detail, href }: {
+  title: string; status: string; detail: string; href?: string;
+}) {
   return (
     <article className="panel sales-crm-card">
       <h3>{title}</h3>
       <strong>{status}</strong>
       <p>{detail}</p>
+      {href && <a className="sales-crm-link" href={href} aria-label={title + ' reporting status'}>Reporting status</a>}
     </article>
   );
 }

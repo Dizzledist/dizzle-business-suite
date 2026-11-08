@@ -50,6 +50,16 @@ if (!isSalesCrmEnabled(process.env)) {
     await expect(page.getByRole('heading', { name: 'Workspace unavailable' })).toBeVisible();
   });
 
+  test('unverified invoice reporting explains the evidence gate instead of showing totals', async ({ page }) => {
+    await page.goto('/');
+    await page.getByLabel('Test identity').selectOption('rep-a');
+    await page.getByRole('link', { name: 'Sales CRM' }).click();
+    await page.getByRole('link', { name: 'Monthly Sales reporting status' }).click();
+    await expect(page.getByRole('heading', { name: 'Invoice reporting' })).toBeVisible();
+    await expect(page.getByText('Waiting for verified first-email timestamps from Zoho Inventory.')).toBeVisible();
+    await expect(page.getByText('Last successful sync: None recorded.')).toBeVisible();
+  });
+
   test('dashboard works on a narrow screen and placeholder links support keyboard activation', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 800 });
     await page.goto('/');
