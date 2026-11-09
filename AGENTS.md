@@ -8,6 +8,8 @@ Phase 0 documentation was merged in PR #1. The user's November 6 Phase 1 task au
 
 Current task supersession, November 9: Phase 1 PR #3 is merged. Cheddr authorizes a separate marketing branch/worktree and coordination for parallel sales/marketing development toward one permission-aware app. This session is branch setup and documentation only; the earlier task-bound marketing exclusion does not prohibit this workstream. See [marketing workspace](docs/MARKETING_WORKSPACE.md) for ownership, shared-review boundaries and the next implementation slice. Reuse reviewed shared identity/services; do not infer that the unmerged Sales CRM or Warehouse branches are already on main. No live integration, merge or deployment is part of this setup.
 
+Later November 9 implementation supersession: Cheddr supplied the Marketing Workspace build prompt and requested completion of the existing prototype on `feat/marketing-workspace`, draft PR #5. This authorizes fixture-backed marketing home, calendar/campaigns, sample image studio, review, internal Assets publication and rep consumption, shared local identity/navigation adjustments, focused tests and documentation. It supersedes the setup-only boundary for this task. Follow [marketing demo](docs/MARKETING_DEMO.md); keep real generation, external publishing/sends, production storage, Sales CRM/Warehouse integration, merge and deployment separate.
+
 ## Builder responsibilities
 
 | Area | Lead and coordination |

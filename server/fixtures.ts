@@ -3,18 +3,22 @@ import type { Identity, InvoiceView } from '../shared/contracts';
 export const FIXTURE_NOTICE = 'Synthetic fixtures only. Zoho origin, payment/credit semantics, event ordering and freshness thresholds remain unverified. Demo freshness: 5 minutes; demo source versions are ordered snapshots, not Zoho guarantees.';
 export const FRESHNESS_MS = 5 * 60 * 1000;
 export function identityFixtures(): Identity[] {
-  const make = (id: string, name: string, roles: Identity['roles'], release = false, demo = false): Identity =>
-    ({ id, name, roles, organizationId: 'demo-o1', active: true, read: true, release, demo });
+  const make = (id: string, name: string, roles: Identity['roles'], release = false, demo = false,
+    departments: Identity['departments'] = [], marketingGrants: Identity['marketingGrants'] = []): Identity =>
+    ({ id, name, roles, organizationId: 'demo-o1', departments, marketingGrants, active: true, read: true, release, demo });
   return [
-    make('manager', 'Sales manager', ['sales_manager'], true, true),
-    make('rep-a', 'Rep A · Juniper accounts', ['sales_rep']),
-    make('rep-b', 'Rep B · Cedar accounts', ['sales_rep']),
-    make('warehouse', 'Warehouse worker', ['warehouse']),
-    make('owner', 'Owner', ['owner'], true, true),
-    make('admin', 'Admin', ['admin'], true, true),
-    { ...make('disabled', 'Disabled manager', ['sales_manager'], true, true), active: false },
-    { ...make('revoked', 'Revoked manager', ['sales_manager']), read: false },
-    { ...make('outside', 'Other organization manager', ['sales_manager'], true, true), organizationId: 'demo-o2' },
+    make('manager', 'Sales manager', ['sales_manager'], true, true, ['sales']),
+    make('rep-a', 'Rep A · Juniper accounts', ['sales_rep'], false, false, ['sales'], ['asset:read:published']),
+    make('rep-b', 'Rep B · Cedar accounts', ['sales_rep'], false, false, ['sales'], ['asset:read:published']),
+    make('warehouse', 'Warehouse worker', ['warehouse'], false, false, ['warehouse']),
+    make('owner', 'Owner', ['owner'], true, true, ['sales', 'marketing'],
+      ['workspace:read', 'campaign:write', 'creative:generate', 'asset:review', 'asset:publish', 'asset:read:all']),
+    make('admin', 'Admin', ['admin'], true, true, ['sales']),
+    make('marketing', 'Marketing editor', ['marketing'], false, false, ['marketing'],
+      ['workspace:read', 'campaign:write', 'creative:generate']),
+    { ...make('disabled', 'Disabled manager', ['sales_manager'], true, true, ['sales']), active: false },
+    { ...make('revoked', 'Revoked manager', ['sales_manager']), read: false, departments: ['sales'] },
+    { ...make('outside', 'Other organization manager', ['sales_manager'], true, true, ['sales']), organizationId: 'demo-o2' },
   ];
 }
 export interface InvoiceRecord {

@@ -1,5 +1,13 @@
 # Marketing workspace and parallel development
 
+## Implementation update: November 9, 2026
+
+Cheddr explicitly authorized completing the local Marketing Workspace in draft PR #5 after supplying the original build prompt. The branch now adds the fixture-backed workflow described in [MARKETING_DEMO](MARKETING_DEMO.md). This supersedes the setup-only and no-dashboard statements in the historical setup guide below. Sales CRM and Warehouse remain separate branches; no combined authentication or integration is claimed.
+
+Shared review: `Identity` gains departments and marketing action grants; the existing server fixture identity remains the only marketing authentication context. The app shell chooses an authorized department and mounts marketing or the original invoice workflow. `SalesAssetsPanel` is reusable when Sales CRM is integrated. API registration adds marketing and protected file routes; existing release logic is reused. Local preview ports reuse the exact `shared/local-ports.ts` helper from Sales CRM at `a81ddae` (defaults 5173/3001); marketing browser tests use 5373/3201. Warehouse uses different port variable names, requiring reconciliation during integration. See the contracts and handoff before combining these shared files.
+
+The guide below records the earlier setup baseline, rather than current runtime scope.
+
 November 9, 2026. Active lead: Cheddr (Marketing / Admin). This branch establishes the marketing workstream; it does not yet implement a marketing dashboard or change login behavior.
 
 ## Confirmed direction

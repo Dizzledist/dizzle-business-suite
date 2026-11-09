@@ -107,3 +107,15 @@ Source: Cheddr's explicit request for a separate marketing branch while the sale
 | MKT03 | Reuse one reviewed identity, account-assignment, integration and shared Assets service across department modules | Sales CRM identity and PR #2 Assets contracts remain review candidates. No duplicate auth/connector/stock logic; account access and historical sales credit remain distinct |
 
 See [MARKETING_WORKSPACE](MARKETING_WORKSPACE.md) for current references and handoff procedure. Separate PRs and shared integration testing are the coordination plan, not permission to merge pending PRs. Both builders review shared contracts before changing them.
+
+## Marketing implementation authorization and local choices, November 9, 2026
+
+Source: Cheddr supplied the original "Build the Marketing Workspace" prompt and explicitly instructed Codex to "finish where it left off." This authorizes completing the uncommitted prototype on `feat/marketing-workspace` in existing draft PR #5, including checks, documentation, commit and push. Both builders still review shared changes; no production policy sign-off is inferred.
+
+| ID | Decision or local implementation choice | Superseded rule / limits |
+|---|---|---|
+| MKT04 | Implement local marketing home, campaigns/calendar, sample generation, review, internal Assets publication and Sales preview; document future build slices | Supersedes MKT01's setup-only boundary and historical Phase 1 marketing exclusion for this task. No live provider calls, external sends, production storage, merge or deployment |
+| MKT05 | Conservative demo rules: Marketing editor authors; explicitly granted Owner reviews/publishes; no creator/latest-editor self-review; approved exact versions only; all mode snapshots current eligible recipients; current grants/account assignment are rechecked | PR #2 M01-M04 remain open production decisions. Multiple approved versions can be explicitly published until each publication is retired. No expiry, automatic replacement, verified document imports or immutable review-decision ledger claimed. Restricted document metadata/files require the read-all grant in marketing; reps additionally require current assignment for price lists |
+| MKT06 | Reuse server-defined Phase 1 identities and assignment predicate, append marketing action grants/departments, keep generation behind `GenerationAdapter`, and reuse the Sales CRM local-port helper verbatim from `a81ddae` | Implements a local navigation/permission demonstration, not production login or department administration. Sales CRM sessions and Warehouse grants remain separate integration work. Tests use isolated 5373/3201; optional preview variables are DIZZLE_WEB_PORT and DIZZLE_API_PORT |
+
+Approved R01-R03 and financial/source ownership rules remain unchanged. See [MARKETING_DEMO](MARKETING_DEMO.md) for exact fixtures and [HANDOFF](HANDOFF.md) for evidence and integration review needs.

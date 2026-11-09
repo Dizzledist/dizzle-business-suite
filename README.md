@@ -4,6 +4,8 @@ Dizzle is a web app for the AI Business Suite described in the [project brief](d
 
 This repository contains the shared foundation and a Phase 1 local React/TypeScript app and API demonstrating the invoice-to-warehouse workflow with synthetic data. No live Zoho integration or production infrastructure is configured.
 
+The marketing branch also includes a fixture-backed Marketing Workspace: campaigns, internal content scheduling, sample creative generation, review and permission-scoped rep Assets. See the [marketing demo](docs/MARKETING_DEMO.md) for identities, exact steps and limitations. Select **Marketing editor** to start; use **Owner → Marketing** to review and publish.
+
 ## Run the local workflow
 
 Use Node.js 24.x, then run from the repository root:
@@ -22,7 +24,7 @@ npx playwright install chromium
 npm run check
 ```
 
-Checks run TypeScript, HTTP integration tests, the client build and Chromium browser tests. Stop an active demo before browser tests so they can start fresh local servers. GitHub Actions runs the same checks on pull requests.
+Checks run TypeScript, HTTP integration tests, the client build and Chromium browser tests. Browser checks use isolated ports 5373/3201; keep those free. GitHub Actions runs the same checks on pull requests. `npm run dev` supports `DIZZLE_WEB_PORT` and `DIZZLE_API_PORT` for separate previews.
 
 ## Shared development foundation
 

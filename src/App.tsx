@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DemoEvent, InvoiceView, Workspace } from '../shared/contracts';
+import { MarketingWorkspace, SalesAssetsPanel } from './MarketingWorkspace';
 
 const identities = [
   ['manager', 'Sales manager'], ['rep-a', 'Rep A'], ['rep-b', 'Rep B'], ['warehouse', 'Warehouse'],
-  ['owner', 'Owner'], ['admin', 'Admin'], ['disabled', 'Disabled manager'], ['revoked', 'Revoked manager'], ['outside', 'Other organization'],
+  ['owner', 'Owner'], ['admin', 'Admin'], ['marketing', 'Marketing editor'], ['disabled', 'Disabled manager'], ['revoked', 'Revoked manager'], ['outside', 'Other organization'],
 ];
 const money = (amount: string) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(amount));
 export function App() {
   const [identity, setIdentity] = useState('manager');
+  const [department, setDepartment] = useState('sales');
   const [data, setData] = useState<Workspace | null>(null);
   const [selected, setSelected] = useState('inv-open');
   const [reason, setReason] = useState('');
@@ -28,7 +30,7 @@ export function App() {
   }
   async function reload(version: number) {
     const next = await api<Workspace>('/workspace');
-    if (generation.current === version) setData(next);
+    if (generation.current === version) { setData(next); setDepartment(current => next.identity.departments.includes(current as typeof next.identity.departments[number]) ? current : next.identity.departments[0] ?? 'sales'); }
   }
   useEffect(() => {
     const version = ++generation.current;
@@ -59,7 +61,8 @@ export function App() {
     <aside className="sidebar">
       <a className="brand" href="/" aria-label="Dizzle home"><span className="brand-mark">d.</span> DIZZLE</a>
       <span className="sidebar-label">BUSINESS SUITE</span>
-      <div className="nav-active"><span>↗</span> Invoice workflow</div>
+      {data && <label className="department-select">Department<select aria-label="Department" value={department} onChange={event => setDepartment(event.target.value)}>{data.identity.departments.map(item => <option key={item} value={item}>{item === 'sales' ? 'Sales' : item === 'marketing' ? 'Marketing' : 'Warehouse'}</option>)}</select></label>}
+      <div className="nav-active"><span>↗</span> {department === 'marketing' ? 'Marketing workspace' : department === 'warehouse' ? 'Warehouse' : 'Invoice workflow'}</div>
       <div className="sidebar-note">One source of truth.<br/>A clear path to fulfillment.</div>
       <div className="local-tag"><span/> Local sample data</div>
     </aside>
@@ -69,6 +72,11 @@ export function App() {
           {identities.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
         </select></label>
       </header>
+      {!data && department === 'marketing' && <div role={error ? 'alert' : 'status'} className={error ? 'alert error' : ''}>{error || 'Loading authorized workspace…'}</div>}
+      {department === 'marketing' ? data?.identity.departments.includes('marketing')
+        ? <MarketingWorkspace key={identity} identity={identity}/>
+        : data ? <div className="alert error" role="alert">Access denied. This identity has no Marketing department grant.</div> : null
+      : <>
       <section className="page-title"><div><span className="eyebrow">PHASE 1 · LOCAL DEMO</span><h1>From invoice to warehouse.</h1><p>See what’s paid, what’s held, and what’s ready to fulfill.</p></div>
         {data?.identity.demo && <button className="secondary" disabled={busy} onClick={() => act('/demo/reset', {}, 'Sample data reset')}>Reset demo</button>}
       </section>
@@ -116,7 +124,9 @@ export function App() {
         <section className="warehouse"><div className="section-heading"><div><span className="eyebrow">FULFILLMENT</span><h2>Warehouse board</h2></div><span className="badge">Orders · {data.jobs.length}</span></div>
           {data.jobs.length === 0 ? <div className="empty"><span>□</span><h3>No released work yet</h3><p>Unpaid and partially paid invoices stay outside this queue.</p></div> : <div className="job-grid">{data.jobs.map(j => <article className="panel job-card" key={j.id} data-testid="warehouse-job"><div className="panel-title"><h3>{j.invoiceNumber}</h3><span className="badge green">{j.status}</span></div><p>{j.accountName}</p><p className="job-id">{j.id}</p>{j.items.map(item => <div className="job-item" key={item.sku}><span>{item.sku}</span><strong>{item.quantity} {item.unit}</strong></div>)}{j.review && <div className="hold-note">Review required · {j.review}</div>}<small>Linked source: {j.invoiceId}</small></article>)}</div>}
         </section>
+        {data.identity.marketingGrants.includes('asset:read:published') || data.identity.marketingGrants.includes('asset:read:all') ? <SalesAssetsPanel identity={identity}/> : null}
         <footer>{data.fixtureNotice}<p>API data resets on restart or Reset demo. No real customers, invoices, payments, inventory or messages.</p></footer>
+      </>}
       </>}
     </main>
   </div>;

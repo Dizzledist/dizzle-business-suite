@@ -60,3 +60,18 @@ Cheddr and Dizzle Sales Manager [jointly approved R01-R03 and A26-A30](DECISIONS
 ## Evidence for vertical-slice completion
 
 Record isolated test results for A01-A30, concurrency/recovery evidence, role checks across retrieval paths, provider mapping verification and unresolved limitations. R01-R03 and A26-A30 are jointly approved as recorded in DECISIONS; any later policy amendments require explicit review. No live acceptance or cutover until relevant Q01-Q06/Q08 decisions are settled and staging is isolated. The user's scoped Phase 1 request authorizes the local scaffold; additional departments, live integrations and production infrastructure remain separate tasks.
+
+## Authorized local marketing slice (MKT04, November 9)
+
+These fixture acceptance cases supplement the original invoice cases. They do not claim full PR #2 or production acceptance.
+
+| ID | Scenario / local evidence |
+|---|---|
+| MX01 | Campaign/content creation, exact review, Pacific internal scheduling; caption/destination/time edits clear approval and scheduling; HTTP + browser |
+| MX02 | Sample generation retains prompt/references/dimensions, failure/retry succeeds, new variations preserve old bytes and original references; HTTP + browser |
+| MX03 | Ungranted/self-review and unapproved publication fail; approved selected publication is deduplicated; HTTP + browser |
+| MX04 | Eligible rep discovers, previews/downloads an asset; ineligible rep direct file URL fails; HTTP + browser |
+| MX05 | Restricted price-list list/file scope, synthetic exact-batch COA preview, revoked/disabled/foreign/editor denials; HTTP + browser |
+| MX06 | All audience snapshots exclude future hires; revoked grants block reads; retirement removes list/direct-file access; HTTP + browser |
+| MX07 | Brand/channel/status/search filters, empty/loading/error/access-denied states, retry and mobile width; browser evidence covers filters, empty/error recovery and mobile layouts; HTTP tests exercise grant denials |
+| MX08 | Existing 31 HTTP invoice/release cases and 3 browser regressions continue to pass; no source balance, stock or external-send behavior changes |

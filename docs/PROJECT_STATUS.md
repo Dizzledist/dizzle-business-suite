@@ -2,7 +2,15 @@
 
 Updated: November 9, 2026 (America/Los_Angeles).
 
-## Current task: marketing workstream setup
+## Current task: finish fixture-backed Marketing Workspace
+
+Active implementation lead: Cheddr with Codex, November 9, 2026. The user supplied the original implementation prompt and explicitly requested completion of the existing Copilot prototype on `feat/marketing-workspace`, [draft PR #5](https://github.com/Dizzledist/dizzle-business-suite/pull/5). The branch now implements marketing home, campaigns/date-grouped content planning, Pacific internal scheduling, sample SVG generation with retry/versioning, exact-version review, internal selected/all-recipient publication and protected rep search/previews/downloads. [MARKETING_DEMO](MARKETING_DEMO.md) documents identities, steps and limitations. MKT04-MKT06 supersede the earlier setup-only scope for this task.
+
+`npm run check` passes: typecheck, 38 HTTP tests (31 existing + 7 marketing), build and 5 Chromium tests (3 existing + 2 marketing). Desktop/mobile screenshots were visually inspected. No separate lint configuration exists. Final handoff records checks/publication, shared-contract changes and future slices. Preview: http://127.0.0.1:5473 with API 3301; defaults remain 5173/3001. Browser tests use isolated 5373/3201.
+
+Shared surfaces: identity projections, fixture grants, assignment predicate, API registration, app entry/styles and configurable preview/test ports. Both builders review these changes; Sales CRM and Warehouse remain separate. This is a local in-memory demo, with no real login, provider generation, external posting/sends, production files, live reporting or deployment. Conservative self-review/audience/document rules are demo choices, not jointly approved production policy.
+
+## Earlier task: marketing workstream setup
 
 Active lead: Cheddr (Marketing / Admin) with Codex. Created `feat/marketing-workspace` in the separate `dizzle-marketing-workspace` worktree from fetched main at `d4afc223d7313274ecea75f3655d2188abbbbbd6` (merged Phase 1 PR #3). Tracked files were clean at setup. The original Warehouse checkout, its untracked workspace file, and the pinned Sales CRM preview are preserved.
 
