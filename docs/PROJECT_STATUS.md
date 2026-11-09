@@ -10,6 +10,8 @@ Active implementation lead: Cheddr with Codex, November 9, 2026. The user suppli
 
 Shared surfaces: identity projections, fixture grants, assignment predicate, API registration, app entry/styles and configurable preview/test ports. Both builders review these changes; Sales CRM and Warehouse remain separate. This is a local in-memory demo, with no real login, provider generation, external posting/sends, production files, live reporting or deployment. Conservative self-review/audience/document rules are demo choices, not jointly approved production policy.
 
+Implementation published as `401dbf5`; a focused follow-up normalizes two new files' line endings and records publication. PR #5 stays draft with an updated implementation description. Use the final branch head for review. See the latest handoff correction for staged-whitespace findings and the final response for remote CI status.
+
 ## Earlier task: marketing workstream setup
 
 Active lead: Cheddr (Marketing / Admin) with Codex. Created `feat/marketing-workspace` in the separate `dizzle-marketing-workspace` worktree from fetched main at `d4afc223d7313274ecea75f3655d2188abbbbbd6` (merged Phase 1 PR #3). Tracked files were clean at setup. The original Warehouse checkout, its untracked workspace file, and the pinned Sales CRM preview are preserved.
