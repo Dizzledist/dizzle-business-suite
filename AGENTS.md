@@ -6,6 +6,8 @@ Read [README](README.md), [project scope](docs/PROJECT_SCOPE.md), [status](docs/
 
 Phase 0 documentation was merged in PR #1. The user's November 6 Phase 1 task authorizes a minimal local React/TypeScript app and API with synthetic invoice/payment/warehouse fixtures, API-enforced test identities, isolated tests and PR CI. This supersedes the earlier scaffolding hold for this scoped task only. No live Zoho, production infrastructure, real identity provider, outbound sends, department dashboards or marketing Assets belong in this task. See [local demo](docs/LOCAL_DEMO.md) for run commands, fixture assumptions and acceptance coverage.
 
+Current task supersession, November 9: Phase 1 PR #3 is merged. Cheddr authorizes a separate marketing branch/worktree and coordination for parallel sales/marketing development toward one permission-aware app. This session is branch setup and documentation only; the earlier task-bound marketing exclusion does not prohibit this workstream. See [marketing workspace](docs/MARKETING_WORKSPACE.md) for ownership, shared-review boundaries and the next implementation slice. Reuse reviewed shared identity/services; do not infer that the unmerged Sales CRM or Warehouse branches are already on main. No live integration, merge or deployment is part of this setup.
+
 ## Builder responsibilities
 
 | Area | Lead and coordination |

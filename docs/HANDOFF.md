@@ -111,3 +111,16 @@ Next task: sales manager:
 Next task: user / marketing lead:
 Next safe shared foundation step:
 ```
+
+## Session 2026-11-09 / Cheddr with Codex: marketing workstream setup
+
+- **Task / active lead:** Cheddr (Marketing / Admin) with Codex. User requests a marketing branch alongside the sales manager's sales/pipeline work, eventually integrated into one permission-aware app. This session creates the workstream and documentation; no marketing runtime is added.
+- **Verified base / branch:** Fetched main at `d4afc223d7313274ecea75f3655d2188abbbbbd6`; Phase 1 PR #3 merged. Created `feat/marketing-workspace` in sibling worktree `dizzle-marketing-workspace`. Sales branch remains `a81ddaed3e838e0a03256578b8faae3650d1e6b8`; Warehouse branch remains `8ac2e976636d146a4342562716cbe97824ba955a`. Both are unmerged into this baseline.
+- **Changes / review:** MARKETING_WORKSPACE documents ownership, branch references, shift handoff and shared integration. README links it; status, AGENTS and decisions identify the current setup scope. MKT01-MKT03 record the user direction and setup choices. No C1-C5 payload or runtime permission changes. Both builders review shared identity, department grants/default dashboard, original sales credit versus assigned-account visibility, and PR #2's C6-C8 proposals before dependent implementation.
+- **Checks:** All 59 relative file links across 11 Markdown documents resolved; working/staged whitespace checks and named staged diff passed. The initial system Python alias was unavailable; the link check ran successfully with Node's built-in filesystem API. No runtime checks rerun: application, dependencies, configuration and tests are unchanged. Publication result is reported with the pushed commit.
+- **Preservation / environment:** Original Warehouse checkout and server, both Sales CRM preview processes, PR #2 and PR #4 remain untouched. VS Code workspace remains untracked in the original checkout, original SHA-256 `4F888FE1084D2A9091583D5093693D81453C0B8D06DFD6192B096972BAE551D4`. No secrets, environment changes, migrations, live provider calls or new preview server.
+- **Publication:** Push only `feat/marketing-workspace`; draft PR against main with title `docs: establish parallel marketing workstream`. No merge or deployment. Branch and commit subject provide the stable handoff reference; PR link is returned after creation.
+- **Known gaps:** This branch includes only merged Phase 1 runtime. Sales CRM, Kanban and Assets proposal need separate integration review. Department dashboard selection and a complete shared multi-role identity/grant model are not implemented here. Base README/AGENTS contain historical Phase 1 wording; the new current-task note supersedes that task exclusion for this setup only.
+- **Next: sales manager:** Continue scoped sales/dashboard/pipeline work, push exact handoff commits and coordinate shared shell/auth/config changes.
+- **Next: Cheddr / marketing:** Select a small fixture-backed marketing home/Assets draft-review implementation using PR #2's examples, with no duplicate login or live provider dependency.
+- **Next shared foundation:** Agree department landing/grants and shared service boundaries, then review Sales CRM/Warehouse integration and run combined cross-role tests in a separate integration worktree before any authorized merge.

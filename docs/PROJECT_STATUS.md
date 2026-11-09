@@ -1,6 +1,16 @@
 # Project status
 
-Updated: November 6, 2026 (America/Los_Angeles).
+Updated: November 9, 2026 (America/Los_Angeles).
+
+## Current task: marketing workstream setup
+
+Active lead: Cheddr (Marketing / Admin) with Codex. Created `feat/marketing-workspace` in the separate `dizzle-marketing-workspace` worktree from fetched main at `d4afc223d7313274ecea75f3655d2188abbbbbd6` (merged Phase 1 PR #3). Tracked files were clean at setup. The original Warehouse checkout, its untracked workspace file, and the pinned Sales CRM preview are preserved.
+
+This task documents separate sales/marketing ownership and future integration into one authorized app; it adds no dashboard, login, API or dependency changes. See [MARKETING_WORKSPACE](MARKETING_WORKSPACE.md) for branch references, shift handoff and shared-review needs. Sales CRM at `a81ddae`, Warehouse PR #4 and Assets proposal PR #2 remain separate/unmerged; their behavior is not included in this branch.
+
+Next for Cheddr: choose a fixture-backed marketing home/Assets draft-review slice. Next for sales manager: continue sales/pipeline on the sales branch and coordinate shared shell/auth/config changes. Next shared review: department grants/default dashboard, reporting versus assigned-account scope, and reuse of one identity and asset service. Runtime authorization and routing remain unimplemented beyond the merged Phase 1 fixture workflow.
+
+Historical Phase 1 status below is retained as the record before PR #3 merged; its draft/base references are not the current integration state. Setup verification and publication are recorded in the latest handoff.
 
 ## Verified starting state and current task
 

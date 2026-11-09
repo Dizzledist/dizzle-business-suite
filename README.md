@@ -26,6 +26,7 @@ Checks run TypeScript, HTTP integration tests, the client build and Chromium bro
 
 ## Shared development foundation
 
+- [Marketing workspace and parallel sales/marketing development](docs/MARKETING_WORKSPACE.md)
 - [Builder conventions and session rules](AGENTS.md)
 - [Project scope and confirmed baseline](docs/PROJECT_SCOPE.md)
 - [Project status and next tasks](docs/PROJECT_STATUS.md)

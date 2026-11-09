@@ -95,3 +95,15 @@ Source: user's explicit request to build the local invoice-to-warehouse demo aft
 | L05 | HTTP integration tests + Playwright Chromium user flows; PR Actions run typecheck/tests/build/browser checks | No deployment permissions or live credentials; approved acceptance specs have only the scoped coverage documented in LOCAL_DEMO |
 
 See [LOCAL_DEMO](LOCAL_DEMO.md) for reproducible behavior and [CONTRACTS](CONTRACTS.md) for consumer boundaries. Owner/admin and sales manager release permissions remain distinct from fixture simulation grants; price lists, COAs and marketing are outside this branch.
+
+## Parallel marketing and sales workstreams, November 9, 2026
+
+Source: Cheddr's explicit request for a separate marketing branch while the sales manager develops sales/dashboard/pipeline, with the work ultimately combined into one department-aware web app. This supersedes the prior task-bound marketing exclusion for branch setup and coordination; it does not alter D01-D04 or approved R01-R03.
+
+| ID | Confirmed direction / setup choice | Limits and review |
+|---|---|---|
+| MKT01 | Cheddr leads `feat/marketing-workspace` from reviewed main; sales manager continues the sales workstream on its own branch | Separate worktrees preserve existing previews. Branch setup does not merge either feature or authorize deployment |
+| MKT02 | One application serves authorized department dashboards after sign-in; existing multi-role and least-privilege rules apply | Reaffirms scope/D03. Dashboard routing, department membership/grant schema, default landing and multi-role UI need joint implementation review; no runtime change in this task |
+| MKT03 | Reuse one reviewed identity, account-assignment, integration and shared Assets service across department modules | Sales CRM identity and PR #2 Assets contracts remain review candidates. No duplicate auth/connector/stock logic; account access and historical sales credit remain distinct |
+
+See [MARKETING_WORKSPACE](MARKETING_WORKSPACE.md) for current references and handoff procedure. Separate PRs and shared integration testing are the coordination plan, not permission to merge pending PRs. Both builders review shared contracts before changing them.
