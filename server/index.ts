@@ -6,13 +6,12 @@ import { SocialAccountVault } from './publishing/accounts';
 import { testAccounts } from './publishing/adapters';
 import { PublishingQueue } from './publishing/queue';
 import { join } from 'node:path';
-import { MarketingStore } from './marketing-store';
+import { publishingStorage } from './publishing/storage';
 if (existsSync('.env')) loadEnvFile('.env');
 const { api } = localPorts(process.env);
 
 if (process.env.NODE_ENV === 'production') throw new Error('Local fixture API cannot run in production mode.');
-const store = new MarketingStore();
-const publishingDirectory = process.env.DIZZLE_PUBLISHING_DIR ?? store.directory;
+const { store, directory: publishingDirectory } = publishingStorage();
 const accounts = [...testAccounts, ...new SocialAccountVault(publishingDirectory).accounts()];
 const server = createApi(undefined, { store, publishingQueue: new PublishingQueue(join(publishingDirectory, 'publishing.sqlite')), accounts });
 server.listen(api, '127.0.0.1', () => console.log(`Dizzle fixture API: http://127.0.0.1:${api}`));

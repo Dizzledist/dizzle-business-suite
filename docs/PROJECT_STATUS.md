@@ -2,7 +2,15 @@
 
 Updated: November 11, 2026 (America/Los_Angeles).
 
-## Current task: approved Instagram/X publishing
+## Current task: first hosted social pilot preparation
+
+Active lead: Cheddr with Codex. User requests review of PR #5 / 96e8fc8, restart/due-time/exactly-once demonstration with test adapters, a private one-host Cheddr staging setup and concrete account/live-test approval checklist. Verified current draft PR head before changes. Scope: review evidence, stable private storage configuration, staging artifacts and test-only verification. Live publishing remains disabled; no account connection, public exposure or deployment. Shared storage/auth boundaries need both builders' review.
+
+Prepared: verified draft PR #5 at 96e8fc8 before changes. Owner confirms @cheddrco_ and no configured X developer app. Added private one-host service/env/proxy templates, a staging preflight, explicit shared marketing/queue/vault storage resolver and wrong-handle OAuth guard. Added an exact source-image/hash/caption/proposed-time packet without approving or queueing it. See [staging runbook and account checklist](SOCIAL_PILOT_STAGING.md). No host or provider account was deployed/connected.
+
+Verification: full check passes typecheck, 85 API/provider/store/queue tests, build and 9 Chromium tests. Nine focused pilot checks include actual HTTP approval/queue, API and queue reopen, due-time single test send, persistent receipt, editing, cancel/restart, uncertainty/restart, stable storage and staging guards. Production auth and worker execution-time employee/grant revalidation remain blockers; live gates remain hard-off. Prepared Linux units/nginx snippets still need operator validation on the actual host. Local staging preflight intentionally fails because this checkout contains its private local .env and lacks staging configuration; it never prints values.
+
+## Previous task: approved Instagram/X publishing
 
 Active lead: Cheddr with Codex, November 11. Explicit user request authorizes persistent approved queue, independent worker, provider adapters, manual fallback and AI proposals on the marketing branch / draft PR #5. Live publishing stays OFF until a separately authorized test post. Inspect current official docs, use isolated adapters/clock, preserve local identities and existing grants; deployment/account setup require user action. Shared contract/storage/API changes need both builders' review.
 

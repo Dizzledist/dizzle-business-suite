@@ -1,13 +1,13 @@
 import { existsSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
 import { join } from 'node:path';
-import { MarketingStore } from '../server/marketing-store';
+import { publishingStorage } from '../server/publishing/storage';
 import { PublishingQueue } from '../server/publishing/queue';
 import { PublishingWorker } from '../server/publishing/worker';
 import { TestPublishingAdapter, InstagramAdapter, XAdapter } from '../server/publishing/adapters';
 import { SocialAccountVault } from '../server/publishing/accounts';
 if (existsSync('.env')) loadEnvFile('.env');
-const directory = process.env.DIZZLE_PUBLISHING_DIR ?? new MarketingStore().directory;
+const directory = publishingStorage().directory;
 const queue = new PublishingQueue(join(directory, 'publishing.sqlite')), vault = new SocialAccountVault(directory);
 // Live reads, like live writes, await explicit account/test authorization. No public create calls here.
 const LIVE_PROVIDER_READS_ENABLED = false;

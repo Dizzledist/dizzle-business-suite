@@ -1,0 +1,30 @@
+{
+  "status": "proposal_only_not_approved_not_queued",
+  "brandId": "cheddr",
+  "platform": "x",
+  "expectedHandle": "@cheddrco_",
+  "providerUserId": null,
+  "accountSetup": "Owner confirmed X developer app is not configured",
+  "caption": "Cheddr publishing pilot: a single-image test from our marketing workspace.",
+  "sourceAssetId": "asset-8578837e-f19f-4635-889d-655bcb5ed9f7",
+  "sourceVersionId": "version-e5ce065d-5aa3-4bad-897c-5e5c046af3c2",
+  "sourceApprovalStatus": "draft_requires_exact_image_approval",
+  "privateImageRelativePath": "pilot-review/cheddr-first-post.jpg",
+  "imageSha256": "777a123ebee2a46ffe32aaaf2f2a42b3cb4189988b911c56d73b6148d1460468",
+  "imageMimeType": "image/jpeg",
+  "imageWidth": 512,
+  "imageHeight": 512,
+  "imageBytes": 47201,
+  "imageDescription": "Illustrative generic bottle on burgundy backdrop and dark stone; not a verified Cheddr product depiction",
+  "proposedPacificTime": "2026-11-12T12:00:00-08:00",
+  "proposedUtcTime": "2026-11-12T20:00:00.000Z",
+  "timeRule": "Reconfirm a future instant after setup; never enable an overdue proposal to catch up automatically",
+  "livePublishingEnabled": false,
+  "requiredApprovals": [
+    "Verified numeric account ID and exact handle after OAuth",
+    "Exact JPEG bytes and source creative version",
+    "Exact caption",
+    "Future Pacific and UTC posting instant",
+    "Named owner authorization for exactly one live job after identity/hosting/scope blockers are resolved"
+  ]
+}

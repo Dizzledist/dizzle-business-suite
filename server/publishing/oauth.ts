@@ -1,6 +1,9 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { SocialPlatform } from '../../shared/publishing';
 export const oauthScopes = { instagram: ['instagram_business_basic', 'instagram_business_content_publish'], x: ['tweet.read', 'tweet.write', 'users.read', 'media.write', 'offline.access'] };
+export function verifyExpectedHandle(actual: string, expected?: string) {
+  if (expected && actual !== expected) throw new Error('Authorized account does not match the expected pilot handle. Nothing was saved.');
+}
 export function oauthStart(platform: SocialPlatform, clientId: string, redirectUri: string) {
   const state = randomBytes(32).toString('base64url'), verifier = randomBytes(48).toString('base64url');
   const url = new URL(platform === 'x' ? 'https://x.com/i/oauth2/authorize' : 'https://www.instagram.com/oauth/authorize');

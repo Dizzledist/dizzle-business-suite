@@ -2,6 +2,8 @@
 
 November 11, 2026. Marketing branch / draft PR #5. **Live publishing is hard-disabled. No live post, account OAuth exchange or paid API request was made for this task.** Provider HTTP calls in tests are stubs. Existing OpenAI image-generation configuration/history is preserved.
 
+First-hosted-pilot preparation now has a [dedicated staging runbook](SOCIAL_PILOT_STAGING.md), private service/environment templates, HTTP restart verification and a proposal for **@cheddrco_**. The owner confirms its X developer app is not configured. Staging is SSH-only until reviewed real authentication and execution-time grant revalidation exist; live gates remain false.
+
 ## What works locally
 
 Calendar entries can select a connected destination, approved raster creative, caption and Pacific posting time. The reviewer sees the handle, caption, time and exact JPEG export. Every content edit clears approval; account metadata and original image bytes are part of the approval snapshot. Editing queued content cancels its old queued job atomically before returning it to draft. Claimed, uncertain and completed posts are immutable; create a new entry for a new post.
@@ -81,6 +83,8 @@ Configured brand IDs: `dizzle`, `cheddr`, `puffr`, `frosty`, `georgia-hemp`. Con
 The existing `MarketingStore` remains a single-API-process local JSON store. The new versioned `server/publishing/001-publishing.sql` creates a **separate new queue**, not a migration to Zoho, Sales CRM or another database. Existing queue schemas are checked; no automatic upgrade of a future schema is performed. Node's built-in SQLite currently emits an experimental warning under the pinned Node 24 environment.
 
 Default queue/vault location is the existing checkout-specific private marketing data directory outside the web root. `DIZZLE_PUBLISHING_DIR` may override it with an **absolute private directory outside the checkout**; API, worker, OAuth CLI, reconciliation and media origin must use the same directory. Keep the same persistent disk/path across restarts and releases. The queue contains approved JPEG bytes, so the worker does not need the browser or fixture API to send. SQLite atomic claims support multiple workers on **one host/local disk**; this is not multi-host PostgreSQL or a network-filesystem claim guarantee. The API's JSON store still requires a single writer.
+
+For staging releases, explicitly set `DIZZLE_MARKETING_DIR` as well: publishing override alone did not relocate `state.json` at 96e8fc8. The shared storage resolver now lets all entry points use a stable private marketing path; this first-pilot template requires both directory settings to be identical. Existing local defaults remain unchanged. `SOCIAL_EXPECTED_HANDLE` optionally rejects an OAuth connection to the wrong account before credentials are saved; the first pilot pins `@cheddrco_`.
 
 `social-accounts.json` contains public account metadata plus AES-256-GCM encrypted tokens. Set `SOCIAL_TOKEN_KEY` to a private random 32-byte hex key and retain it in server secret storage; losing it requires reconnecting accounts. Restrict filesystem permissions/ACLs and backups. Server client secrets remain environment variables. Credential refresh uses an exclusive directory lock; after a crash, stop workers and inspect/recover an orphaned `token-refresh.lock` before reconnecting. Never steal the lock from an alive refresh process. No credential or signed media URL enters a client projection, handoff, Git file or error response.
 

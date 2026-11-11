@@ -1,9 +1,9 @@
 import { createServer } from 'node:http';
 import { existsSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
-import { MarketingStore } from '../server/marketing-store';
+import { publishingStorage } from '../server/publishing/storage';
 import { SocialAccountVault } from '../server/publishing/accounts';
-import { consumeOAuthState, oauthScopes, oauthStart } from '../server/publishing/oauth';
+import { consumeOAuthState, oauthScopes, oauthStart, verifyExpectedHandle } from '../server/publishing/oauth';
 if (existsSync('.env')) loadEnvFile('.env');
 const [platform, brandId] = process.argv.slice(2);
 if (!['instagram', 'x'].includes(platform) || !['dizzle', 'cheddr', 'puffr', 'frosty', 'georgia-hemp'].includes(brandId)) throw new Error('Usage: npm run social:connect -- <instagram|x> <brandId>');
@@ -14,7 +14,7 @@ const redirectUri = process.env.SOCIAL_OAUTH_REDIRECT_URI;
 if (!clientId || !clientSecret || !redirectUri || !/^[a-f0-9]{64}$/i.test(process.env.SOCIAL_TOKEN_KEY ?? '')) throw new Error('Configure server client credentials, SOCIAL_OAUTH_REDIRECT_URI and SOCIAL_TOKEN_KEY. See SOCIAL_PUBLISHING.md.');
 const redirect = new URL(redirectUri); if (redirect.protocol !== 'https:' && !['127.0.0.1', 'localhost'].includes(redirect.hostname)) throw new Error('OAuth requires HTTPS or a registered loopback callback.');
 const pending = oauthStart(provider, clientId, redirectUri);
-const vault = new SocialAccountVault(process.env.DIZZLE_PUBLISHING_DIR ?? new MarketingStore().directory);
+const vault = new SocialAccountVault(publishingStorage().directory);
 async function api(url: string, init?: RequestInit) { const r = await fetch(url, { ...init, redirect: 'error', signal: AbortSignal.timeout(20_000) }); if (!r.ok) throw new Error('Provider rejected OAuth/profile request. Check permissions and app configuration.'); return r.json(); }
 const server = createServer(async (req, res) => {
   const callback = new URL(req.url ?? '/', 'http://callback');
@@ -41,6 +41,7 @@ const server = createServer(async (req, res) => {
     const profile = response.data?.[0] ?? response.data ?? response, id = provider === 'x' ? profile.id : profile.user_id;
     if (!/^\d+$/.test(id ?? '') || !/^[A-Za-z0-9_.]+$/.test(profile.username ?? '')) throw new Error('Could not verify the authorized account identity.');
     const account = { id: `${provider}-${brandId}-${id}`, brandId, platform: provider, providerUserId: id, handle: '@' + profile.username, mode: 'live' as const, connected: true };
+    verifyExpectedHandle(account.handle, process.env.SOCIAL_EXPECTED_HANDLE);
     vault.save(account, { accessToken, refreshToken, issuedAt: Date.now(), expiresAt: Date.now() + expiresIn * 1000 });
     console.log(`Connected ${provider} ${account.handle} to ${brandId}. Live publishing remains OFF. Restart the local API to show the account.`);
     res.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' }); res.end('Account connected. Close this tab. Live publishing remains OFF.'); server.close();
