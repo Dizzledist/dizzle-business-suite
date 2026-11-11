@@ -66,12 +66,17 @@ export interface MarketingAsset {
 export interface GenerationJob {
   id: string; organizationId: string; assetId: string; versionId: string | null; campaignId: string; prompt: string;
   referenceAssetIds: string[]; width: number; height: number;
-  status: 'succeeded' | 'failed'; error: string | null; attempts: number; createdBy: string; createdAt: string;
+  status: 'running' | 'succeeded' | 'failed'; error: string | null; attempts: number; createdBy: string; createdAt: string;
+  requestKey: string; retryKeys: string[]; fingerprint: string; retryable: boolean; outcomeUnknown: boolean;
+  model: string; quality: string; providerSize: string | null; providerRequestId: string | null;
+  usage: { inputTokens: number; outputTokens: number; totalTokens: number } | null;
+  attemptDates: string[];
 }
 export interface MarketingWorkspaceData {
   identity: Identity; brands: Brand[]; campaigns: Campaign[]; content: ContentItem[];
   assets: MarketingAsset[]; generationJobs: GenerationJob[]; eligibleReps: { id: string; name: string }[];
   fixtureNotice: string;
+  imageGeneration: { mode: 'openai' | 'test'; ready: boolean; model: string; quality: string; message: string; remainingAttempts: number; maxDailyAttempts: number; persistent: boolean };
 }
 export interface SalesAssetView {
   assetId: string; versionId: string; title: string; kind: AssetKind; brand: string;

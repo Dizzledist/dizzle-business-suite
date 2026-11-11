@@ -1,4 +1,7 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
+import sharp from 'sharp';
+import { ImageGenerationError, OpenAIImageGenerator, type ImageGenerator, type GeneratedImage } from './image-generation';
+import { MarketingStore } from './marketing-store';
 import type {
   AssetPublication, AssetVersion, Brand, Campaign, ContentItem, GenerationJob, Identity,
   MarketingAsset, MarketingGrant, MarketingWorkspaceData, SalesAssetView,
@@ -6,13 +9,13 @@ import type {
 import { ApiError, Workflow } from './workflow';
 
 const organizationId = 'demo-o1';
-const fixtureNotice = 'Synthetic marketing fixtures. Sample generation is local SVG artwork; publishing is internal only. Data resets on API restart or Reset demo.';
+const fixtureNotice = 'Synthetic business fixtures and isolated test images. Publishing is internal only. Ephemeral test state resets on API restart or Reset demo.';
 const brands: Brand[] = [
   { id: 'dizzle', name: 'Dizzle Dist' }, { id: 'cheddr', name: 'Cheddr' },
   { id: 'puffr', name: 'Puffr' }, { id: 'frosty', name: 'Frosty' },
   { id: 'georgia-hemp', name: 'Georgia Hemp Co' },
 ];
-type FileRecord = { mimeType: string; body: string; fileName: string };
+type FileRecord = { mimeType: string; body: string | Buffer; fileName: string };
 type CampaignInput = { brandId: string; title: string; objective: string; owner: string };
 type ContentInput = {
   campaignId: string; title: string; objective: string; owner: string; channel: string;
@@ -20,17 +23,13 @@ type ContentInput = {
 };
 type GenerationInput = {
   brandId: string; campaignId: string; prompt: string; referenceAssetIds: string[];
-  width: number; height: number; simulateTransientError: boolean; assetId?: string;
+  width: number; height: number; simulateTransientError: boolean; assetId?: string; requestKey: string;
 };
 
 const escapeXml = (value: string) => value.replace(/[<>&"']/g, character => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[character]!);
-function artwork(brand: string, prompt: string, width: number, height: number, version: number) {
+function fixtureArtwork(brand: string, prompt: string, width: number, height: number, version: number) {
   const title = escapeXml(prompt.trim().split(/\s+/).slice(0, 7).join(' '));
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#211b1b"/><path d="M0 ${height * .72} Q${width * .42} ${height * .35} ${width} ${height * .6} V${height} H0Z" fill="#8b1825"/><circle cx="${width * .78}" cy="${height * .23}" r="${Math.min(width, height) * .13}" fill="#dd3946"/><text x="8%" y="18%" fill="#f2eeee" font-family="Georgia,serif" font-size="${Math.max(20, width * .052)}">${escapeXml(brand)}</text><text x="8%" y="48%" fill="white" font-family="Georgia,serif" font-size="${Math.max(28, width * .074)}">${title}</text><text x="8%" y="90%" fill="#f7cbd0" font-family="sans-serif" font-size="${Math.max(12, width * .022)}">SAMPLE ARTWORK · VERSION ${version}</text></svg>`;
-}
-
-export interface GenerationAdapter {
-  render(brand: string, prompt: string, width: number, height: number, version: number): string;
 }
 
 export class MarketingService {
@@ -40,9 +39,34 @@ export class MarketingService {
   private jobs: GenerationJob[] = [];
   private files = new Map<string, FileRecord>();
 
-  constructor(private workflow: Workflow, private generator: GenerationAdapter = { render: artwork }) { this.reset(); }
+  constructor(private workflow: Workflow, private generator: ImageGenerator = new OpenAIImageGenerator(), private store?: MarketingStore) {
+    this.seed();
+    const saved = store?.load() as { schema?: number; campaigns?: Campaign[]; content?: ContentItem[]; assets?: MarketingAsset[]; jobs?: GenerationJob[]; files?: [string, { mimeType: string; fileName: string; body: string }][] } | null;
+    if (saved) {
+      if (saved.schema !== 1 || ![saved.campaigns, saved.content, saved.assets, saved.jobs, saved.files].every(Array.isArray)) throw new Error('Unsupported saved marketing state. Preserve it before recovery.');
+      this.campaigns = saved.campaigns!; this.content = saved.content!; this.assets = saved.assets!; this.jobs = saved.jobs!;
+      this.files = new Map(saved.files!.map(([id, file]) => [id, { ...file, body: Buffer.from(file.body, 'base64') }]));
+      for (const job of this.jobs) if (job.status === 'running') { job.status = 'failed'; job.retryable = false; job.outcomeUnknown = true; job.error = 'The API restarted during generation. Check OpenAI usage before starting another image.'; }
+    }
+    this.persist();
+  }
+
+  private persist() {
+    this.store?.save({ schema: 1, campaigns: this.campaigns, content: this.content, assets: this.assets, jobs: this.jobs,
+      files: [...this.files.entries()].map(([id, file]) => [id, { ...file, body: Buffer.from(file.body).toString('base64') }]) });
+  }
+  private attemptsToday() {
+    const today = new Date().toISOString().slice(0, 10);
+    return this.jobs.reduce((sum, job) => sum + job.attemptDates.filter(date => date.startsWith(today)).length, 0);
+  }
+  private requireGenerationCapacity() {
+    if (!this.generator.ready) throw new ApiError(503, this.generator.message);
+    if (this.jobs.some(job => job.status === 'running')) throw new ApiError(409, 'An image is already generating. Wait for it to finish.');
+    if (this.attemptsToday() >= 10) throw new ApiError(429, 'The local limit of 10 image attempts per UTC day has been reached.');
+  }
 
   reset() {
+    if (this.store) return; // Paid image history is never erased by invoice-demo reset.
     this.campaigns = [];
     this.content = [];
     this.assets = [];
@@ -70,7 +94,10 @@ export class MarketingService {
       content: this.content.map(item => ({ ...item })),
       assets: this.assets.filter(asset => !['price_list', 'coa'].includes(asset.kind) || actor.marketingGrants.includes('asset:read:all')).map(asset => ({ ...asset, versions: asset.versions.map(version => ({ ...version })), publications: asset.publications.map(publication => ({ ...publication, repIds: [...publication.repIds] })) })),
       generationJobs: this.jobs.map(job => ({ ...job, referenceAssetIds: [...job.referenceAssetIds] })),
-      eligibleReps: this.reps().map(rep => ({ id: rep.id, name: rep.name })), fixtureNotice,
+      eligibleReps: this.reps().map(rep => ({ id: rep.id, name: rep.name })),
+      fixtureNotice: this.store ? 'Business records include synthetic fixtures. Marketing drafts and files are saved locally; Reset demo resets invoice/payment fixtures only.' : fixtureNotice,
+      imageGeneration: { mode: this.generator.mode, ready: this.generator.ready, model: this.generator.model, quality: this.generator.quality, message: this.generator.message,
+        remainingAttempts: Math.max(0, 10 - this.attemptsToday()), maxDailyAttempts: 10, persistent: !!this.store },
     };
   }
 
@@ -79,7 +106,7 @@ export class MarketingService {
     this.brand(input.brandId);
     const campaign: Campaign = { id: `campaign-${randomUUID()}`, organizationId, ...input, createdBy: actor.id, createdAt: new Date().toISOString() };
     this.campaigns.push(campaign);
-    return { ...campaign };
+    this.persist(); return { ...campaign };
   }
 
   createContent(actor: Identity, input: ContentInput) {
@@ -92,7 +119,7 @@ export class MarketingService {
       approvalSnapshot: null, reviewNote: null, scheduledAt: null,
     };
     this.content.push(item);
-    return { ...item };
+    this.persist(); return { ...item };
   }
 
   updateContent(actor: Identity, id: string, input: ContentInput) {
@@ -102,7 +129,7 @@ export class MarketingService {
     this.validateLinkedVersion(input.linkedAssetId, input.linkedVersionId, campaign.brandId);
     Object.assign(item, input, { editedBy: actor.id, campaignId: campaign.id, brandId: campaign.brandId, status: 'draft',
       approvedBy: null, approvedAt: null, approvalSnapshot: null, reviewNote: null, scheduledAt: null });
-    return { ...item };
+    this.persist(); return { ...item };
   }
 
   submitContent(actor: Identity, id: string) {
@@ -111,7 +138,7 @@ export class MarketingService {
     if (item.status !== 'draft') throw new ApiError(409, 'Only draft content can be submitted.');
     item.status = 'in_review';
     item.reviewNote = null;
-    return { ...item };
+    this.persist(); return { ...item };
   }
 
   reviewContent(actor: Identity, id: string, decision: 'approve' | 'return', notes: string) {
@@ -126,7 +153,7 @@ export class MarketingService {
       item.status = 'approved'; item.approvedBy = actor.id; item.approvedAt = new Date().toISOString();
       item.approvalSnapshot = this.contentSnapshot(item);
     }
-    return { ...item };
+    this.persist(); return { ...item };
   }
 
   scheduleContent(actor: Identity, id: string) {
@@ -136,50 +163,101 @@ export class MarketingService {
       throw new ApiError(409, 'Content needs current approval before it can be scheduled.');
     this.validateLinkedVersion(item.linkedAssetId, item.linkedVersionId, item.brandId);
     item.status = 'scheduled'; item.scheduledAt = new Date().toISOString();
-    return { ...item };
+    this.persist(); return { ...item };
   }
 
   createGeneration(actor: Identity, input: GenerationInput) {
     this.require(actor, 'creative:generate');
+    const fingerprint = createHash('sha256').update(JSON.stringify([input.brandId, input.campaignId, input.prompt, input.referenceAssetIds, input.width, input.height, input.assetId ?? null, input.simulateTransientError])).digest('hex');
+    const previous = this.jobs.find(job => job.requestKey === input.requestKey && job.createdBy === actor.id);
+    if (previous) { if (previous.fingerprint !== fingerprint) throw new ApiError(409, 'This request key was already used with different generation settings.'); return { ...previous }; }
+    this.requireGenerationCapacity();
+    if (input.simulateTransientError && this.generator.mode !== 'test') throw new ApiError(400, 'Simulation is available in isolated tests only.');
     const campaign = this.campaign(input.campaignId);
     if (campaign.brandId !== input.brandId) throw new ApiError(400, 'Campaign and brand must match.');
-    for (const referenceId of input.referenceAssetIds) {
+    const references = [...new Set(input.referenceAssetIds)];
+    if (references.length > 4) throw new ApiError(400, 'Choose at most four original references.');
+    for (const referenceId of references) {
       const reference = this.asset(referenceId);
       if (reference.kind !== 'reference' || reference.brandId !== input.brandId) throw new ApiError(400, 'References must be original files from this brand.');
     }
     let asset: MarketingAsset;
     if (input.assetId) {
       asset = this.asset(input.assetId);
-      if (asset.kind !== 'creative' || asset.brandId !== input.brandId || asset.campaignId !== campaign.id)
-        throw new ApiError(400, 'A variation must remain in the same brand and campaign.');
+      if (asset.kind !== 'creative' || asset.brandId !== input.brandId || asset.campaignId !== campaign.id) throw new ApiError(400, 'A variation must remain in the same brand and campaign.');
     } else {
-      asset = this.newAsset({ brandId: input.brandId, kind: 'creative', title: `Creative · ${campaign.title}`, campaignId: campaign.id,
+      asset = this.newAsset({ brandId: input.brandId, kind: 'creative', title: 'Creative \u00b7 ' + campaign.title, campaignId: campaign.id,
         productSku: null, batchId: null, restrictedAccountId: null, createdBy: actor.id, sourceType: 'generated_artwork' });
       this.assets.push(asset);
     }
-    const job: GenerationJob = {
-      id: `generation-${randomUUID()}`, organizationId, assetId: asset.id, versionId: null,
-      campaignId: campaign.id, prompt: input.prompt.trim(), referenceAssetIds: [...input.referenceAssetIds],
-      width: input.width, height: input.height, status: 'succeeded', error: null, attempts: 1,
-      createdBy: actor.id, createdAt: new Date().toISOString(),
-    };
-    if (input.simulateTransientError) {
-      job.status = 'failed'; job.error = 'Sample adapter transient error. Retry this job to complete the same request.';
-    } else this.completeGeneration(job, asset);
-    this.jobs.unshift(job);
-    return { ...job, referenceAssetIds: [...job.referenceAssetIds] };
+    const now = new Date().toISOString();
+    const job: GenerationJob = { id: 'generation-' + randomUUID(), organizationId, assetId: asset.id, versionId: null,
+      campaignId: campaign.id, prompt: input.prompt.trim(), referenceAssetIds: references, width: input.width, height: input.height,
+      status: 'running', error: null, attempts: 1, createdBy: actor.id, createdAt: now, requestKey: input.requestKey,
+      fingerprint, retryKeys: [], retryable: false, outcomeUnknown: false, model: this.generator.model, quality: this.generator.quality,
+      providerSize: null, providerRequestId: null, usage: null, attemptDates: [now] };
+    this.jobs.unshift(job); this.persist();
+    if (input.simulateTransientError) { job.status = 'failed'; job.retryable = true; job.error = 'Isolated test provider error. Retry to continue.'; this.persist(); }
+    else void this.executeGeneration(job, asset);
+    return { ...job };
   }
 
-  retryGeneration(actor: Identity, id: string) {
+  retryGeneration(actor: Identity, id: string, requestKey: string) {
     this.require(actor, 'creative:generate');
-    const job = this.jobs.find(candidate => candidate.id === id);
+    const job = this.jobs.find(candidate => candidate.id === id && candidate.createdBy === actor.id);
     if (!job) throw new ApiError(404, 'Generation job not found.');
-    if (job.createdBy !== actor.id) throw new ApiError(404, 'Generation job not found.');
-    if (job.status === 'succeeded') return { ...job, referenceAssetIds: [...job.referenceAssetIds] };
-    job.attempts++;
-    job.status = 'succeeded'; job.error = null;
-    this.completeGeneration(job, this.asset(job.assetId));
-    return { ...job, referenceAssetIds: [...job.referenceAssetIds] };
+    if (job.retryKeys.includes(requestKey) || job.status === 'succeeded') return { ...job };
+    if (job.status === 'running') return { ...job };
+    if (!job.retryable || job.outcomeUnknown) throw new ApiError(409, 'This request cannot be retried safely. Check its outcome before creating a new image.');
+    if (job.attempts >= 3) throw new ApiError(429, 'This image has reached its limit of three attempts.');
+    if (job.model !== this.generator.model || job.quality !== this.generator.quality) throw new ApiError(409, 'Image model settings changed. Start a new generation instead of changing this job.');
+    this.requireGenerationCapacity();
+    job.retryKeys.push(requestKey); job.attempts++; job.attemptDates.push(new Date().toISOString());
+    job.status = 'running'; job.error = null; job.retryable = false; this.persist();
+    void this.executeGeneration(job, this.asset(job.assetId));
+    return { ...job };
+  }
+
+  private async executeGeneration(job: GenerationJob, asset: MarketingAsset) {
+    try {
+      const references = job.referenceAssetIds.map(id => {
+        const reference = this.asset(id); const version = reference.versions.at(-1)!; const file = this.files.get(version.id)!;
+        return { body: Buffer.from(file.body), mimeType: file.mimeType };
+      });
+      const image = await this.generator.generate({ prompt: job.prompt, width: job.width, height: job.height, references, requestKey: job.retryKeys.at(-1) ?? job.requestKey });
+      // An ephemeral reset may have discarded an in-flight test job.
+      if (!this.jobs.includes(job)) return;
+      this.completeGeneration(job, asset, image); job.status = 'succeeded';
+    } catch (error) {
+      job.status = 'failed';
+      job.error = error instanceof ImageGenerationError ? error.message : 'Image generation failed without a confirmed saved result. Check usage before starting another image.';
+      job.retryable = error instanceof ImageGenerationError && error.retryable;
+      job.outcomeUnknown = !(error instanceof ImageGenerationError) || error.outcomeUnknown;
+    }
+    try { this.persist(); } catch { job.error = 'The local store could not save this job. Keep the API running and download any completed image before restarting.'; }
+  }
+
+  async uploadReference(actor: Identity, input: { brandId: string; title: string; base64: string }) {
+    this.require(actor, 'creative:generate'); this.brand(input.brandId);
+    const bytes = Buffer.from(input.base64, 'base64');
+    if (bytes.length > 5_000_000) throw new ApiError(413, 'Reference images must be at most 5 MB.');
+    let metadata;
+    try { metadata = await sharp(bytes, { limitInputPixels: 24_000_000 }).metadata(); }
+    catch { throw new ApiError(400, 'Upload a valid PNG, JPEG or WebP image.'); }
+    if (!['png', 'jpeg', 'webp'].includes(metadata.format ?? '') || metadata.pages && metadata.pages > 1) throw new ApiError(400, 'Upload a single PNG, JPEG or WebP image.');
+    // Decode once to reject truncated payloads, but retain the uploaded original
+    // bytes. The provider adapter converts a separate copy for image input.
+    try { await sharp(bytes, { limitInputPixels: 24_000_000 }).stats(); }
+    catch { throw new ApiError(400, 'Upload a complete PNG, JPEG or WebP image.'); }
+    const mimeType = `image/${metadata.format}`;
+    const asset = this.newAsset({ brandId: input.brandId, kind: 'reference', title: input.title, campaignId: null, productSku: null,
+      batchId: null, restrictedAccountId: null, createdBy: actor.id, sourceType: 'original_reference' });
+    const version: AssetVersion = { id: 'version-' + randomUUID(), organizationId, assetId: asset.id, number: 1, status: 'draft', mimeType,
+      width: metadata.width ?? null, height: metadata.height ?? null, createdBy: actor.id, createdAt: new Date().toISOString(),
+      reviewedBy: null, reviewedAt: null, reviewNote: null, provenance: 'User-uploaded original reference; original bytes retained. Not an approved sales asset.', sourceType: 'original_reference' };
+    asset.versions.push(version); this.assets.push(asset);
+    this.files.set(version.id, { body: bytes, mimeType, fileName: 'reference-' + asset.id + '.' + metadata.format });
+    this.persist(); return { ...asset };
   }
 
   submitVersion(actor: Identity, id: string) {
@@ -188,7 +266,7 @@ export class MarketingService {
     if (version.createdBy !== actor.id) throw new ApiError(404, 'Asset version not found.');
     if (version.status !== 'draft') throw new ApiError(409, 'Only a draft version can be submitted.');
     version.status = 'in_review';
-    return { ...version };
+    this.persist(); return { ...version };
   }
 
   reviewVersion(actor: Identity, id: string, decision: 'approve' | 'return', notes: string) {
@@ -198,7 +276,7 @@ export class MarketingService {
     if (actor.id === version.createdBy) throw new ApiError(403, 'Self-approval is disabled in this local demo.');
     version.reviewedBy = actor.id; version.reviewedAt = new Date().toISOString(); version.reviewNote = notes.trim() || null;
     version.status = decision === 'approve' ? 'approved' : 'draft';
-    return { ...version };
+    this.persist(); return { ...version };
   }
 
   publishVersion(actor: Identity, id: string, audienceMode: 'all' | 'selected', repIds: string[]) {
@@ -219,7 +297,7 @@ export class MarketingService {
       publishedAt: new Date().toISOString(), retiredBy: null, retiredAt: null, retireReason: null,
     };
     asset.publications.push(publication);
-    return { ...publication, repIds: [...publication.repIds] };
+    this.persist(); return { ...publication, repIds: [...publication.repIds] };
   }
 
   retirePublication(actor: Identity, id: string, reason: string) {
@@ -228,7 +306,7 @@ export class MarketingService {
     if (publication.status === 'retired') return { ...publication, repIds: [...publication.repIds] };
     publication.status = 'retired'; publication.retiredBy = actor.id;
     publication.retiredAt = new Date().toISOString(); publication.retireReason = reason.trim();
-    return { ...publication, repIds: [...publication.repIds] };
+    this.persist(); return { ...publication, repIds: [...publication.repIds] };
   }
 
   publishedAssets(actor: Identity): SalesAssetView[] {
@@ -276,18 +354,15 @@ export class MarketingService {
       (!asset.restrictedAccountId || this.workflow.isAssignedToAccount(actor, asset.restrictedAccountId));
   }
 
-  private completeGeneration(job: GenerationJob, asset: MarketingAsset) {
-    const versionNumber = Math.max(0, ...asset.versions.map(version => version.number)) + 1;
-    const id = `version-${randomUUID()}`;
-    const version: AssetVersion = {
-      id, organizationId, assetId: asset.id, number: versionNumber, status: 'draft', mimeType: 'image/svg+xml',
-      width: job.width, height: job.height, createdBy: job.createdBy, createdAt: new Date().toISOString(),
-      reviewedBy: null, reviewedAt: null, reviewNote: null, provenance: 'Local sample generation adapter; not an AI/provider result.',
-      sourceType: 'generated_artwork',
-    };
-    asset.versions.push(version);
-    job.versionId = id;
-    this.files.set(id, { mimeType: version.mimeType, body: this.generator.render(brands.find(brand => brand.id === asset.brandId)!.name, job.prompt, job.width, job.height, versionNumber), fileName: `sample-artwork-v${versionNumber}.svg` });
+  private completeGeneration(job: GenerationJob, asset: MarketingAsset, image: GeneratedImage) {
+    const number = Math.max(0, ...asset.versions.map(version => version.number)) + 1;
+    const id = 'version-' + randomUUID();
+    const version: AssetVersion = { id, organizationId, assetId: asset.id, number, status: 'draft', mimeType: 'image/png',
+      width: image.width, height: image.height, createdBy: job.createdBy, createdAt: new Date().toISOString(),
+      reviewedBy: null, reviewedAt: null, reviewNote: null,
+      provenance: (this.generator.mode === 'test' ? 'Isolated test PNG' : 'OpenAI image generation') + ' / ' + job.model + ' / ' + job.quality + '; original ' + image.providerSize + '; fitted without cropping to ' + image.width + 'x' + image.height + '.', sourceType: 'generated_artwork' };
+    asset.versions.push(version); job.versionId = id; job.providerSize = image.providerSize; job.providerRequestId = image.requestId; job.usage = image.usage;
+    this.files.set(id, { mimeType: 'image/png', body: image.body, fileName: 'artwork-v' + number + '.png' });
   }
 
   private newAsset(input: Pick<MarketingAsset, 'brandId' | 'kind' | 'title' | 'campaignId' | 'productSku' | 'batchId' | 'restrictedAccountId' | 'createdBy' | 'sourceType'>): MarketingAsset {
@@ -313,7 +388,7 @@ export class MarketingService {
     this.content.push(scheduled);
     const creative = this.seedAsset({ brandId: 'cheddr', kind: 'creative', title: 'Cheddr autumn campaign image', campaignId: campaign.id,
       productSku: 'CH-AUTUMN-01', batchId: null, restrictedAccountId: null, createdBy: 'marketing', sourceType: 'generated_artwork',
-      mimeType: 'image/svg+xml', body: artwork('Cheddr', 'Autumn collection preview', 1080, 1350, 1), fileName: 'cheddr-autumn-v1.svg', provenance: 'Seeded approved campaign creative; sample data.' });
+      mimeType: 'image/svg+xml', body: fixtureArtwork('Cheddr', 'Autumn collection preview', 1080, 1350, 1), fileName: 'cheddr-autumn-v1.svg', provenance: 'Seeded approved campaign creative; sample data.' });
     this.publishSeed(creative, 'all', []);
     const priceList = this.seedAsset({ brandId: 'dizzle', kind: 'price_list', title: 'Juniper Market wholesale price list', campaignId: null,
       productSku: null, batchId: null, restrictedAccountId: 'account-a', createdBy: 'owner', sourceType: 'uploaded_document',

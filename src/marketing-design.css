@@ -123,6 +123,21 @@
 .is-marketing .studio-form fieldset { border-color: #3c404b; border-radius: 6px; padding: 14px; }
 .is-marketing .studio-form label.check-option { display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; }
 .is-marketing .studio-form label.check-option input { margin: 0; accent-color: #dc7c8e; }
+.generation-connection { margin: 20px 0 25px; padding: 16px 19px; border: 1px solid #355b4c; border-radius: 7px; background: #192b24; }
+.generation-connection strong { font-size: 13px; color: #d2e7dc; }
+.generation-connection p { margin: 8px 0; font-size: 12px; color: #b0c5bc; }
+.generation-connection small { color: #94afa3; font-size: 10px; line-height: 1.8; }
+.generation-connection.needs-setup { border-color: #73563e; background: #2a241e; }
+.generation-connection.needs-setup strong { color: #e9ccb0; }
+.generation-connection.needs-setup p,.generation-connection.needs-setup small { color: #bfa68f; }
+.reference-upload { display: grid; gap: 10px; margin-bottom: 20px; }
+.reference-upload input { max-width: 100%; font-size: 11px; }
+.reference-upload small,.is-marketing .studio-form fieldset > small { font-size: 10px; line-height: 1.8; color: #919dad; }
+.generation-progress { display: flex; align-items: center; gap: 10px; padding: 25px 0; color: #e6c6ce; font-size: 12px; }
+.generation-progress > span { width: 15px; height: 15px; border: 2px solid #69414e; border-top-color: #f2afbd; border-radius: 50%; animation: generation-spin 1s linear infinite; }
+.provider-request-id { display: block; margin-top: 12px; overflow-wrap: anywhere; }
+.status-running { color: #e2bf8f; border-color: #6b563b; background: #30271c; }
+@keyframes generation-spin { to { transform: rotate(360deg); } }
 .is-marketing .assets-view { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
 .is-marketing .assets-view > .section-heading,.is-marketing .assets-view > .empty-inline { grid-column: 1/-1; }
 .is-marketing .asset-record { background: #191b21; border: 1px solid #343741; border-radius: 10px; padding: 21px; margin: 0; min-width: 0; }

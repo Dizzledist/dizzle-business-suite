@@ -2,7 +2,15 @@
 
 Updated: November 11, 2026 (America/Los_Angeles).
 
-## Current task: marketing navigation and visual design
+## Current task: OpenAI image generation
+
+Active lead: Cheddr with Codex, November 11. Explicit user request authorizes server-side OpenAI image generation in the existing Image Studio. Scope: key configuration, bounded provider calls, asynchronous job states/retry, raster output, protected file persistence and existing approval/publication consumption. Shared API/contracts need both builders' review; invoice, account and Warehouse logic remain unchanged. Tests use an isolated mock provider; real account verification depends on a locally supplied key. No external campaign sends, merge or deployment.
+
+Implemented: fixed-host OpenAI generation/edits, private key loading, PNG exports, original raster-reference uploads, immediate job responses with polling, sanitized failures, explicit bounded retries, saved UUIDs/counts and protected local marketing history. New paid artwork survives restart and invoice Reset demo. See [OpenAI setup](OPENAI_IMAGE_GENERATION.md) and MKT08. The current key placeholder remains blank; no real OpenAI call/account acceptance has been claimed. Existing Zoho private configuration remains separate and unchanged. Final check/publication evidence follows in HANDOFF.
+
+Verification: `npm run check` passes with typecheck, 51 API/provider/store tests, build and 7 Chromium tests, including existing invoice-to-warehouse cases. Browser tests use an isolated PNG provider and exercise reference upload, generation/retry, review and protected rep PNG download. Provider payload, quota/redaction, persistence, interrupted jobs and request deduplication are covered with stubs. Missing-key UI is explicit; direct web access to `.env` and the local store returns 403. Live-account activation still requires a privately supplied key and an API restart.
+
+## Previous task: marketing navigation and visual design
 
 Active lead: Cheddr with Codex. The user requests intuitive left-panel navigation for Home, Calendar, Image Studio, Review and Assets, plus a polished Dizzle visual system. Work stays on feat/marketing-workspace / draft PR #5. Implemented persistent desktop navigation, an accessible mobile drawer, contextual page headings, actionable overview counts, a creative launch area, thumbnail library, calmer forms and a plan-first Calendar with explicit editors. The new visual stylesheet is scoped to marketing. Both builders review App shell changes; existing fixture APIs/grants and Sales CRM/Warehouse boundaries are unchanged. MKT07 records this presentation decision. Verification/publication evidence is appended in HANDOFF; prior implementation records follow.
 

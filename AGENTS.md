@@ -10,6 +10,8 @@ Current task supersession, November 9: Phase 1 PR #3 is merged. Cheddr authorize
 
 Later November 9 implementation supersession: Cheddr supplied the Marketing Workspace build prompt and requested completion of the existing prototype on `feat/marketing-workspace`, draft PR #5. This authorizes fixture-backed marketing home, calendar/campaigns, sample image studio, review, internal Assets publication and rep consumption, shared local identity/navigation adjustments, focused tests and documentation. It supersedes the setup-only boundary for this task. Follow [marketing demo](docs/MARKETING_DEMO.md); keep real generation, external publishing/sends, production storage, Sales CRM/Warehouse integration, merge and deployment separate.
 
+November 11 image-generation supersession: Cheddr explicitly requests real OpenAI images instead of sample SVG generation. This authorizes the server-side image adapter, private key loading, bounded image API calls, raster reference uploads, PNG output and protected local marketing persistence for this task. See [OpenAI setup](docs/OPENAI_IMAGE_GENERATION.md). It supersedes the earlier sample-generation/no-provider-call restriction for images only. Test providers remain isolated and key-free; record whether a live call actually occurred. Do not change Zoho credentials, deploy fixture identities, send campaigns, merge or deploy as part of this work.
+
 ## Builder responsibilities
 
 | Area | Lead and coordination |

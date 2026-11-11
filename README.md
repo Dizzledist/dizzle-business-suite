@@ -4,7 +4,7 @@ Dizzle is a web app for the AI Business Suite described in the [project brief](d
 
 This repository contains the shared foundation and a Phase 1 local React/TypeScript app and API demonstrating the invoice-to-warehouse workflow with synthetic data. No live Zoho integration or production infrastructure is configured.
 
-The marketing branch also includes a fixture-backed Marketing Workspace: campaigns, internal content scheduling, sample creative generation, review and permission-scoped rep Assets. See the [marketing demo](docs/MARKETING_DEMO.md) for identities, exact steps and limitations. Select **Marketing editor** to start; use **Owner → Marketing** to review and publish.
+The marketing branch includes campaigns, internal content scheduling, server-side OpenAI PNG generation, review and permission-scoped rep Assets. See [OpenAI setup](docs/OPENAI_IMAGE_GENERATION.md) for private key configuration and saved image history, and the [marketing demo](docs/MARKETING_DEMO.md) for workflow steps. Select **Marketing editor** to start; use **Owner → Marketing** to review and publish. Real generation requires your own configured OpenAI project key.
 
 ## Run the local workflow
 
@@ -15,7 +15,7 @@ npm ci
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173**. Start as Sales manager, select DZ-1001, and either receive a verified fixture payment or release against documented terms with a reason. Replay events, repeat release requests and switch to rep/warehouse identities to inspect the resulting scope and job. **Reset demo** restores the sample records. State is in memory and resets on restart.
+Open **http://127.0.0.1:5173**. Start as Sales manager, select DZ-1001, and either receive a verified fixture payment or release against documented terms with a reason. Replay events, repeat release requests and switch to rep/warehouse identities to inspect the resulting scope and job. **Reset demo** restores the invoice/payment samples. Those fixtures reset on restart; marketing files and history are saved separately and survive reset/restart.
 
 See [local demo and acceptance coverage](docs/LOCAL_DEMO.md) for exact steps, API routes, test identities, verification assumptions and deferred production requirements. The identity selector is a local test facility, not production authentication.
 

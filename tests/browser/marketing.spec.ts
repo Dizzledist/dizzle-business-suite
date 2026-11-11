@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import sharp from 'sharp';
 
 test.beforeEach(async ({ request }) => {
   expect((await request.post('/api/demo/reset', { headers: { 'X-Demo-Identity': 'manager' }, data: {} })).ok()).toBeTruthy();
@@ -31,16 +32,18 @@ test('marketing creates content and creative; owner reviews and publishes; only 
   await page.getByRole('tab', { name: 'Image Studio' }).click();
   await page.getByLabel('Image prompt').fill('Crimson autumn launch');
   await page.getByLabel('Original Cheddr logo reference').check();
+  await page.getByLabel('Upload a reference image').setInputFiles({ name: 'Product photo.png', mimeType: 'image/png', buffer: await sharp({ create: { width: 24, height: 24, channels: 3, background: '#ad4858' } }).png().toBuffer() });
+  await expect(page.getByLabel('Product photo', { exact: false })).toBeChecked();
   await page.getByLabel('Simulate one transient sample error').check();
-  await page.getByRole('button', { name: 'Generate sample artwork' }).click();
+  await page.getByRole('button', { name: 'Generate image' }).click();
   const job = page.locator('.generation-card').first();
   await expect(job).toContainText('failed');
   await job.getByRole('button', { name: 'Retry job' }).click();
   await expect(job.locator('img')).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: 'test-results/marketing-studio-desktop.png', fullPage: true, animations: 'disabled' });
-  const [draftDownload] = await Promise.all([page.waitForEvent('download'), job.getByRole('button', { name: 'Download sample-artwork-v1.svg' }).click()]);
-  expect(draftDownload.suggestedFilename()).toBe('sample-artwork-v1.svg');
+  const [draftDownload] = await Promise.all([page.waitForEvent('download'), job.getByRole('button', { name: 'Download artwork-v1.png' }).click()]);
+  expect(draftDownload.suggestedFilename()).toBe('artwork-v1.png');
   const editor = { 'X-Demo-Identity': 'marketing' };
   const workspace = await (await page.request.get('/api/marketing/workspace', { headers: editor })).json();
   const generated = workspace.generationJobs[0];
@@ -69,7 +72,7 @@ test('marketing creates content and creative; owner reviews and publishes; only 
   await expect(salesAsset).toHaveCount(1);
   await expect(salesAsset.locator('img')).toBeVisible();
   const [download] = await Promise.all([page.waitForEvent('download'), salesAsset.getByRole('button', { name: /Download/ }).click()]);
-  expect(download.suggestedFilename()).toBe('sample-artwork-v1.svg');
+  expect(download.suggestedFilename()).toBe('artwork-v1.png');
   const file = `/api/assets/${generated.assetId}/versions/${generated.versionId}/file`;
   expect((await page.request.get(file, { headers: { 'X-Demo-Identity': 'rep-b' } })).status()).toBe(404);
   await page.getByLabel('Test identity').selectOption('rep-b');
@@ -150,4 +153,20 @@ test('left navigation supports keyboard selection and mobile dismissal without l
   await page.getByLabel('Department', { exact: true }).selectOption('sales');
   await expect(page.getByRole('heading', { name: 'From invoice to warehouse.' })).toBeVisible();
   expect(await page.evaluate(() => document.body.style.overflow)).not.toBe('hidden');
+});
+
+test('unconfigured OpenAI is clearly explained and generation stays disabled', async ({ page }) => {
+  await page.route('**/api/marketing/workspace', async route => {
+    const response = await route.fetch();
+    const data = await response.json();
+    data.imageGeneration = { ...data.imageGeneration, mode: 'openai', ready: false, message: 'Add OPENAI_API_KEY to the local .env file and restart the API to enable image generation.' };
+    await route.fulfill({ response, json: data });
+  });
+  await page.goto('/');
+  await page.getByLabel('Test identity').selectOption('marketing');
+  await page.getByRole('tab', { name: 'Image Studio', exact: true }).click();
+  await expect(page.getByText('Connect OpenAI to get started', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Generate image', exact: true })).toBeDisabled();
+  await expect(page.getByLabel('Simulate one transient sample error')).toHaveCount(0);
+  await page.screenshot({ path: 'test-results/openai-setup.png', fullPage: true, animations: 'disabled' });
 });

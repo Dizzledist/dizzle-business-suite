@@ -3,6 +3,7 @@ import { once } from 'node:events';
 import type { AddressInfo } from 'node:net';
 import { createApi } from '../server/api';
 import { Workflow } from '../server/workflow';
+import { TestImageGenerator } from './fixtures/image-generator';
 
 describe('fixture-backed marketing workflow', () => {
   let server: ReturnType<typeof createApi>;
@@ -10,7 +11,7 @@ describe('fixture-backed marketing workflow', () => {
   let workflow: Workflow;
   beforeEach(async () => {
     workflow = new Workflow();
-    server = createApi(workflow);
+    server = createApi(workflow, { generator: new TestImageGenerator() });
     server.listen(0, '127.0.0.1'); await once(server, 'listening');
     base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   });
@@ -25,8 +26,19 @@ describe('fixture-backed marketing workflow', () => {
   const generation = (workspace: any, overrides: Record<string, unknown> = {}) => ({
     brandId: 'cheddr', campaignId: workspace.campaigns[0].id, prompt: 'Autumn product launch, rich crimson studio light',
     referenceAssetIds: workspace.assets.filter((asset: any) => asset.kind === 'reference').map((asset: any) => asset.id),
-    width: 1080, height: 1350, simulateTransientError: false, ...overrides,
+    width: 1080, height: 1350, requestKey: crypto.randomUUID(), simulateTransientError: false, ...overrides,
   });
+
+  async function completed(response: Response, actor = 'marketing') {
+    const started = await response.json();
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const workspace = await (await request('/marketing/workspace', actor)).json();
+      const job = workspace.generationJobs.find((entry: any) => entry.id === started.id);
+      if (job && job.status !== 'running') return job;
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    throw new Error('Image job did not complete');
+  }
 
   it('creates content, requires exact review, and schedules only the approved snapshot', async () => {
     const workspace = await (await request('/marketing/workspace')).json();
@@ -57,9 +69,9 @@ describe('fixture-backed marketing workflow', () => {
 
   it('keeps generation input and each output version distinct, supports retry, and blocks unapproved publication', async () => {
     const workspace = await (await request('/marketing/workspace')).json();
-    const first = await (await request('/marketing/generation-jobs', 'marketing', generation(workspace, { simulateTransientError: true }))).json();
+    const first = await completed(await request('/marketing/generation-jobs', 'marketing', generation(workspace, { simulateTransientError: true })));
     expect(first).toMatchObject({ status: 'failed', attempts: 1, prompt: 'Autumn product launch, rich crimson studio light' });
-    const retried = await (await request(`/marketing/generation-jobs/${first.id}/retry`, 'marketing', {})).json();
+    const retried = await completed(await request(`/marketing/generation-jobs/${first.id}/retry`, 'marketing', { requestKey: crypto.randomUUID() }));
     expect(retried).toMatchObject({ status: 'succeeded', attempts: 2, referenceAssetIds: first.referenceAssetIds });
     expect(retried.versionId).toBeTruthy();
     expect((await request(`/marketing/versions/${retried.versionId}/publish`, 'owner', { audienceMode: 'all', repIds: [] })).status).toBe(409);
@@ -131,11 +143,11 @@ describe('fixture-backed marketing workflow', () => {
     const workspace = await (await request('/marketing/workspace')).json();
     const original = workspace.assets.find((asset: any) => asset.kind === 'reference');
     const originalFile = await (await request(`/marketing/versions/${original.versions[0].id}/file`)).text();
-    const first = await (await request('/marketing/generation-jobs', 'marketing', generation(workspace))).json();
+    const first = await completed(await request('/marketing/generation-jobs', 'marketing', generation(workspace)));
     await request(`/marketing/versions/${first.versionId}/submit`, 'marketing', {});
     await request(`/marketing/versions/${first.versionId}/review`, 'owner', { decision: 'approve', notes: 'Version one' });
     const bytes = await (await request(`/marketing/versions/${first.versionId}/file`)).text();
-    const second = await (await request('/marketing/generation-jobs', 'marketing', generation(workspace, { assetId: first.assetId, prompt: 'Changed scene' }))).json();
+    const second = await completed(await request('/marketing/generation-jobs', 'marketing', generation(workspace, { assetId: first.assetId, prompt: 'Changed scene' })));
     expect(second.assetId).toBe(first.assetId);
     expect(second.versionId).not.toBe(first.versionId);
     expect((await request(`/marketing/versions/${second.versionId}/publish`, 'owner', { audienceMode: 'all', repIds: [] })).status).toBe(409);
@@ -146,7 +158,7 @@ describe('fixture-backed marketing workflow', () => {
 
   it('blocks self-review and invalid generation and clears approval when destination or time changes', async () => {
     const workspace = await (await request('/marketing/workspace', 'owner')).json();
-    const first = await (await request('/marketing/generation-jobs', 'owner', generation(workspace))).json();
+    const first = await completed(await request('/marketing/generation-jobs', 'owner', generation(workspace)), 'owner');
     await request(`/marketing/versions/${first.versionId}/submit`, 'owner', {});
     expect((await request(`/marketing/versions/${first.versionId}/review`, 'owner', { decision: 'approve', notes: '' })).status).toBe(403);
     expect((await request('/marketing/generation-jobs', 'marketing', generation(workspace, { width: 0 }))).status).toBe(400);

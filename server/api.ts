@@ -4,6 +4,8 @@ import { localPorts } from '../shared/local-ports';
 import { demoEvents } from '../shared/contracts';
 import { ApiError, Workflow } from './workflow';
 import { MarketingService } from './marketing';
+import type { ImageGenerator } from './image-generation';
+import { MarketingStore } from './marketing-store';
 
 const releaseSchema = z.object({
   reason: z.string().trim().min(1).max(500), termsId: z.string().min(1).max(100),
@@ -21,16 +23,18 @@ const reviewSchema = z.object({ decision: z.enum(['approve', 'return']), notes: 
 const generationSchema = z.object({
   brandId: z.string().min(1), campaignId: z.string().min(1), prompt: z.string().trim().min(1).max(2000),
   referenceAssetIds: z.array(z.string()).max(12), width: z.number().int().min(64).max(4096), height: z.number().int().min(64).max(4096),
-  simulateTransientError: z.boolean(), assetId: z.string().optional(),
+  simulateTransientError: z.boolean().default(false), assetId: z.string().optional(), requestKey: z.string().uuid(),
 }).strict();
+const retrySchema = z.object({ requestKey: z.string().uuid() }).strict();
+const referenceSchema = z.object({ brandId: z.string().min(1), title: z.string().trim().min(1).max(160), base64: z.string().min(4).max(6_700_000).regex(/^[A-Za-z0-9+/]+={0,2}$/) }).strict();
 const publishSchema = z.object({ audienceMode: z.enum(['all', 'selected']), repIds: z.array(z.string()).max(100).default([]) }).strict();
 const retireSchema = z.object({ reason: z.string().trim().min(1).max(500) }).strict();
-async function body(req: IncomingMessage): Promise<unknown> {
+async function body(req: IncomingMessage, limit = 16_384): Promise<unknown> {
   if (!req.headers['content-type']?.startsWith('application/json')) throw new ApiError(415, 'JSON body required.');
   let content = '';
   for await (const chunk of req) {
     content += String(chunk);
-    if (Buffer.byteLength(content) > 16_384) throw new ApiError(413, 'Request too large.');
+    if (Buffer.byteLength(content) > limit) throw new ApiError(413, 'Request too large.');
   }
   try { return JSON.parse(content); } catch { throw new ApiError(400, 'Invalid JSON.'); }
 }
@@ -38,8 +42,8 @@ function send(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
   res.end(JSON.stringify(data));
 }
-export function createApi(workflow = new Workflow()) {
-  const marketing = new MarketingService(workflow);
+export function createApi(workflow = new Workflow(), options: { generator?: ImageGenerator; store?: MarketingStore } = {}) {
+  const marketing = new MarketingService(workflow, options.generator, options.store);
   const ports = localPorts(process.env);
   return createServer(async (req, res) => {
     try {
@@ -67,9 +71,13 @@ export function createApi(workflow = new Workflow()) {
         const input = reviewSchema.parse(await body(req));
         return send(res, 200, marketing.reviewContent(actor, id, input.decision, input.notes));
       }
-      if (req.method === 'POST' && path === '/api/marketing/generation-jobs') return send(res, 201, marketing.createGeneration(actor, generationSchema.parse(await body(req))));
+      if (req.method === 'POST' && path === '/api/marketing/references') {
+        if (!actor.marketingGrants.includes('creative:generate') || actor.organizationId !== 'demo-o1') throw new ApiError(403, 'Reference upload is not authorized.');
+        return send(res, 201, await marketing.uploadReference(actor, referenceSchema.parse(await body(req, 6_700_500))));
+      }
+      if (req.method === 'POST' && path === '/api/marketing/generation-jobs') return send(res, 202, marketing.createGeneration(actor, generationSchema.parse(await body(req))));
       const retryGeneration = /^\/api\/marketing\/generation-jobs\/([a-z0-9-]+)\/retry$/.exec(path);
-      if (req.method === 'POST' && retryGeneration) return send(res, 200, marketing.retryGeneration(actor, retryGeneration[1]));
+      if (req.method === 'POST' && retryGeneration) return send(res, 202, marketing.retryGeneration(actor, retryGeneration[1], retrySchema.parse(await body(req)).requestKey));
       const versionAction = /^\/api\/marketing\/versions\/([a-z0-9-]+)\/(submit|review|publish)$/.exec(path);
       if (versionAction && req.method === 'POST') {
         const [, id, action] = versionAction;

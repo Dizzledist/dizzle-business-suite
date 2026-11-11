@@ -4,7 +4,7 @@ export default defineConfig({
   testDir: './tests/browser', workers: 1, fullyParallel: false,
   use: { baseURL: 'http://127.0.0.1:5373', trace: 'retain-on-failure' },
   webServer: [
-    { command: 'npm run dev:api', env, url: 'http://127.0.0.1:3201/api/health', reuseExistingServer: false, timeout: 60_000 },
+    { command: 'npx tsx tests/browser/fixture-server.ts', env, url: 'http://127.0.0.1:3201/api/health', reuseExistingServer: false, timeout: 60_000 },
     { command: 'npx vite --host 127.0.0.1 --port 5373 --strictPort', url: 'http://127.0.0.1:5373/api/health', env, reuseExistingServer: false, timeout: 60_000 },
   ],
 });

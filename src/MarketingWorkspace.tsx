@@ -58,6 +58,13 @@ export function MarketingWorkspace({ identity, section, setSection }: { identity
     reload(version).catch(reason => { if (generation.current === version) setError(String(reason.message)); });
     return () => { generation.current++; };
   }, [identity]);
+  const hasRunningJob = data?.generationJobs.some(job => job.status === 'running') ?? false;
+  useEffect(() => {
+    if (!hasRunningJob) return;
+    const version = generation.current;
+    const timer = window.setInterval(() => { void reload(version).catch(() => { if (generation.current === version) setError('Could not refresh image status. Reopen the workspace to check the existing job; do not submit it again.'); }); }, 1500);
+    return () => window.clearInterval(timer);
+  }, [identity, hasRunningJob]);
   async function act<T = unknown>(path: string, message: string, payload?: unknown, method = 'POST'): Promise<T | undefined> {
     setBusy(true); setError(''); setNotice('');
     const version = generation.current;
@@ -170,10 +177,10 @@ function CalendarItem({ item, data, busy, act }: any) {
   return <article className="calendar-item"><div className="calendar-item-main"><strong>{item.title}</strong><span>{data.brands.find((brand: any) => brand.id === item.brandId)?.name} · {campaign?.title} · {item.channel}</span><small>{item.destinationAccount} · {pacific(item.plannedAt)}</small><p>{item.caption}</p>{item.linkedVersionId && <small>Linked approved version: {item.linkedVersionId}</small>}{item.reviewNote && <small>Review note: {item.reviewNote}</small>}{item.approvedBy && <small>Approved by {item.approvedBy}; exact content snapshot recorded.</small>}</div><div className="calendar-item-actions"><span className={`status-mark status-${item.status}`}>{statusLabel(item.status)}</span>{item.status === 'draft' && <button disabled={busy} onClick={() => act(`/marketing/content/${item.id}/submit`, 'Submitted for review.')}>Submit review</button>}{item.status === 'in_review' && review && <><button disabled={busy} onClick={() => act(`/marketing/content/${item.id}/review`, 'Content approved.', { decision: 'approve', notes: '' })}>Approve</button><button disabled={busy} onClick={() => act(`/marketing/content/${item.id}/review`, 'Returned to draft.', { decision: 'return', notes: '' })}>Return</button></>}{item.status === 'approved' && <button disabled={busy} onClick={() => act(`/marketing/content/${item.id}/schedule`, 'Internal schedule recorded.')}>Schedule internally</button>}</div></article>;
 }
 
-function StudioView({ data, busy, act, api, identity }: any) {
+function StudioView({ data, busy, act, identity }: any) {
   const [brandId, setBrandId] = useState('cheddr');
   const [campaignId, setCampaignId] = useState('');
-  const [prompt, setPrompt] = useState('A refined autumn launch for wholesale buyers, crimson and graphite tones');
+  const [prompt, setPrompt] = useState('A refined autumn product campaign, crimson and graphite tones, photographic studio lighting');
   const [references, setReferences] = useState<string[]>([]);
   const [preset, setPreset] = useState('1080x1350');
   const [width, setWidth] = useState('1080');
@@ -181,34 +188,82 @@ function StudioView({ data, busy, act, api, identity }: any) {
   const [assetId, setAssetId] = useState('');
   const [simulateError, setSimulateError] = useState(false);
   const [formError, setFormError] = useState('');
+  const pendingRequest = useRef<{ fingerprint: string; key: string } | null>(null);
   const campaigns = data.campaigns.filter((campaign: any) => campaign.brandId === brandId);
   const referenceAssets = data.assets.filter((asset: MarketingAsset) => asset.kind === 'reference' && asset.brandId === brandId);
-  const creativeAssets = data.assets.filter((asset: MarketingAsset) => asset.kind === 'creative' && asset.brandId === brandId);
-  useEffect(() => { if (!campaigns.some((campaign: any) => campaign.id === campaignId)) setCampaignId(campaigns[0]?.id ?? ''); }, [brandId, data.campaigns]);
+  const creativeAssets = data.assets.filter((asset: MarketingAsset) => asset.kind === 'creative' && asset.brandId === brandId && asset.campaignId === campaignId);
+  const running = data.generationJobs.some((job: GenerationJob) => job.status === 'running');
+  const settings = data.imageGeneration;
+  useEffect(() => { if (!campaigns.some((campaign: any) => campaign.id === campaignId)) { setCampaignId(campaigns[0]?.id ?? ''); setAssetId(''); } }, [brandId, data.campaigns]);
   function choosePreset(value: string) {
     setPreset(value);
-    if (value !== 'custom') { const [nextWidth, nextHeight] = value.split('x'); setWidth(nextWidth); setHeight(nextHeight); }
+    if (value !== 'custom') { const [w, h] = value.split('x'); setWidth(w); setHeight(h); }
   }
   async function generate(event: React.FormEvent) {
     event.preventDefault(); setFormError('');
-    try { await act('/marketing/generation-jobs', 'Sample generation job created.', { brandId, campaignId, prompt, referenceAssetIds: references, width: Number(width), height: Number(height), simulateTransientError: simulateError, ...(assetId ? { assetId } : {}) }); }
-    catch (reason) { setFormError(reason instanceof Error ? reason.message : 'Generation failed.'); }
+    const input = { brandId, campaignId, prompt, referenceAssetIds: references, width: Number(width), height: Number(height), simulateTransientError: simulateError, ...(assetId ? { assetId } : {}) };
+    const fingerprint = JSON.stringify(input);
+    if (pendingRequest.current?.fingerprint !== fingerprint) pendingRequest.current = { fingerprint, key: crypto.randomUUID() };
+    const result = await act('/marketing/generation-jobs', 'Image generation started. You can leave this section while it runs.', { ...input, requestKey: pendingRequest.current!.key });
+    if (result) pendingRequest.current = null;
+  }
+  async function upload(file: File | undefined) {
+    if (!file) return;
+    setFormError('');
+    if (file.size > 5_000_000 || !['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) { setFormError('Choose a PNG, JPEG or WebP image of at most 5 MB.'); return; }
+    const reader = new FileReader();
+    reader.onerror = () => setFormError('Could not read this image.');
+    reader.onload = async () => {
+      const asset = await act('/marketing/references', 'Reference image saved.', { brandId, title: file.name.replace(/\.[^.]+$/, ''), base64: String(reader.result).split(',')[1] });
+      if (asset) setReferences(current => [...current, asset.id].slice(-4));
+    };
+    reader.readAsDataURL(file);
   }
   return <div className="studio-view">
-    <div className="studio-heading"><div><span className="eyebrow">IMAGE STUDIO</span><h2>Build a creative draft.</h2><p>Artwork output stays separate from original product renders and logos.</p></div><span className="sample-stamp">LOCAL SAMPLE ADAPTER</span></div>
+    <div className="studio-heading"><div><span className="eyebrow">IMAGE STUDIO</span><h2>Create campaign imagery.</h2><p>Generate PNG artwork with OpenAI, then review the exact version before publishing.</p></div><span className="sample-stamp">{settings.mode === 'test' ? 'ISOLATED TEST PROVIDER' : 'OPENAI IMAGES'}</span></div>
+    <div className={settings.ready ? 'generation-connection' : 'generation-connection needs-setup'}><strong>{settings.ready ? 'Image generation configured' : 'Connect OpenAI to get started'}</strong><p>{settings.message}</p><small>{settings.model} / {settings.quality} quality / {settings.remainingAttempts} of {settings.maxDailyAttempts} attempts remaining today (UTC). {settings.persistent ? 'Images and job history are saved locally.' : 'Isolated test state.'}</small></div>
     {formError && <p role="alert" className="inline-error">{formError}</p>}
-    <div className="studio-grid"><form className="studio-form" onSubmit={generate}><label>Brand<select value={brandId} onChange={event => { setBrandId(event.target.value); setAssetId(''); setReferences([]); }} disabled={busy}>{data.brands.map((brand: any) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label><label>Campaign<select value={campaignId} required onChange={event => setCampaignId(event.target.value)}><option value="">Select campaign</option>{campaigns.map((campaign: any) => <option key={campaign.id} value={campaign.id}>{campaign.title}</option>)}</select></label><label>Variation<select value={assetId} onChange={event => setAssetId(event.target.value)}><option value="">New creative asset</option>{creativeAssets.map((asset: any) => <option key={asset.id} value={asset.id}>New version of {asset.title}</option>)}</select></label><label>Image prompt<textarea required maxLength={2000} value={prompt} onChange={event => setPrompt(event.target.value)}/></label><fieldset><legend>Original references</legend>{referenceAssets.map((asset: any) => <label className="check-option" key={asset.id}><input type="checkbox" checked={references.includes(asset.id)} onChange={event => setReferences(current => event.target.checked ? [...current, asset.id] : current.filter(id => id !== asset.id))}/>{asset.title}<small>{asset.sourceType.replaceAll('_', ' ')} · unchanged</small></label>)}{!referenceAssets.length && <small>No original references for this brand.</small>}</fieldset><fieldset><legend>Target dimensions</legend><div className="preset-row">{['1080x1350', '1080x1080', 'custom'].map(value => <label key={value} className={`preset-option ${preset === value ? 'active' : ''}`}><input type="radio" name="dimensions" value={value} checked={preset === value} onChange={() => choosePreset(value)}/>{value === 'custom' ? 'Custom' : value.replace('x', ' × ')}</label>)}</div>{preset === 'custom' && <div className="form-two"><label>Width<input type="number" min="64" max="4096" value={width} onChange={event => setWidth(event.target.value)}/></label><label>Height<input type="number" min="64" max="4096" value={height} onChange={event => setHeight(event.target.value)}/></label></div>}</fieldset><label className="check-option"><input type="checkbox" checked={simulateError} onChange={event => setSimulateError(event.target.checked)}/>Simulate one transient sample error</label><button className="primary" disabled={busy || !campaignId}>Generate sample artwork</button></form>
-      <div className="generation-results"><div className="block-heading"><div><span className="eyebrow">JOB HISTORY</span><h3>Generation jobs</h3></div></div>{data.generationJobs.map((job: GenerationJob) => <GenerationCard key={job.id} job={job} data={data} identity={identity} busy={busy} act={act} api={api}/>)}{!data.generationJobs.length && <div className="empty-inline">Generated drafts will appear here.</div>}</div></div>
+    <div className="studio-grid"><form className="studio-form" onSubmit={generate}>
+      <label>Brand<select value={brandId} onChange={event => { setBrandId(event.target.value); setAssetId(''); setReferences([]); }} disabled={busy}>{data.brands.map((brand: any) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label>
+      <label>Campaign<select value={campaignId} required onChange={event => { setCampaignId(event.target.value); setAssetId(''); }}><option value="">Select campaign</option>{campaigns.map((campaign: any) => <option key={campaign.id} value={campaign.id}>{campaign.title}</option>)}</select></label>
+      <label>Variation<select value={assetId} onChange={event => setAssetId(event.target.value)}><option value="">New creative asset</option>{creativeAssets.map((asset: any) => <option key={asset.id} value={asset.id}>New version of {asset.title}</option>)}</select></label>
+      <label>Image prompt<textarea required maxLength={2000} value={prompt} onChange={event => setPrompt(event.target.value)}/></label>
+      <fieldset><legend>Original references</legend><label className="reference-upload">Upload a reference image<input type="file" accept="image/png,image/jpeg,image/webp" disabled={busy || running} onChange={event => { void upload(event.target.files?.[0]); event.target.value = ''; }}/><small>PNG, JPEG or WebP, up to 5 MB. Selected references are sent to OpenAI. Exact label fidelity still needs review.</small></label>
+        {referenceAssets.map((asset: MarketingAsset) => <label className="check-option" key={asset.id}><input type="checkbox" checked={references.includes(asset.id)} disabled={!references.includes(asset.id) && references.length >= 4} onChange={event => setReferences(current => event.target.checked ? [...current, asset.id] : current.filter(id => id !== asset.id))}/>{asset.title}<small>{asset.versions[0].provenance}</small></label>)}
+      </fieldset>
+      <fieldset><legend>PNG export dimensions</legend><div className="preset-row">{['1080x1350', '1080x1080', 'custom'].map(value => <label key={value} className={'preset-option ' + (preset === value ? 'active' : '')}><input type="radio" name="dimensions" checked={preset === value} onChange={() => choosePreset(value)}/>{value === 'custom' ? 'Custom' : value.replace('x', ' x ')}</label>)}</div>
+        {preset === 'custom' && <div className="form-two"><label>Width<input type="number" required min="64" max="4096" value={width} onChange={event => setWidth(event.target.value)}/></label><label>Height<input type="number" required min="64" max="4096" value={height} onChange={event => setHeight(event.target.value)}/></label></div>}
+        <small>OpenAI renders at a supported size. The result is fitted to your export with transparent padding where needed; nothing is cropped.</small>
+      </fieldset>
+      {settings.mode === 'test' && <label className="check-option"><input type="checkbox" checked={simulateError} onChange={event => setSimulateError(event.target.checked)}/>Simulate one transient sample error</label>}
+      <button className="primary" disabled={busy || running || !campaignId || !settings.ready || settings.remainingAttempts === 0}>{running ? 'Generating image...' : 'Generate image'}</button>
+      {settings.mode === 'openai' && <small>One image per request. Generation and explicit retries use your OpenAI API billing.</small>}
+    </form><div className="generation-results"><div className="block-heading"><div><span className="eyebrow">JOB HISTORY</span><h3>Generated images</h3></div></div>
+      {data.generationJobs.map((job: GenerationJob) => <GenerationCard key={job.id} job={job} data={data} identity={identity} busy={busy} act={act}/>)}
+      {!data.generationJobs.length && <div className="empty-inline">Your generated images will appear here.</div>}
+    </div></div>
   </div>;
 }
 
-function GenerationCard({ job, data, identity, busy, act, api }: any) {
+function GenerationCard({ job, data, identity, busy, act }: any) {
   const asset = data.assets.find((entry: MarketingAsset) => entry.id === job.assetId);
   const version = asset?.versions.find((entry: any) => entry.id === job.versionId);
   const [downloadError, setDownloadError] = useState('');
-  return <article className="generation-card"><div className="job-title"><div><strong>{asset?.title ?? 'Creative draft'}</strong><small>{pacific(job.createdAt)} · {job.width} × {job.height}</small></div><span className={`status-mark status-${job.status}`}>{job.status}</span></div><p>{job.prompt}</p><small>Original references: {job.referenceAssetIds.map((id: string) => data.assets.find((entry: any) => entry.id === id)?.title ?? id).join(', ') || 'None'}</small>{job.error && <p className="inline-error">{job.error}</p>}
-    {version && <><p className="version-meta">Version {version.number} · {statusLabel(version.status)} · {version.provenance}</p><ProtectedImage path={`/marketing/versions/${version.id}/file`} identity={identity} title={asset?.title}/><div className="file-actions"><button disabled={busy || version.status !== 'draft'} onClick={() => act(`/marketing/versions/${version.id}/submit`, 'Version submitted for review.')}>Submit version for review</button><DownloadButton path={`/marketing/versions/${version.id}/file?download=1`} identity={identity} fileName={`sample-artwork-v${version.number}.svg`} onError={setDownloadError}/></div></>}
-    {downloadError && <small role="alert" className="inline-error">{downloadError}</small>}{job.status === 'failed' && <button disabled={busy} onClick={() => act(`/marketing/generation-jobs/${job.id}/retry`, 'Generation retry completed.')}>Retry job</button>}</article>;
+  const retryKey = useRef<string | null>(null);
+  async function retry() {
+    retryKey.current ??= crypto.randomUUID();
+    if (await act('/marketing/generation-jobs/' + job.id + '/retry', 'Image retry started.', { requestKey: retryKey.current })) retryKey.current = null;
+  }
+  return <article className="generation-card"><div className="job-title"><div><strong>{asset?.title ?? 'Creative draft'}</strong><small>{pacific(job.createdAt)} / {job.width} x {job.height}</small></div><span className={'status-mark status-' + job.status}>{job.status}</span></div>
+    <p>{job.prompt}</p><small>{job.model} / {job.quality} / attempt {job.attempts}</small><p><small>References: {job.referenceAssetIds.map((id: string) => data.assets.find((entry: any) => entry.id === id)?.title ?? id).join(', ') || 'None'}</small></p>
+    {job.status === 'running' && <div className="generation-progress" role="status"><span/>Creating your image. This may take a few minutes.</div>}
+    {job.error && <p role="alert" className="inline-error">{job.error}</p>}
+    {version && <><p className="version-meta">Version {version.number} / {statusLabel(version.status)} / {version.provenance}</p><ProtectedImage path={'/marketing/versions/' + version.id + '/file'} identity={identity} title={asset?.title}/><div className="file-actions"><button disabled={busy || version.status !== 'draft'} onClick={() => act('/marketing/versions/' + version.id + '/submit', 'Version submitted for review.')}>Submit version for review</button><DownloadButton path={'/marketing/versions/' + version.id + '/file?download=1'} identity={identity} fileName={'artwork-v' + version.number + '.png'} onError={setDownloadError}/></div></>}
+    {job.usage && <small>OpenAI usage: {job.usage.totalTokens} tokens. Dollar cost is not returned by this request.</small>}
+    {job.providerRequestId && <small className="provider-request-id">Provider request: {job.providerRequestId}</small>}
+    {downloadError && <small role="alert" className="inline-error">{downloadError}</small>}
+    {job.status === 'failed' && job.retryable && !job.outcomeUnknown && <button disabled={busy} onClick={() => void retry()}>Retry job</button>}
+  </article>;
 }
 
 function ReviewView({ data, notes, setNotes, busy, act, setSection }: any) {
@@ -231,7 +286,7 @@ function AssetsView({ data, busy, act, api, identity }: any) {
   const canPublish = data.identity.marketingGrants.includes('asset:publish');
   return <div className="assets-view"><div className="section-heading"><div><span className="eyebrow">SALES LIBRARY</span><h2>Asset versions & publication history</h2></div><small>COAs remain uploaded, provenance-backed documents.</small></div>
     {grouped.map((asset: MarketingAsset) => <article className="asset-record" key={asset.id}><div className="asset-record-heading"><div><strong>{asset.title}</strong><small>{data.brands.find((brand: any) => brand.id === asset.brandId)?.name} · {asset.kind.replaceAll('_', ' ')}{asset.productSku ? ` · ${asset.productSku}` : ''}{asset.batchId ? ` · Batch ${asset.batchId}` : ''}{asset.restrictedAccountId ? ` · Account restricted` : ''}</small>{asset.campaignId && <small>Campaign: {data.campaigns.find((campaign: any) => campaign.id === asset.campaignId)?.title}</small>}</div><span className="count">{asset.versions.length} versions</span></div>
-      {asset.versions.map(version => <div className="asset-version-row" key={version.id}><div><strong>Version {version.number}</strong><span className={`status-mark status-${version.status}`}>{statusLabel(version.status)}</span><small>{version.sourceType.replaceAll('_', ' ')} · created by {version.createdBy} · {version.provenance}</small>{version.reviewedBy && <small>Reviewed by {version.reviewedBy} on {pacific(version.reviewedAt!)}</small>}</div><div className="asset-version-actions">{version.mimeType.startsWith('image/') && <ProtectedImage path={`/marketing/versions/${version.id}/file`} identity={identity} title={asset.title}/ >}{(asset.kind === 'creative' || data.identity.marketingGrants.includes('asset:read:all')) && <DownloadButton path={`/marketing/versions/${version.id}/file?download=1`} identity={identity} fileName={`asset-v${version.number}.${version.mimeType === 'image/svg+xml' ? 'svg' : version.mimeType === 'text/csv' ? 'csv' : 'txt'}`} onError={setDownloadError}/>}</div>
+      {asset.versions.map(version => <div className="asset-version-row" key={version.id}><div><strong>Version {version.number}</strong><span className={`status-mark status-${version.status}`}>{statusLabel(version.status)}</span><small>{version.sourceType.replaceAll('_', ' ')} · created by {version.createdBy} · {version.provenance}</small>{version.reviewedBy && <small>Reviewed by {version.reviewedBy} on {pacific(version.reviewedAt!)}</small>}</div><div className="asset-version-actions">{version.mimeType.startsWith('image/') && <ProtectedImage path={`/marketing/versions/${version.id}/file`} identity={identity} title={asset.title}/ >}{(asset.kind === 'creative' || data.identity.marketingGrants.includes('asset:read:all')) && <DownloadButton path={`/marketing/versions/${version.id}/file?download=1`} identity={identity} fileName={`asset-v${version.number}.${version.mimeType === 'image/png' ? 'png' : version.mimeType === 'image/svg+xml' ? 'svg' : version.mimeType === 'text/csv' ? 'csv' : 'txt'}`} onError={setDownloadError}/>}</div>
         {version.status === 'approved' && canPublish && <div className="publish-controls"><label>Audience<select aria-label={`Audience for ${asset.title} version ${version.number}`} value={audiences[version.id] ?? 'all'} onChange={event => setAudiences({ ...audiences, [version.id]: event.target.value })}><option value="all">All eligible reps</option><option value="selected">Selected reps</option></select></label>{(audiences[version.id] ?? 'all') === 'selected' && <div className="rep-picker">{data.eligibleReps.map((rep: any) => <label key={rep.id}><input type="checkbox" checked={(selected[version.id] ?? []).includes(rep.id)} onChange={event => setSelected(current => ({ ...current, [version.id]: event.target.checked ? [...(current[version.id] ?? []), rep.id] : (current[version.id] ?? []).filter(id => id !== rep.id) }))}/>{rep.name}</label>)}</div>}<button disabled={busy} onClick={() => act(`/marketing/versions/${version.id}/publish`, 'Approved version published to the internal rep library.', { audienceMode: audiences[version.id] ?? 'all', repIds: selected[version.id] ?? [] })}>Publish approved version</button></div>}
       </div>)}
       {asset.publications.map((publication: AssetPublication) => <div className="publication-row" key={publication.id}><span>{publication.status} · version {asset.versions.find(version => version.id === publication.versionId)?.number}</span><small>{publication.audienceMode === 'all' ? 'All eligible reps at publication' : `Selected: ${publication.repIds.join(', ')}`} · by {publication.publishedBy} · {pacific(publication.publishedAt)}</small>{publication.retiredAt && <small>Retired by {publication.retiredBy} · {publication.retireReason}</small>}{publication.status === 'published' && canPublish && <button className="text-action" disabled={busy} onClick={() => act(`/marketing/publications/${publication.id}/retire`, 'Publication retired.', { reason: 'Retired in local demo.' })}>Retire</button>}</div>)}
