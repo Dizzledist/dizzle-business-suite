@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { AssetPublication, ContentItem, GenerationJob, MarketingAsset, MarketingWorkspaceData, SalesAssetView } from '../shared/contracts';
+import { MarketingIcon, type MarketingSection } from './MarketingNavigation';
+import './marketing-design.css';
 
-type Section = 'home' | 'calendar' | 'studio' | 'review' | 'assets';
 const pacific = (value: string) => new Intl.DateTimeFormat('en-US', {
   timeZone: 'America/Los_Angeles', dateStyle: 'medium', timeStyle: 'short',
 }).format(new Date(value)) + ' PT';
@@ -27,9 +28,8 @@ function fromPacificInput(value: string) {
 }
 const statusLabel = (value: string) => value.replaceAll('_', ' ');
 
-export function MarketingWorkspace({ identity }: { identity: string }) {
+export function MarketingWorkspace({ identity, section, setSection }: { identity: string; section: MarketingSection; setSection: (section: MarketingSection) => void }) {
   const [data, setData] = useState<MarketingWorkspaceData | null>(null);
-  const [section, setSection] = useState<Section>('home');
   const [brandId, setBrandId] = useState('all');
   const [channelFilter, setChannelFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -77,27 +77,31 @@ export function MarketingWorkspace({ identity }: { identity: string }) {
   const upcoming = content.filter(item => item.status === 'scheduled').sort((a, b) => a.plannedAt.localeCompare(b.plannedAt));
   const published = assets.flatMap(asset => asset.publications.filter(publication => publication.status === 'published').map(publication => ({ asset, publication }))).sort((a, b) => b.publication.publishedAt.localeCompare(a.publication.publishedAt));
   const campaigns = data.campaigns.filter(campaign => brandId === 'all' || campaign.brandId === brandId);
+  const creativeToReview = assets.flatMap(asset => asset.versions.filter(version => version.status === 'in_review').map(version => ({ asset, version })));
 
   const filteredData = { ...data, content, assets, campaigns };
-  return <section className="marketing-page">
+  const page = {
+    home: { title: 'Marketing overview', description: 'Your campaigns, creative and next steps. All in view.', number: '01' },
+    calendar: { title: 'Content calendar', description: 'Turn the campaign brief into a clear plan.', number: '02' },
+    studio: { title: 'Image studio', description: 'A dedicated space to shape your next creative.', number: '03' },
+    review: { title: 'Review & approval', description: 'The right version. The right message. Your decision.', number: '04' },
+    assets: { title: 'Sales assets', description: 'Approved material, ready for the people who need it.', number: '05' },
+  }[section];
+  return <section className="marketing-page" id="marketing-panel" role="tabpanel" aria-labelledby={`marketing-nav-${section}`} tabIndex={-1}>
+    <div className="workspace-context"><span><i/>LOCAL PREVIEW</span><time>{new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(new Date())}<span className="context-timezone"> · Pacific time</span></time></div>
     <div className="marketing-heading">
-      <div><span className="eyebrow">MARKETING · LOCAL WORKSPACE</span><h1>Make the next release count.</h1><p>Campaigns, creative review, and sales-ready material in one place.</p></div>
-      <label className="brand-filter">Brand <select aria-label="Brand filter" value={brandId} onChange={event => setBrandId(event.target.value)}><option value="all">All brands</option>{data.brands.map(brand => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label>
+      <div><span className="eyebrow">DIZZLE / MARKETING <span className="section-number">{page.number}</span></span><h1>{page.title}</h1><p>{page.description}</p></div>
+      {section !== 'studio' && <label className="brand-filter">WORKING ACROSS<select aria-label="Brand filter" value={brandId} onChange={event => setBrandId(event.target.value)}><option value="all">All brands</option>{data.brands.map(brand => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label>}
     </div>
-    <div className="marketing-tabs" role="tablist" aria-label="Marketing workspace">
-      {([['home', 'Home'], ['calendar', 'Calendar'], ['studio', 'Image Studio'], ['review', 'Review'], ['assets', 'Assets']] as const).map(([id, label]) =>
-        <button key={id} role="tab" aria-selected={section === id} className={section === id ? 'selected' : ''} onClick={() => setSection(id)}>{label}</button>)}
-    </div>
-    <div className="marketing-notice"><span>Sample data</span><p>{data.fixtureNotice} Demo review rule: no self-approval; Owner reviews and publishes. All audiences are recipient snapshots.</p></div>
     {error && <div className="alert error" role="alert">{error}</div>}
     {notice && <div className="alert success" role="status">{notice}</div>}
     {section === 'home' && <div className="marketing-home">
       <div className="marketing-metrics">
-        <div><span>Upcoming content</span><strong>{upcoming.length}</strong><small>Internal schedule · Pacific time</small></div>
-        <div><span>Needs review</span><strong>{draftsToReview}</strong><small>Content and exact asset versions</small></div>
-        <div><span>Published assets</span><strong>{published.length}</strong><small>Internal rep audiences</small></div>
+        <button onClick={() => setSection('calendar')}><span><MarketingIcon name="calendar"/>On the calendar</span><strong>{String(upcoming.length).padStart(2, '0')}</strong><small>Scheduled content <MarketingIcon name="arrow"/></small></button>
+        <button onClick={() => setSection('review')}><span><MarketingIcon name="review"/>Ready for review</span><strong>{String(draftsToReview).padStart(2, '0')}</strong><small>Content & creative <MarketingIcon name="arrow"/></small></button>
+        <button onClick={() => setSection('assets')}><span><MarketingIcon name="assets"/>Published assets</span><strong>{String(published.length).padStart(2, '0')}</strong><small>Available to eligible reps <MarketingIcon name="arrow"/></small></button>
       </div>
-      <div className="marketing-shortcuts"><button onClick={() => setSection('calendar')}>Calendar <span>↗</span></button><button onClick={() => setSection('studio')}>Image Studio <span>↗</span></button><button onClick={() => setSection('assets')}>Assets <span>↗</span></button></div>
+      <div className="creative-launch"><div className="launch-emblem"><MarketingIcon name="studio"/></div><div><span className="eyebrow">FROM IDEA TO APPROVED</span><h2>Give your next campaign a head start.</h2><p>Build a content plan or start with the creative.</p></div><div className="launch-actions"><button className="primary" onClick={() => setSection('studio')}>Create artwork <MarketingIcon name="arrow"/></button><button className="text-action" onClick={() => setSection('calendar')}>Plan content</button></div></div>
       <div className="marketing-columns">
         <section className="marketing-block"><div className="block-heading"><div><span className="eyebrow">NEXT UP</span><h2>Upcoming content</h2></div><button className="text-action" onClick={() => setSection('calendar')}>Open calendar</button></div>
           {upcoming.slice(0, 4).map(item => <ContentRow key={item.id} item={item} brand={data.brands.find(brand => brand.id === item.brandId)?.name ?? ''} campaign={data.campaigns.find(campaign => campaign.id === item.campaignId)?.title ?? ''}/>)}
@@ -105,7 +109,8 @@ export function MarketingWorkspace({ identity }: { identity: string }) {
         </section>
         <section className="marketing-block"><div className="block-heading"><div><span className="eyebrow">REVIEW QUEUE</span><h2>Needs a decision</h2></div><button className="text-action" onClick={() => setSection('review')}>Open review</button></div>
           {content.filter(item => item.status === 'in_review').slice(0, 3).map(item => <ContentRow key={item.id} item={item} brand={data.brands.find(brand => brand.id === item.brandId)?.name ?? ''} campaign={data.campaigns.find(campaign => campaign.id === item.campaignId)?.title ?? ''}/>)}
-          {content.filter(item => item.status === 'in_review').length === 0 && <p className="empty-inline">No content waiting for review.</p>}
+          {creativeToReview.slice(0, 2).map(({ asset, version }) => <button className="review-preview-link" key={version.id} onClick={() => setSection('review')}><MarketingIcon name="studio"/><span>{asset.title}<small>Creative · version {version.number}</small></span><MarketingIcon name="arrow"/></button>)}
+          {content.filter(item => item.status === 'in_review').length + creativeToReview.length === 0 && <div className="review-clear"><MarketingIcon name="review"/><strong>No content waiting for review.</strong><p>Submitted content and creative appear here.</p><button className="text-action" onClick={() => setSection('review')}>View review queue <MarketingIcon name="arrow"/></button></div>}
         </section>
       </div>
       <section className="marketing-block"><div className="block-heading"><div><span className="eyebrow">RECENTLY PUBLISHED</span><h2>Sales Assets</h2></div><button className="text-action" onClick={() => setSection('assets')}>View all</button></div>
@@ -116,6 +121,7 @@ export function MarketingWorkspace({ identity }: { identity: string }) {
     {section === 'studio' && <StudioView data={data} busy={busy} act={act} api={api} identity={identity}/>}
     {section === 'review' && <ReviewView data={filteredData} notes={reviewNotes} setNotes={setReviewNotes} busy={busy} act={act} setSection={setSection}/>}
     {section === 'assets' && <AssetsView data={filteredData} busy={busy} act={act} api={api} identity={identity}/>}
+    <details className="workspace-disclosure"><summary>Sample workspace <span>Internal planning & publishing only</span></summary><p>{data.fixtureNotice} Demo review rule: no self-approval; Owner reviews and publishes. All audiences are recipient snapshots.</p></details>
   </section>;
 }
 
@@ -128,6 +134,7 @@ function CalendarView({ data, campaigns, content, channelFilter, statusFilter, s
   const [itemForm, setItemForm] = useState({ campaignId: campaigns[0]?.id ?? '', title: '', objective: '', owner: data.identity.name, channel: 'Instagram', plannedAt: pacificInput(), destinationAccount: '', caption: '', linkedAssetId: '', linkedVersionId: '' });
   const [formError, setFormError] = useState('');
   const [newCampaignId, setNewCampaignId] = useState('');
+  const [editor, setEditor] = useState<'campaign' | 'content' | null>(null);
   const visible: ContentItem[] = (content as ContentItem[]).filter(item => (channelFilter === 'all' || item.channel === channelFilter) && (statusFilter === 'all' || item.status === statusFilter)).sort((a, b) => a.plannedAt.localeCompare(b.plannedAt));
   const groups = visible.reduce<Record<string, ContentItem[]>>((result, item) => {
     const key = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(item.plannedAt));
@@ -136,21 +143,23 @@ function CalendarView({ data, campaigns, content, channelFilter, statusFilter, s
   const approvedAssets = data.assets.filter((asset: MarketingAsset) => asset.kind === 'creative' && asset.brandId === data.campaigns.find((campaign: any) => campaign.id === itemForm.campaignId)?.brandId).flatMap((asset: MarketingAsset) => asset.versions.filter(version => version.status === 'approved').map(version => ({ asset, version })));
   async function createCampaign(event: React.FormEvent) {
     event.preventDefault(); setFormError('');
-    try { const campaign = await act('/marketing/campaigns', 'Campaign created.', campaignForm) as { id: string } | undefined; if (campaign) { setNewCampaignId(campaign.id); setItemForm(form => ({ ...form, campaignId: campaign.id })); } }
+    try { const campaign = await act('/marketing/campaigns', 'Campaign created.', campaignForm) as { id: string } | undefined; if (campaign) { setEditor('content'); setNewCampaignId(campaign.id); setItemForm(form => ({ ...form, campaignId: campaign.id })); } }
     catch (reason) { setFormError(reason instanceof Error ? reason.message : 'Could not create campaign.'); }
   }
   async function submitItem(event: React.FormEvent) {
     event.preventDefault(); setFormError('');
     const { plannedAt, linkedAssetId, linkedVersionId, ...rest } = itemForm;
-    try { const created = await act('/marketing/content', 'Content item created as a draft.', { ...rest, plannedAt: fromPacificInput(plannedAt), linkedAssetId: linkedAssetId || null, linkedVersionId: linkedVersionId || null }); if (created) setItemForm(form => ({ ...form, title: '', objective: '', caption: '' })); }
+    try { const created = await act('/marketing/content', 'Content item created as a draft.', { ...rest, plannedAt: fromPacificInput(plannedAt), linkedAssetId: linkedAssetId || null, linkedVersionId: linkedVersionId || null }); if (created) { setEditor(null); setItemForm(form => ({ ...form, title: '', objective: '', caption: '' })); } }
     catch (reason) { setFormError(reason instanceof Error ? reason.message : 'Could not create content item.'); }
   }
   const campaignChoices = [...campaigns, ...data.campaigns.filter((campaign: any) => newCampaignId === campaign.id && !campaigns.some((item: any) => item.id === campaign.id))];
   return <div className="calendar-view">
     <div className="calendar-toolbar"><div><span className="eyebrow">PLANNING</span><h2>Calendar & campaigns</h2></div><div className="filters"><label>Channel<select aria-label="Channel filter" value={channelFilter} onChange={event => setChannelFilter(event.target.value)}><option value="all">All channels</option>{['Instagram', 'Facebook', 'Email', 'SMS', 'Wholesale'].map(channel => <option key={channel}>{channel}</option>)}</select></label><label>Status<select aria-label="Status filter" value={statusFilter} onChange={event => setStatusFilter(event.target.value)}><option value="all">All statuses</option>{['draft', 'in_review', 'approved', 'scheduled'].map(status => <option key={status} value={status}>{statusLabel(status)}</option>)}</select></label></div></div>
     {formError && <p className="inline-error" role="alert">{formError}</p>}
-    <div className="planner-grid"><form className="planner-form" onSubmit={createCampaign}><h3>New campaign</h3><label>Brand<select value={campaignForm.brandId} onChange={event => setCampaignForm({ ...campaignForm, brandId: event.target.value })}>{data.brands.map((brand: any) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label><label>Campaign title<input required maxLength={160} value={campaignForm.title} onChange={event => setCampaignForm({ ...campaignForm, title: event.target.value })}/></label><label>Objective<textarea required value={campaignForm.objective} onChange={event => setCampaignForm({ ...campaignForm, objective: event.target.value })}/></label><label>Owner<input required value={campaignForm.owner} onChange={event => setCampaignForm({ ...campaignForm, owner: event.target.value })}/></label><button className="primary" disabled={busy}>Create campaign</button></form>
-      <form className="planner-form content-form" onSubmit={submitItem}><h3>Schedule content internally</h3><label>Campaign<select required value={itemForm.campaignId} onChange={event => setItemForm({ ...itemForm, campaignId: event.target.value })}><option value="">Select campaign</option>{campaignChoices.map((campaign: any) => <option key={campaign.id} value={campaign.id}>{campaign.title}</option>)}</select></label><div className="form-two"><label>Title<input required value={itemForm.title} onChange={event => setItemForm({ ...itemForm, title: event.target.value })}/></label><label>Owner<input required value={itemForm.owner} onChange={event => setItemForm({ ...itemForm, owner: event.target.value })}/></label></div><label>Objective<input required value={itemForm.objective} onChange={event => setItemForm({ ...itemForm, objective: event.target.value })}/></label><div className="form-two"><label>Channel<select value={itemForm.channel} onChange={event => setItemForm({ ...itemForm, channel: event.target.value })}>{['Instagram', 'Facebook', 'Email', 'SMS', 'Wholesale'].map(channel => <option key={channel}>{channel}</option>)}</select></label><label>Destination account<input required placeholder="@brand or internal list" value={itemForm.destinationAccount} onChange={event => setItemForm({ ...itemForm, destinationAccount: event.target.value })}/></label></div><label>Planned date and time (Pacific)<input type="datetime-local" required value={itemForm.plannedAt} onChange={event => setItemForm({ ...itemForm, plannedAt: event.target.value })}/></label><label>Caption or brief<textarea required value={itemForm.caption} onChange={event => setItemForm({ ...itemForm, caption: event.target.value })}/></label><label>Approved linked creative<select value={itemForm.linkedVersionId} onChange={event => { const entry = approvedAssets.find((entry: any) => entry.version.id === event.target.value); setItemForm({ ...itemForm, linkedAssetId: entry?.asset.id ?? '', linkedVersionId: entry?.version.id ?? '' }); }}><option value="">No linked asset</option>{approvedAssets.map(({ asset, version }: any) => <option key={version.id} value={version.id}>{asset.title} · v{version.number}</option>)}</select></label><button className="primary" disabled={busy || !itemForm.campaignId}>Create draft</button></form></div>
+    <div className="calendar-actions"><p>{visible.length} content item{visible.length === 1 ? '' : 's'} in this view</p><div><button className="secondary" onClick={() => setEditor(editor === 'campaign' ? null : 'campaign')}>New campaign</button><button className="primary" onClick={() => setEditor(editor === 'content' ? null : 'content')}>New content <span aria-hidden="true">+</span></button></div></div>
+    {editor && <div className="calendar-editor-heading"><span>{editor === 'campaign' ? 'CAMPAIGN SETUP' : 'CONTENT DETAILS'}</span><button className="text-action" onClick={() => setEditor(null)}>Close editor</button></div>}
+    <div className="planner-grid" hidden={!editor}><form hidden={editor !== 'campaign'} className="planner-form" onSubmit={createCampaign}><h3>New campaign</h3><label>Brand<select value={campaignForm.brandId} onChange={event => setCampaignForm({ ...campaignForm, brandId: event.target.value })}>{data.brands.map((brand: any) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label><label>Campaign title<input required maxLength={160} value={campaignForm.title} onChange={event => setCampaignForm({ ...campaignForm, title: event.target.value })}/></label><label>Objective<textarea required value={campaignForm.objective} onChange={event => setCampaignForm({ ...campaignForm, objective: event.target.value })}/></label><label>Owner<input required value={campaignForm.owner} onChange={event => setCampaignForm({ ...campaignForm, owner: event.target.value })}/></label><button className="primary" disabled={busy}>Create campaign</button></form>
+      <form hidden={editor !== 'content'} className="planner-form content-form" onSubmit={submitItem}><h3>Schedule content internally</h3><label>Campaign<select required value={itemForm.campaignId} onChange={event => setItemForm({ ...itemForm, campaignId: event.target.value })}><option value="">Select campaign</option>{campaignChoices.map((campaign: any) => <option key={campaign.id} value={campaign.id}>{campaign.title}</option>)}</select></label><div className="form-two"><label>Title<input required value={itemForm.title} onChange={event => setItemForm({ ...itemForm, title: event.target.value })}/></label><label>Owner<input required value={itemForm.owner} onChange={event => setItemForm({ ...itemForm, owner: event.target.value })}/></label></div><label>Objective<input required value={itemForm.objective} onChange={event => setItemForm({ ...itemForm, objective: event.target.value })}/></label><div className="form-two"><label>Channel<select value={itemForm.channel} onChange={event => setItemForm({ ...itemForm, channel: event.target.value })}>{['Instagram', 'Facebook', 'Email', 'SMS', 'Wholesale'].map(channel => <option key={channel}>{channel}</option>)}</select></label><label>Destination account<input required placeholder="@brand or internal list" value={itemForm.destinationAccount} onChange={event => setItemForm({ ...itemForm, destinationAccount: event.target.value })}/></label></div><label>Planned date and time (Pacific)<input type="datetime-local" required value={itemForm.plannedAt} onChange={event => setItemForm({ ...itemForm, plannedAt: event.target.value })}/></label><label>Caption or brief<textarea required value={itemForm.caption} onChange={event => setItemForm({ ...itemForm, caption: event.target.value })}/></label><label>Approved linked creative<select value={itemForm.linkedVersionId} onChange={event => { const entry = approvedAssets.find((entry: any) => entry.version.id === event.target.value); setItemForm({ ...itemForm, linkedAssetId: entry?.asset.id ?? '', linkedVersionId: entry?.version.id ?? '' }); }}><option value="">No linked asset</option>{approvedAssets.map(({ asset, version }: any) => <option key={version.id} value={version.id}>{asset.title} · v{version.number}</option>)}</select></label><button className="primary" disabled={busy || !itemForm.campaignId}>Create draft</button></form></div>
     <div className="calendar-list"><div className="section-heading"><div><span className="eyebrow">DATE GROUPED</span><h2>Content plan</h2></div><small>Times shown in America/Los_Angeles</small></div>{Object.entries(groups).map(([day, items]) => <section className="date-group" key={day}><h3>{day}</h3>{items.map(item => <CalendarItem key={item.id} item={item} data={data} busy={busy} act={act}/>)}</section>)}{!visible.length && <div className="empty-inline">No content matches these filters.</div>}</div>
   </div>;
 }

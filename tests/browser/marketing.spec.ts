@@ -7,8 +7,10 @@ test.beforeEach(async ({ request }) => {
 test('marketing creates content and creative; owner reviews and publishes; only the selected rep can retrieve it', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('Test identity').selectOption('marketing');
-  await expect(page.getByRole('heading', { name: 'Make the next release count.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Marketing overview' })).toBeVisible();
+  await page.screenshot({ path: 'test-results/marketing-home-desktop.png', fullPage: true, animations: 'disabled' });
   await page.getByRole('tab', { name: 'Calendar', exact: true }).click();
+  await page.getByRole('button', { name: 'New campaign', exact: true }).click();
   const campaign = page.locator('.planner-form').first();
   await campaign.getByRole('combobox', { name: 'Brand', exact: true }).selectOption('cheddr');
   await campaign.getByLabel('Campaign title').fill('Browser launch');
@@ -35,6 +37,8 @@ test('marketing creates content and creative; owner reviews and publishes; only 
   await expect(job).toContainText('failed');
   await job.getByRole('button', { name: 'Retry job' }).click();
   await expect(job.locator('img')).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: 'test-results/marketing-studio-desktop.png', fullPage: true, animations: 'disabled' });
   const [draftDownload] = await Promise.all([page.waitForEvent('download'), job.getByRole('button', { name: 'Download sample-artwork-v1.svg' }).click()]);
   expect(draftDownload.suggestedFilename()).toBe('sample-artwork-v1.svg');
   const editor = { 'X-Demo-Identity': 'marketing' };
@@ -82,12 +86,17 @@ test('mobile filters, protected document previews, and recoverable workspace err
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await page.getByLabel('Test identity').selectOption('marketing');
-  await expect(page.getByRole('heading', { name: 'Make the next release count.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Marketing overview' })).toBeVisible();
   await page.screenshot({ path: 'test-results/marketing-home-mobile.png', fullPage: true, animations: 'disabled' });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await page.getByLabel('Brand filter').selectOption('frosty');
   await expect(page.getByText('Nothing scheduled yet.')).toBeVisible();
+  await page.getByRole('button', { name: 'Open workspace navigation', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Workspace sidebar' })).toBeVisible();
+  await page.screenshot({ path: 'test-results/marketing-navigation-mobile.png', animations: 'disabled' });
   await page.getByRole('tab', { name: 'Calendar', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('tabpanel')).toBeFocused();
   await expect(page.getByText('No content matches these filters.')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await page.screenshot({ path: 'test-results/marketing-calendar-mobile.png', fullPage: true, animations: 'disabled' });
@@ -108,5 +117,37 @@ test('mobile filters, protected document previews, and recoverable workspace err
   await expect(page.getByRole('alert')).toContainText('Marketing access denied');
   await page.unroute('**/api/marketing/workspace');
   await page.getByRole('button', { name: 'Retry', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Make the next release count.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Marketing overview' })).toBeVisible();
+});
+
+test('left navigation supports keyboard selection and mobile dismissal without losing the current section', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Test identity').selectOption('marketing');
+  const navigation = page.getByRole('tablist', { name: 'Marketing workspace' });
+  await expect(navigation).toHaveAttribute('aria-orientation', 'vertical');
+  const navBox = await navigation.boundingBox();
+  const contentBox = await page.getByRole('heading', { name: 'Marketing overview' }).boundingBox();
+  expect(navBox!.x + navBox!.width).toBeLessThan(contentBox!.x);
+  await page.getByRole('tab', { name: 'Home', exact: true }).focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('heading', { name: 'Content calendar', exact: true })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Calendar', exact: true })).toBeFocused();
+  await expect(page.locator('.planner-grid')).toBeHidden();
+  await page.getByRole('button', { name: 'New content', exact: false }).click();
+  await expect(page.locator('.content-form')).toBeVisible();
+  await page.getByRole('button', { name: 'Close editor', exact: true }).click();
+  await expect(page.locator('.content-form')).toBeHidden();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Open workspace navigation', exact: true }).click();
+  await expect(page.getByRole('tab', { name: 'Calendar', exact: true })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Open workspace navigation', exact: true })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'Content calendar', exact: true })).toBeVisible();
+  await page.getByLabel('Test identity').selectOption('owner');
+  await expect(page.getByRole('heading', { name: 'Marketing overview' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open workspace navigation', exact: true }).click();
+  await page.getByLabel('Department', { exact: true }).selectOption('sales');
+  await expect(page.getByRole('heading', { name: 'From invoice to warehouse.' })).toBeVisible();
+  expect(await page.evaluate(() => document.body.style.overflow)).not.toBe('hidden');
 });

@@ -1,6 +1,12 @@
 # Project status
 
-Updated: November 9, 2026 (America/Los_Angeles).
+Updated: November 11, 2026 (America/Los_Angeles).
+
+## Current task: marketing navigation and visual design
+
+Active lead: Cheddr with Codex. The user requests intuitive left-panel navigation for Home, Calendar, Image Studio, Review and Assets, plus a polished Dizzle visual system. Work stays on feat/marketing-workspace / draft PR #5. Implemented persistent desktop navigation, an accessible mobile drawer, contextual page headings, actionable overview counts, a creative launch area, thumbnail library, calmer forms and a plan-first Calendar with explicit editors. The new visual stylesheet is scoped to marketing. Both builders review App shell changes; existing fixture APIs/grants and Sales CRM/Warehouse boundaries are unchanged. MKT07 records this presentation decision. Verification/publication evidence is appended in HANDOFF; prior implementation records follow.
+
+November 11 verification: `npm run check` passes (typecheck, 38 HTTP tests, build, 6 Chromium tests). Home, Studio, Assets and mobile navigation/layout screenshots were visually reviewed. The local preview remains at http://127.0.0.1:5473. No separate lint tool is configured; the existing Vite future-native-loader warning remains non-blocking.
 
 ## Current task: finish fixture-backed Marketing Workspace
 

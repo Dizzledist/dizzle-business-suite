@@ -4,6 +4,8 @@ November 9, 2026. Cheddr leads implementation; both builders review shared ident
 
 ## Run and reproduce
 
+Navigation update, November 11: Home, Calendar, Image Studio, Review and Assets are in the left workspace panel. On narrow screens, use the menu button at the top left to open that same panel; Escape or the close button dismisses it. Keyboard users can move between sections with Up/Down/Home/End. Calendar shows the plan first; **New campaign** or **New content** opens the relevant editor, and **Close editor** returns to the plan. Image Studio has its own brand selector; the page-level brand filter applies to the other sections.
+
 Use Node 24.x, `npm ci`, then `npm run dev`. Open **http://127.0.0.1:5173**. If another preview occupies the defaults, use PowerShell:
 
 ```powershell
@@ -15,7 +17,7 @@ npm run dev
 That preview opens at **http://127.0.0.1:5473**. Keep both ports free; do not stop another builder's server. Variables are optional; no credentials are required. `npm run dev:web` is the historical fixed-port command; use `npm run dev` for configurable preview ports.
 
 1. Select **Marketing editor**. Home shows record counts, upcoming content, review links and published creative. The brand filter scopes Home, Calendar, Review and Assets; Image Studio has its own brand/campaign selection.
-2. Open **Calendar**. Create a Cheddr campaign with title, objective and owner. In the content form select that campaign; enter title, objective, owner, channel, destination account, Pacific date/time, caption and optionally an exact approved creative version. **Create draft**, then **Submit review**. Channel and status filters scope the date-grouped plan. Scheduling is internal only.
+2. Open **Calendar**, then **New campaign**. Create a Cheddr campaign with title, objective and owner. The content editor opens after campaign creation; **New content** also opens it directly. Select that campaign; enter title, objective, owner, channel, destination account, Pacific date/time, caption and optionally an exact approved creative version. **Create draft**, then **Submit review** in the plan. Channel and status filters scope the date-grouped plan. Scheduling is internal only.
 3. Open **Image Studio**. Select Cheddr and a campaign, enter a prompt, select original references and choose 1080 × 1350, 1080 × 1080 or custom 64–4096 dimensions. Optionally simulate a transient error, **Generate sample artwork**, then **Retry job**. Preview/download the sample SVG and **Submit version for review**. A variation appends a new draft version; original reference bytes and previous versions stay unchanged. The sample adapter records reference IDs but does not composite their pixels or perform AI generation.
 4. Select **Owner**, then Department **Marketing**. Open **Review**, inspect the exact content, destination and time or creative version, enter notes, and approve or return it. Owner is the only fixture with review/publish grants. Self-approval is disabled for creator and latest content editor; this is a conservative demo rule pending joint review.
 5. In **Calendar**, schedule approved content internally. In **Assets**, find the approved version, choose **Selected reps**, check Rep A and **Publish approved version**. Repeating the same active publication returns the same record. All-reps mode stores the currently eligible recipient IDs. Later hires are excluded until explicitly published to; current assignment and grants are still checked on every read.

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { DemoEvent, InvoiceView, Workspace } from '../shared/contracts';
 import { MarketingWorkspace, SalesAssetsPanel } from './MarketingWorkspace';
+import { MarketingIcon, MarketingNavigation, marketingSections, type MarketingSection } from './MarketingNavigation';
 
 const identities = [
   ['manager', 'Sales manager'], ['rep-a', 'Rep A'], ['rep-b', 'Rep B'], ['warehouse', 'Warehouse'],
@@ -10,6 +11,8 @@ const money = (amount: string) => new Intl.NumberFormat('en-US', { style: 'curre
 export function App() {
   const [identity, setIdentity] = useState('manager');
   const [department, setDepartment] = useState('sales');
+  const [marketingSection, setMarketingSection] = useState<MarketingSection>('home');
+  const [navigationOpen, setNavigationOpen] = useState(false);
   const [data, setData] = useState<Workspace | null>(null);
   const [selected, setSelected] = useState('inv-open');
   const [reason, setReason] = useState('');
@@ -34,11 +37,31 @@ export function App() {
   }
   useEffect(() => {
     const version = ++generation.current;
-    setData(null); setError(''); setNotice(''); setReason(''); setTermsId('');
+    setData(null); setError(''); setNotice(''); setReason(''); setTermsId(''); setMarketingSection('home'); setNavigationOpen(false);
     reload(version).catch(e => { if (generation.current === version) setError(String(e.message)); });
     return () => { generation.current++; };
     // Changing identity discards the old data before rendering another role.
   }, [identity]);
+  useEffect(() => {
+    if (!navigationOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.querySelector<HTMLButtonElement>('.marketing-navigation [aria-selected=true]')?.focus();
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { setNavigationOpen(false); requestAnimationFrame(() => document.getElementById('workspace-menu')?.focus()); }
+      if (event.key === 'Tab') {
+        const controls = [...document.querySelectorAll<HTMLElement>('#workspace-sidebar button:not([tabindex="-1"]), #workspace-sidebar select, #workspace-sidebar a')];
+        const first = controls[0], last = controls.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    };
+    document.addEventListener('keydown', close);
+    const desktop = window.matchMedia('(min-width: 861px)');
+    const resize = () => { if (desktop.matches) setNavigationOpen(false); };
+    desktop.addEventListener('change', resize);
+    return () => { document.body.style.overflow = originalOverflow; document.removeEventListener('keydown', close); desktop.removeEventListener('change', resize); };
+  }, [navigationOpen]);
   async function act(path: string, payload: unknown, message: string) {
     setBusy(true); setError(''); setNotice('');
     const version = generation.current;
@@ -57,24 +80,37 @@ export function App() {
   const job = data?.jobs.find(j => j.invoiceId === invoice?.id);
   const simulate = (event: DemoEvent) => invoice && act(`/demo/invoices/${invoice.id}/events`, { event }, 'Fixture event');
   function choose(next: InvoiceView) { setSelected(next.id); setReason(''); setTermsId(''); setError(''); setNotice(''); }
-  return <div className="app">
-    <aside className="sidebar">
+  const isMarketing = department === 'marketing';
+  function navigateMarketing(section: MarketingSection, closeDrawer = false) {
+    setMarketingSection(section);
+    if (closeDrawer) {
+      setNavigationOpen(false);
+      if (window.matchMedia('(max-width: 860px)').matches) requestAnimationFrame(() => document.getElementById('marketing-panel')?.focus());
+    }
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+  return <div className={`app ${isMarketing ? 'is-marketing' : ''} ${navigationOpen ? 'navigation-open' : ''}`}>
+    {isMarketing && navigationOpen && <button className="navigation-backdrop" aria-label="Close workspace navigation" onClick={() => { setNavigationOpen(false); requestAnimationFrame(() => document.getElementById('workspace-menu')?.focus()); }}/>}
+    <aside className="sidebar" id="workspace-sidebar" aria-label="Workspace sidebar" role={isMarketing && navigationOpen ? 'dialog' : undefined} aria-modal={isMarketing && navigationOpen ? true : undefined}>
+      {isMarketing && <button className="sidebar-dismiss" aria-label="Close navigation panel" onClick={() => { setNavigationOpen(false); requestAnimationFrame(() => document.getElementById('workspace-menu')?.focus()); }}><MarketingIcon name="close"/></button>}
       <a className="brand" href="/" aria-label="Dizzle home"><span className="brand-mark">d.</span> DIZZLE</a>
       <span className="sidebar-label">BUSINESS SUITE</span>
-      {data && <label className="department-select">Department<select aria-label="Department" value={department} onChange={event => setDepartment(event.target.value)}>{data.identity.departments.map(item => <option key={item} value={item}>{item === 'sales' ? 'Sales' : item === 'marketing' ? 'Marketing' : 'Warehouse'}</option>)}</select></label>}
-      <div className="nav-active"><span>↗</span> {department === 'marketing' ? 'Marketing workspace' : department === 'warehouse' ? 'Warehouse' : 'Invoice workflow'}</div>
-      <div className="sidebar-note">One source of truth.<br/>A clear path to fulfillment.</div>
+      {data && <label className="department-select">Department<select aria-label="Department" value={department} onChange={event => { setDepartment(event.target.value); setNavigationOpen(false); }}>{data.identity.departments.map(item => <option key={item} value={item}>{item === 'sales' ? 'Sales' : item === 'marketing' ? 'Marketing' : 'Warehouse'}</option>)}</select></label>}
+      {isMarketing && data?.identity.departments.includes('marketing') ? <MarketingNavigation section={marketingSection} onChange={navigateMarketing}/>
+        : <><div className="nav-active"><span>↗</span> {department === 'warehouse' ? 'Warehouse' : 'Invoice workflow'}</div><div className="sidebar-note">One source of truth.<br/>A clear path to fulfillment.</div></>}
       <div className="local-tag"><span/> Local sample data</div>
     </aside>
-    <main>
-      <header className="topbar"><span>Operations <span className="slash">/</span> Workflow demo</span>
+    <main inert={isMarketing && navigationOpen}>
+      <header className="topbar">
+        {isMarketing && <button id="workspace-menu" className="workspace-menu" aria-label={navigationOpen ? 'Close workspace navigation menu' : 'Open workspace navigation'} aria-expanded={navigationOpen} aria-controls="workspace-sidebar" onClick={() => setNavigationOpen(!navigationOpen)}><MarketingIcon name={navigationOpen ? 'close' : 'menu'}/></button>}
+        <span>{isMarketing ? <>Marketing <span className="slash">/</span><strong>{marketingSections.find(item => item.id === marketingSection)?.label}</strong></> : <>Operations <span className="slash">/</span> Workflow demo</>}</span>
         <label className="identity">Test identity <select aria-label="Test identity" value={identity} disabled={busy} onChange={e => { setData(null); setIdentity(e.target.value); }}>
           {identities.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
         </select></label>
       </header>
       {!data && department === 'marketing' && <div role={error ? 'alert' : 'status'} className={error ? 'alert error' : ''}>{error || 'Loading authorized workspace…'}</div>}
       {department === 'marketing' ? data?.identity.departments.includes('marketing')
-        ? <MarketingWorkspace key={identity} identity={identity}/>
+        ? <MarketingWorkspace key={identity} identity={identity} section={marketingSection} setSection={navigateMarketing}/>
         : data ? <div className="alert error" role="alert">Access denied. This identity has no Marketing department grant.</div> : null
       : <>
       <section className="page-title"><div><span className="eyebrow">PHASE 1 · LOCAL DEMO</span><h1>From invoice to warehouse.</h1><p>See what’s paid, what’s held, and what’s ready to fulfill.</p></div>
