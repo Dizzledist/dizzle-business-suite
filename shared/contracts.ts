@@ -1,3 +1,4 @@
+import type { PublishJob, SocialAccount } from './publishing';
 export type Role = 'owner' | 'admin' | 'sales_manager' | 'sales_rep' | 'warehouse' | 'marketing';
 export type Department = 'sales' | 'marketing' | 'warehouse';
 export type MarketingGrant = 'workspace:read' | 'campaign:write' | 'creative:generate' | 'asset:review' | 'asset:publish' | 'asset:read:all' | 'asset:read:published';
@@ -49,6 +50,7 @@ export interface Campaign {
 }
 export interface ContentItem {
   id: string; organizationId: string; campaignId: string; brandId: string; title: string; objective: string; owner: string;
+  destinationAccountId?: string | null;
   channel: string; plannedAt: string; destinationAccount: string; caption: string;
   linkedAssetId: string | null; linkedVersionId: string | null; status: ContentStatus;
   createdBy: string; editedBy: string; approvedBy: string | null; approvedAt: string | null; approvalSnapshot: string | null;
@@ -85,6 +87,7 @@ export interface GenerationJob {
 export interface MarketingWorkspaceData {
   identity: Identity; brands: Brand[]; campaigns: Campaign[]; content: ContentItem[];
   assets: MarketingAsset[]; generationJobs: GenerationJob[]; eligibleReps: { id: string; name: string }[];
+  socialAccounts: SocialAccount[]; publishingJobs: PublishJob[]; livePublishingEnabled: boolean;
   fixtureNotice: string;
   brandKits: BrandKit[];
   imageGeneration: { mode: 'openai' | 'test'; ready: boolean; model: string; quality: string; message: string; remainingAttempts: number; maxDailyAttempts: number; persistent: boolean };

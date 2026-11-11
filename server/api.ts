@@ -5,6 +5,10 @@ import { demoEvents } from '../shared/contracts';
 import { ApiError, Workflow } from './workflow';
 import { MarketingService } from './marketing';
 import type { ImageGenerator } from './image-generation';
+import type { SocialAccount } from '../shared/publishing';
+import { join } from 'node:path';
+import { PublishingQueue } from './publishing/queue';
+import type { CaptionDrafter } from './publishing/drafts';
 import { MarketingStore } from './marketing-store';
 
 const releaseSchema = z.object({
@@ -16,7 +20,7 @@ const campaignSchema = z.object({ brandId: z.string().min(1), title: z.string().
 const contentSchema = z.object({
   campaignId: z.string().min(1), title: z.string().trim().min(1).max(160), objective: z.string().trim().min(1).max(1000),
   owner: z.string().trim().min(1).max(100), channel: z.string().trim().min(1).max(80),
-  plannedAt: z.string().datetime(), destinationAccount: z.string().trim().min(1).max(160),
+  destinationAccountId: z.string().nullable().optional(), plannedAt: z.string().datetime(), destinationAccount: z.string().trim().min(1).max(160),
   caption: z.string().trim().min(1).max(5000), linkedAssetId: z.string().nullable(), linkedVersionId: z.string().nullable(),
 }).strict();
 const reviewSchema = z.object({ decision: z.enum(['approve', 'return']), notes: z.string().max(2000).default('') }).strict();
@@ -49,10 +53,10 @@ function send(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
   res.end(JSON.stringify(data));
 }
-export function createApi(workflow = new Workflow(), options: { generator?: ImageGenerator; store?: MarketingStore } = {}) {
-  const marketing = new MarketingService(workflow, options.generator, options.store);
+export function createApi(workflow = new Workflow(), options: { generator?: ImageGenerator; store?: MarketingStore; publishingQueue?: PublishingQueue; accounts?: SocialAccount[]; drafter?: CaptionDrafter } = {}) {
+  const marketing = new MarketingService(workflow, options.generator, options.store, options.publishingQueue ?? (options.store ? new PublishingQueue(join(options.store.directory, 'publishing.sqlite')) : undefined), options.accounts, options.drafter);
   const ports = localPorts(process.env);
-  return createServer(async (req, res) => {
+  const server = createServer(async (req, res) => {
     try {
       const host = new URL(`http://${req.headers.host ?? ''}`);
       if (!['127.0.0.1', 'localhost', '[::1]'].includes(host.hostname)) throw new ApiError(403, 'Local host required.');
@@ -66,6 +70,23 @@ export function createApi(workflow = new Workflow(), options: { generator?: Imag
       const actor = workflow.authenticate(typeof id === 'string' ? id : undefined);
       if (req.method === 'GET' && path === '/api/workspace') return send(res, 200, workflow.workspace(actor));
       if (req.method === 'GET' && path === '/api/marketing/workspace') return send(res, 200, marketing.workspace(actor));
+      if (req.method === 'POST' && path === '/api/marketing/social/propose') {
+        const input = z.object({ brandId: z.string(), brief: z.string().min(1).max(2000), platform: z.enum(['Instagram', 'X']) }).strict().parse(await body(req));
+        return send(res, 200, await marketing.proposeSocial(actor, input.brandId, input.brief, input.platform));
+      }
+      const cancelSocial = /^\/api\/marketing\/publishing-jobs\/([a-z0-9-]+)\/cancel$/.exec(path);
+      if (req.method === 'POST' && cancelSocial) return send(res, 200, marketing.cancelSocial(actor, cancelSocial[1]));
+      const socialImage = /^\/api\/marketing\/content\/([a-z0-9-]+)\/social-image$/.exec(path);
+      if (req.method === 'GET' && socialImage) {
+        const image = await marketing.socialImage(actor, socialImage[1]);
+        res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Content-Disposition': 'inline; filename="approved-social-image.jpg"', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }); return res.end(image);
+      }
+      const manualSocial = /^\/api\/marketing\/content\/([a-z0-9-]+)\/(mark-posted|confirm-existing)$/.exec(path);
+      if (req.method === 'POST' && manualSocial) {
+        const input = z.object({ url: z.string().url().max(500), postedAt: z.string().datetime(), inspectedExactPost: z.literal(true).optional() }).strict().parse(await body(req));
+        if (manualSocial[2] === 'confirm-existing' && !input.inspectedExactPost) throw new ApiError(400, 'Confirm the exact existing account, creative, caption and post URL first.');
+        return send(res, 200, marketing.markSocialPosted(actor, manualSocial[1], input.url, input.postedAt, manualSocial[2] === 'confirm-existing'));
+      }
       const brandKit = /^\/api\/marketing\/brand-kits\/([a-z0-9-]+)$/.exec(path);
       if (req.method === 'PUT' && brandKit) return send(res, 200, marketing.updateBrandKit(actor, brandKit[1], brandKitSchema.parse(await body(req, 300_000))));
       if (req.method === 'POST' && path === '/api/marketing/campaigns') return send(res, 201, marketing.createCampaign(actor, campaignSchema.parse(await body(req))));
@@ -76,7 +97,7 @@ export function createApi(workflow = new Workflow(), options: { generator?: Imag
       if (contentAction && req.method === 'POST') {
         const [, id, action] = contentAction;
         if (action === 'submit') return send(res, 200, marketing.submitContent(actor, id));
-        if (action === 'schedule') return send(res, 200, marketing.scheduleContent(actor, id));
+        if (action === 'schedule') return send(res, 200, await marketing.scheduleContent(actor, id));
         const input = reviewSchema.parse(await body(req));
         return send(res, 200, marketing.reviewContent(actor, id, input.decision, input.notes));
       }
@@ -139,4 +160,6 @@ export function createApi(workflow = new Workflow(), options: { generator?: Imag
       else send(res, 500, { error: 'Local API error.' });
     }
   });
+  server.on('close', () => marketing.publishingQueue.close());
+  return server;
 }

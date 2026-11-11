@@ -2,7 +2,15 @@
 
 Updated: November 11, 2026 (America/Los_Angeles).
 
-## Current task: reusable Brand Kits
+## Current task: approved Instagram/X publishing
+
+Active lead: Cheddr with Codex, November 11. Explicit user request authorizes persistent approved queue, independent worker, provider adapters, manual fallback and AI proposals on the marketing branch / draft PR #5. Live publishing stays OFF until a separately authorized test post. Inspect current official docs, use isolated adapters/clock, preserve local identities and existing grants; deployment/account setup require user action. Shared contract/storage/API changes need both builders' review.
+
+Implemented: connected Instagram/X destination metadata, approved single-image/JPEG preview, exact account/image/caption/time review, revision-invalidating edits, durable SQLite queue, independent worker, atomic claims/leases, provider checkpoints and uncertainty holds, delivery states/status filtering, cancellation and manual posting evidence. Added server-only OAuth CLI/encrypted credentials/refresh, provider-specific upload/container adapters, signed Meta media service and AI caption/time draft proposals without queue authority. See [social publishing setup](SOCIAL_PUBLISHING.md) for official sources, current prices, exact owner connection steps and hosting needs.
+
+Verification: npm run check passes typecheck, 76 API/provider/queue/store tests, build and all 9 Chromium tests. A separate worker process publishes a persisted test job with no API/browser running; simulated clock, two competing queue connections, interruption/reconciliation, approval/cancellation and private media/token boundaries are covered. Desktop/mobile views inspected. Local worker is running with hard-off live gate; preview returns livePublishingEnabled=false, only test destinations, zero queued social jobs and the previous single saved image intact. No real OAuth, live post, paid API call, credit purchase or deployment was performed. Hosting remains unprovisioned and the fixture API cannot be deployed as authentication. Existing Vite warning and Node 24 experimental SQLite warning are non-blocking; no separate lint command exists.
+
+## Previous task: reusable Brand Kits
 
 Implemented follow-up: Cheddr with Codex, November 11. User authorizes importing a full written brand-bible overview from `.md` in Brand Kits. Scope: private saved Markdown text, editor/import controls and automatic job guidance; existing kit permissions/storage/revisions apply. Shared contract/API review required. Markdown import/editor, saved filename/text and automatic prompt inclusion are implemented. Full check passes: 56 API/provider/store tests, 8 Chromium tests, typecheck/build; no paid provider call performed.
 

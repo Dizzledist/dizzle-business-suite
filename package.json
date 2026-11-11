@@ -14,7 +14,11 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "build": "tsc --noEmit && vite build",
-    "check": "npm run typecheck && npm test && npm run build && npm run test:e2e"
+    "check": "npm run typecheck && npm test && npm run build && npm run test:e2e",
+    "social:worker": "tsx scripts/social-worker.ts",
+    "social:media": "tsx scripts/social-media.ts",
+    "social:connect": "tsx scripts/social-connect.ts",
+    "social:reconcile": "tsx scripts/social-reconcile.ts"
   },
   "dependencies": {
     "react": "^19.3.1",

@@ -8,6 +8,8 @@ The marketing branch includes campaigns, internal content scheduling, server-sid
 
 **Brand Kits** in the left panel stores each brand's logos, product originals, style examples, brand-bible page images and written guidelines. Save up to four default references; Image Studio automatically reuses those images and rules on new requests. [Brand Kit setup](docs/BRAND_KITS.md).
 
+**Approved social publishing:** Calendar now has connected Instagram/X destinations, exact-image review, a persistent queue, a separate test worker and manual posting records. Live publishing remains hard-disabled. See [provider/account setup and hosting requirements](docs/SOCIAL_PUBLISHING.md).
+
 ## Run the local workflow
 
 Use Node.js 24.x, then run from the repository root:

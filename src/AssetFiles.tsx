@@ -27,8 +27,8 @@ export function ProtectedImage({ path, identity, title }: { path: string; identi
   return source ? <img className="asset-preview" src={source} alt={title}/> : <span className="preview-placeholder" role="status">Preview unavailable</span>;
 }
 
-export function DownloadButton({ path, identity, fileName, onError }: { path: string; identity: string; fileName: string; onError: (message: string) => void }) {
-  return <button className="download-button" title={`Download ${fileName}`} aria-label={`Download ${fileName}`} onClick={async () => {
+export function DownloadButton({ path, identity, fileName, onError, label }: { path: string; identity: string; fileName: string; onError: (message: string) => void; label?: string }) {
+  return <button className="download-button" title={`Download ${fileName}`} aria-label={label ?? `Download ${fileName}`} onClick={async () => {
     onError('');
     try {
       const response = await fetch(`/api${path}`, { headers: { 'X-Demo-Identity': identity } });
@@ -36,5 +36,5 @@ export function DownloadButton({ path, identity, fileName, onError }: { path: st
       const blob = await response.blob(); const url = URL.createObjectURL(blob); const anchor = document.createElement('a');
       anchor.href = url; anchor.download = fileName; anchor.click(); URL.revokeObjectURL(url);
     } catch (reason) { onError(reason instanceof Error ? reason.message : 'Download failed.'); }
-  }}>↓</button>;
+  }}>{label ?? '↓'}</button>;
 }

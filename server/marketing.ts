@@ -1,5 +1,9 @@
 import { randomUUID, createHash } from 'node:crypto';
 import sharp from 'sharp';
+import { PublishingQueue } from './publishing/queue';
+import { OpenAICaptionDrafter, type CaptionDrafter } from './publishing/drafts';
+import { testAccounts } from './publishing/adapters';
+import type { SocialAccount } from '../shared/publishing';
 import { ImageGenerationError, OpenAIImageGenerator, type ImageGenerator, type GeneratedImage } from './image-generation';
 import { MarketingStore } from './marketing-store';
 import type {
@@ -9,7 +13,7 @@ import type {
 import { ApiError, Workflow } from './workflow';
 
 const organizationId = 'demo-o1';
-const fixtureNotice = 'Synthetic business fixtures and isolated test images. Publishing is internal only. Ephemeral test state resets on API restart or Reset demo.';
+const fixtureNotice = 'Synthetic business fixtures and isolated test images. Live social publishing is OFF; test destinations simulate posts. Ephemeral test state resets on API restart or Reset demo.';
 const brands: Brand[] = [
   { id: 'dizzle', name: 'Dizzle Dist' }, { id: 'cheddr', name: 'Cheddr' },
   { id: 'puffr', name: 'Puffr' }, { id: 'frosty', name: 'Frosty' },
@@ -19,7 +23,7 @@ type FileRecord = { mimeType: string; body: string | Buffer; fileName: string };
 type CampaignInput = { brandId: string; title: string; objective: string; owner: string };
 type ContentInput = {
   campaignId: string; title: string; objective: string; owner: string; channel: string;
-  plannedAt: string; destinationAccount: string; caption: string; linkedAssetId: string | null; linkedVersionId: string | null;
+  destinationAccountId?: string | null; plannedAt: string; destinationAccount: string; caption: string; linkedAssetId: string | null; linkedVersionId: string | null;
 };
 type GenerationInput = {
   brandId: string; campaignId: string; prompt: string; referenceAssetIds: string[];
@@ -41,7 +45,9 @@ export class MarketingService {
   private files = new Map<string, FileRecord>();
   private brandKits: BrandKit[] = brands.map(brand => ({ brandId: brand.id, revision: 0, imageType: '', visualStyle: '', palette: '', typography: '', logoRules: '', avoid: '', guidelines: '', brandBibleMarkdown: '', brandBibleFileName: '', defaultReferenceIds: [], referenceCategories: {}, updatedBy: null, updatedAt: null }));
 
-  constructor(private workflow: Workflow, private generator: ImageGenerator = new OpenAIImageGenerator(), private store?: MarketingStore) {
+  readonly publishingQueue: PublishingQueue;
+  constructor(private workflow: Workflow, private generator: ImageGenerator = new OpenAIImageGenerator(), private store?: MarketingStore, queue?: PublishingQueue, readonly socialAccounts: SocialAccount[] = testAccounts, private drafter: CaptionDrafter = new OpenAICaptionDrafter()) {
+    this.publishingQueue = queue ?? new PublishingQueue();
     this.seed();
     const saved = store?.load() as { schema?: number; campaigns?: Campaign[]; content?: ContentItem[]; assets?: MarketingAsset[]; jobs?: GenerationJob[]; brandKits?: BrandKit[]; files?: [string, { mimeType: string; fileName: string; body: string }][] } | null;
     if (saved) {
@@ -93,6 +99,7 @@ export class MarketingService {
   workspace(actor: Identity): MarketingWorkspaceData {
     this.require(actor, 'workspace:read');
     return {
+      socialAccounts: structuredClone(this.socialAccounts), publishingJobs: this.publishingQueue.list(), livePublishingEnabled: false,
       identity: { ...actor }, brands: brands.map(brand => ({ ...brand })),
       brandKits: structuredClone(this.brandKits),
       campaigns: this.campaigns.map(campaign => ({ ...campaign })),
@@ -145,6 +152,7 @@ export class MarketingService {
     this.require(actor, 'campaign:write');
     const campaign = this.campaign(input.campaignId);
     this.validateLinkedVersion(input.linkedAssetId, input.linkedVersionId, campaign.brandId);
+    this.validateDestination(input, campaign.brandId);
     const item: ContentItem = {
       id: `content-${randomUUID()}`, organizationId, ...input, campaignId: campaign.id, brandId: campaign.brandId,
       status: 'draft', createdBy: actor.id, editedBy: actor.id, approvedBy: null, approvedAt: null,
@@ -159,6 +167,8 @@ export class MarketingService {
     const item = this.contentItem(id);
     const campaign = this.campaign(input.campaignId);
     this.validateLinkedVersion(input.linkedAssetId, input.linkedVersionId, campaign.brandId);
+    this.validateDestination(input, campaign.brandId);
+    this.publishingQueue.blockEdit(id);
     Object.assign(item, input, { editedBy: actor.id, campaignId: campaign.id, brandId: campaign.brandId, status: 'draft',
       approvedBy: null, approvedAt: null, approvalSnapshot: null, reviewNote: null, scheduledAt: null });
     this.persist(); return { ...item };
@@ -176,6 +186,7 @@ export class MarketingService {
   reviewContent(actor: Identity, id: string, decision: 'approve' | 'return', notes: string) {
     this.require(actor, 'asset:review');
     const item = this.contentItem(id);
+    this.validateDestination(item, item.brandId);
     if (item.status !== 'in_review') throw new ApiError(409, 'Content must be in review.');
     if (actor.id === item.createdBy || actor.id === item.editedBy) throw new ApiError(403, 'Self-approval is disabled in this local demo.');
     item.reviewNote = notes.trim() || null;
@@ -188,12 +199,19 @@ export class MarketingService {
     this.persist(); return { ...item };
   }
 
-  scheduleContent(actor: Identity, id: string) {
+  async scheduleContent(actor: Identity, id: string) {
     this.require(actor, 'campaign:write');
     const item = this.contentItem(id);
+    this.validateDestination(item, item.brandId);
     if (item.status !== 'approved' || item.approvalSnapshot !== this.contentSnapshot(item))
       throw new ApiError(409, 'Content needs current approval before it can be scheduled.');
     this.validateLinkedVersion(item.linkedAssetId, item.linkedVersionId, item.brandId);
+    if (item.destinationAccountId) {
+      const bytes = await this.socialImage(actor, id);
+      if (item.status !== 'approved' || item.approvalSnapshot !== this.contentSnapshot(item)) throw new ApiError(409, 'Content changed; renew approval.');
+      const account = this.socialAccounts.find(account => account.id === item.destinationAccountId)!;
+      this.publishingQueue.enqueue({ contentId: item.id, organizationId, account: structuredClone(account), caption: item.caption, publishAt: item.plannedAt, aiGenerated: this.version(item.linkedVersionId!).sourceType === 'generated_artwork', versionId: item.linkedVersionId!, imageHash: createHash('sha256').update(bytes).digest('hex'), approvalSnapshot: item.approvalSnapshot!, approvedBy: item.approvedBy!, approvedAt: item.approvedAt! }, bytes, new Date().toISOString());
+    }
     item.status = 'scheduled'; item.scheduledAt = new Date().toISOString();
     this.persist(); return { ...item };
   }
@@ -460,8 +478,51 @@ export class MarketingService {
       publishedAt: new Date().toISOString(), retiredBy: null, retiredAt: null, retireReason: null });
   }
 
+  private validateDestination(input: ContentInput, brandId: string) {
+    if (!input.destinationAccountId) return;
+    const account = this.socialAccounts.find(account => account.id === input.destinationAccountId && account.brandId === brandId && account.connected);
+    if (!account || input.destinationAccount !== account.handle || input.channel !== (account.platform === 'x' ? 'X' : 'Instagram')) throw new ApiError(400, 'Select a connected account matching the brand, platform and exact handle.');
+    if (!input.linkedVersionId || !input.linkedAssetId) throw new ApiError(400, 'Single-image publishing requires an approved creative.');
+    const version = this.version(input.linkedVersionId);
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(version.mimeType)) throw new ApiError(400, 'Use an approved raster creative for social publishing.');
+    const ratio = (version.width ?? 0) / (version.height ?? 1);
+    if (account.platform === 'instagram' && (ratio < 0.8 || ratio > 1.91 || (version.width ?? 0) < 320)) throw new ApiError(400, 'This Instagram feed pilot accepts images at least 320 pixels wide, from 4:5 through 1.91:1. No cropping is performed.');
+    if (account.platform === 'instagram' && [...input.caption].length > 2200 || account.platform === 'x' && Buffer.byteLength(input.caption, 'utf8') > 280) throw new ApiError(400, 'Caption exceeds this pilot limit: Instagram 2,200 characters; X 280 UTF-8 bytes (conservative).');
+  }
+  async socialImage(actor: Identity, id: string) {
+    this.require(actor, 'workspace:read'); const item = this.contentItem(id);
+    this.validateLinkedVersion(item.linkedAssetId, item.linkedVersionId, item.brandId);
+    if (!item.linkedVersionId) throw new ApiError(409, 'Link an approved image first.');
+    const frozen = this.publishingQueue.list().find(job => job.payload.contentId === id && job.payload.approvalSnapshot === item.approvalSnapshot && job.payload.approvedAt === item.approvedAt);
+    if (frozen) return this.publishingQueue.image(frozen.id);
+    const file = this.files.get(item.linkedVersionId)!;
+    const image = await sharp(file.body).rotate().resize({ width: 1440, withoutEnlargement: true }).flatten({ background: '#ffffff' }).toColourspace('srgb').jpeg({ quality: 95 }).toBuffer();
+    if (image.length > 5_000_000) throw new ApiError(400, 'Prepared image exceeds this pilot\'s 5 MB limit.'); return image;
+  }
+  async proposeSocial(actor: Identity, brandId: string, brief: string, platform: string) {
+    this.require(actor, 'campaign:write'); this.brand(brandId);
+    const kit = this.brandKits.find(kit => kit.brandId === brandId)!;
+    return this.drafter.propose({ brief, platform, earliest: new Date().toISOString(), brandDirection: JSON.stringify(kit) });
+  }
+  cancelSocial(actor: Identity, id: string) { this.require(actor, 'campaign:write'); return this.publishingQueue.cancel(id, actor.id); }
+  markSocialPosted(actor: Identity, contentId: string, url: string, at: string, confirmExisting = false) {
+    this.require(actor, confirmExisting ? 'asset:review' : 'campaign:write'); const item = this.contentItem(contentId);
+    if (!item.approvedBy || item.approvalSnapshot !== this.contentSnapshot(item)) throw new ApiError(409, 'Current exact content approval is required.');
+    const account = this.socialAccounts.find(account => account.id === item.destinationAccountId);
+    if (!account) throw new ApiError(409, 'Select and approve a connected destination first.');
+    const parsed = new URL(url);
+    const valid = account.platform === 'x' ? /^\/(?:i|[A-Za-z0-9_]+)\/status\/\d+\/?$/.test(parsed.pathname) && ['x.com', 'www.x.com', 'twitter.com'].includes(parsed.hostname) : /^\/p\/[A-Za-z0-9_-]+\/?$/.test(parsed.pathname) && ['instagram.com', 'www.instagram.com'].includes(parsed.hostname);
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password || !valid || !Number.isFinite(Date.parse(at)) || Date.parse(at) > Date.now() + 60_000) throw new ApiError(400, 'Enter an actual platform post URL and posting time, not a future date.');
+    const job = this.publishingQueue.list().find(job => job.payload.contentId === contentId && job.payload.approvalSnapshot === item.approvalSnapshot && job.payload.approvedAt === item.approvedAt);
+    if (!job) throw new ApiError(409, 'Schedule the approved entry first. Cancel its queued send before posting manually.');
+    if (confirmExisting) return this.publishingQueue.confirmExisting(job.id, actor.id, parsed.href, at);
+    if (job.state === 'scheduled') throw new ApiError(409, 'Cancel the queued API send before posting manually.');
+    return this.publishingQueue.manual(job.id, actor.id, parsed.href, at);
+  }
   private contentSnapshot(item: ContentItem) {
-    return JSON.stringify([item.campaignId, item.brandId, item.title, item.objective, item.owner, item.channel,
+    const account = this.socialAccounts.find(account => account.id === item.destinationAccountId);
+    const bytes = item.linkedVersionId ? this.files.get(item.linkedVersionId)?.body : null;
+    return JSON.stringify([item.destinationAccountId ?? null, account ?? null, bytes ? createHash('sha256').update(bytes).digest('hex') : null, item.campaignId, item.brandId, item.title, item.objective, item.owner, item.channel,
       item.plannedAt, item.destinationAccount, item.caption, item.linkedAssetId, item.linkedVersionId]);
   }
   private brand(id: string) { const brand = brands.find(candidate => candidate.id === id); if (!brand) throw new ApiError(404, 'Brand not found.'); return brand; }

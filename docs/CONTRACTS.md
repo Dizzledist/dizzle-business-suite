@@ -161,3 +161,16 @@ Affected consumers: Brand Kits editor/library, Studio defaults/provenance, gener
 
 
 MKT10 additive follow-up, November 11: optional `BrandKit.brandBibleMarkdown` (20,000 characters) and `brandBibleFileName` (255 characters) are accepted by the same revision-checked PUT route; its body ceiling is 300,000 bytes. Older kits remain valid without these fields. Imported UTF-8 Markdown is saved as private plain text, included verbatim in effective prompts and preserved in job/retry snapshots. Brand Kits, generation, API/schema/storage and shared-contract consumers require both builders' review. No new upload/file gateway or permission is introduced.
+
+
+## MKT11: approved social calendar and persistent queue
+
+ContentItem gains optional destinationAccountId; the server validates configured account brand/platform/exact handle and approved raster image. The content snapshot now binds account metadata and image bytes in addition to caption/time/version. Every edit clears approval and atomically cancels unclaimed jobs; an already claimed/uncertain/published job blocks edits. Legacy manual plans remain valid, but old approval snapshots cannot authorize a new external send without renewed review.
+
+MarketingWorkspaceData adds socialAccounts (metadata only), publishingJobs and literal-false livePublishingEnabled. New shared publishing types separate content approval from Scheduled/Publishing/Published/Failed/Needs Review/Canceled delivery. Schedule is async and writes an immutable approved payload/JPEG to the isolated version-1 SQLite queue; exact original approval/reviewer/time and JPEG hash are retained. API and worker share a private local directory; the API marketing JSON store remains single-writer. Cross-host PostgreSQL/object storage and production identity are not implemented.
+
+API additions: POST /marketing/social/propose (campaign-write, drafts only); GET /marketing/content/:id/social-image (workspace-read protected JPEG); POST /marketing/publishing-jobs/:id/cancel (campaign-write, queued only); POST /marketing/content/:id/mark-posted (campaign-write, approved content plus canceled/definitely-failed job, valid platform URL/actual time); POST /marketing/content/:id/confirm-existing (review grant, explicit inspectedExactPost=true, uncertain expired lease, existing post evidence). Public input cannot set approval, worker state, credentials or provider receipts. Existing version publication remains internal rep-library publishing.
+
+Worker uses atomic SQLite claim, lease/checkpoint fencing and one approved queue input. Expired/uncertain writes hold for reconciliation; no automatic public-create retry. Provider adapters validate current identity and use fixed hosts. OAuth connection is an explicit local operator CLI; AES-GCM tokens remain server-side and account changes require reconnect/reapproval. A separate capability-signed media origin exposes only the exact approved JPEG temporarily to Meta. AI drafts use a separate server text model and never approve/queue. No live provider calls in validation; hard-off gates remain false.
+
+Affected consumers: Calendar, Review, manual download/shared file button, workspace/content snapshots/types, API registration, private queue/vault/worker/media and future Sales CRM/session integration. Both builders review before merging. See [social publishing](SOCIAL_PUBLISHING.md).
