@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { AssetPublication, ContentItem, GenerationJob, MarketingAsset, MarketingWorkspaceData, SalesAssetView } from '../shared/contracts';
 import { MarketingIcon, type MarketingSection } from './MarketingNavigation';
 import './marketing-design.css';
+import { ProtectedImage, ProtectedDocument, DownloadButton } from './AssetFiles';
+import { BrandKitSettings } from './BrandKitSettings';
 
 const pacific = (value: string) => new Intl.DateTimeFormat('en-US', {
   timeZone: 'America/Los_Angeles', dateStyle: 'medium', timeStyle: 'short',
@@ -93,12 +95,13 @@ export function MarketingWorkspace({ identity, section, setSection }: { identity
     studio: { title: 'Image studio', description: 'A dedicated space to shape your next creative.', number: '03' },
     review: { title: 'Review & approval', description: 'The right version. The right message. Your decision.', number: '04' },
     assets: { title: 'Sales assets', description: 'Approved material, ready for the people who need it.', number: '05' },
+    brands: { title: 'Brand kits', description: 'One home for the look, feel and details that make each brand yours.', number: '06' },
   }[section];
   return <section className="marketing-page" id="marketing-panel" role="tabpanel" aria-labelledby={`marketing-nav-${section}`} tabIndex={-1}>
     <div className="workspace-context"><span><i/>LOCAL PREVIEW</span><time>{new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(new Date())}<span className="context-timezone"> · Pacific time</span></time></div>
     <div className="marketing-heading">
       <div><span className="eyebrow">DIZZLE / MARKETING <span className="section-number">{page.number}</span></span><h1>{page.title}</h1><p>{page.description}</p></div>
-      {section !== 'studio' && <label className="brand-filter">WORKING ACROSS<select aria-label="Brand filter" value={brandId} onChange={event => setBrandId(event.target.value)}><option value="all">All brands</option>{data.brands.map(brand => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label>}
+      {section !== 'studio' && section !== 'brands' && <label className="brand-filter">WORKING ACROSS<select aria-label="Brand filter" value={brandId} onChange={event => setBrandId(event.target.value)}><option value="all">All brands</option>{data.brands.map(brand => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label>}
     </div>
     {error && <div className="alert error" role="alert">{error}</div>}
     {notice && <div className="alert success" role="status">{notice}</div>}
@@ -127,6 +130,7 @@ export function MarketingWorkspace({ identity, section, setSection }: { identity
     {section === 'calendar' && <CalendarView data={filteredData} campaigns={campaigns} content={content} channelFilter={channelFilter} statusFilter={statusFilter} setChannelFilter={setChannelFilter} setStatusFilter={setStatusFilter} busy={busy} act={act} api={api} identity={identity}/>}
     {section === 'studio' && <StudioView data={data} busy={busy} act={act} api={api} identity={identity}/>}
     {section === 'review' && <ReviewView data={filteredData} notes={reviewNotes} setNotes={setReviewNotes} busy={busy} act={act} setSection={setSection}/>}
+    {section === 'brands' && <BrandKitSettings data={data} identity={identity} busy={busy} act={act}/>}
     {section === 'assets' && <AssetsView data={filteredData} busy={busy} act={act} api={api} identity={identity}/>}
     <details className="workspace-disclosure"><summary>Sample workspace <span>Internal planning & publishing only</span></summary><p>{data.fixtureNotice} Demo review rule: no self-approval; Owner reviews and publishes. All audiences are recipient snapshots.</p></details>
   </section>;
@@ -192,6 +196,9 @@ function StudioView({ data, busy, act, identity }: any) {
   const campaigns = data.campaigns.filter((campaign: any) => campaign.brandId === brandId);
   const referenceAssets = data.assets.filter((asset: MarketingAsset) => asset.kind === 'reference' && asset.brandId === brandId);
   const creativeAssets = data.assets.filter((asset: MarketingAsset) => asset.kind === 'creative' && asset.brandId === brandId && asset.campaignId === campaignId);
+  const kit = data.brandKits.find((item: any) => item.brandId === brandId);
+  const defaultIds: string[] = kit?.defaultReferenceIds ?? [];
+  const selectedIds = [...new Set([...defaultIds, ...references])];
   const running = data.generationJobs.some((job: GenerationJob) => job.status === 'running');
   const settings = data.imageGeneration;
   useEffect(() => { if (!campaigns.some((campaign: any) => campaign.id === campaignId)) { setCampaignId(campaigns[0]?.id ?? ''); setAssetId(''); } }, [brandId, data.campaigns]);
@@ -215,7 +222,7 @@ function StudioView({ data, busy, act, identity }: any) {
     reader.onerror = () => setFormError('Could not read this image.');
     reader.onload = async () => {
       const asset = await act('/marketing/references', 'Reference image saved.', { brandId, title: file.name.replace(/\.[^.]+$/, ''), base64: String(reader.result).split(',')[1] });
-      if (asset) setReferences(current => [...current, asset.id].slice(-4));
+      if (asset && defaultIds.length < 4) setReferences(current => [...new Set([...current.filter(id => !defaultIds.includes(id)), asset.id])].slice(-(4 - defaultIds.length)));
     };
     reader.readAsDataURL(file);
   }
@@ -223,20 +230,22 @@ function StudioView({ data, busy, act, identity }: any) {
     <div className="studio-heading"><div><span className="eyebrow">IMAGE STUDIO</span><h2>Create campaign imagery.</h2><p>Generate PNG artwork with OpenAI, then review the exact version before publishing.</p></div><span className="sample-stamp">{settings.mode === 'test' ? 'ISOLATED TEST PROVIDER' : 'OPENAI IMAGES'}</span></div>
     <div className={settings.ready ? 'generation-connection' : 'generation-connection needs-setup'}><strong>{settings.ready ? 'Image generation configured' : 'Connect OpenAI to get started'}</strong><p>{settings.message}</p><small>{settings.model} / {settings.quality} quality / {settings.remainingAttempts} of {settings.maxDailyAttempts} attempts remaining today (UTC). {settings.persistent ? 'Images and job history are saved locally.' : 'Isolated test state.'}</small></div>
     {formError && <p role="alert" className="inline-error">{formError}</p>}
+    <div className="studio-kit-summary"><strong>{kit?.revision ? 'Using saved brand kit v' + kit.revision : 'No saved brand kit yet'}</strong><span>{defaultIds.length} default reference{defaultIds.length === 1 ? '' : 's'} / {selectedIds.length} of 4 image slots</span><p>{kit?.revision ? 'Your saved style, colors, logo rules and default images apply automatically. Add a brief for this image below.' : 'Save guidelines and default images in Brand Kits to reuse the same brand direction for every image.'}</p></div>
+    {selectedIds.length > 4 && <p role="alert" className="inline-error">Remove an extra image below, or update the brand defaults in Brand Kits. Each request can use four reference images.</p>}
     <div className="studio-grid"><form className="studio-form" onSubmit={generate}>
       <label>Brand<select value={brandId} onChange={event => { setBrandId(event.target.value); setAssetId(''); setReferences([]); }} disabled={busy}>{data.brands.map((brand: any) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label>
       <label>Campaign<select value={campaignId} required onChange={event => { setCampaignId(event.target.value); setAssetId(''); }}><option value="">Select campaign</option>{campaigns.map((campaign: any) => <option key={campaign.id} value={campaign.id}>{campaign.title}</option>)}</select></label>
       <label>Variation<select value={assetId} onChange={event => setAssetId(event.target.value)}><option value="">New creative asset</option>{creativeAssets.map((asset: any) => <option key={asset.id} value={asset.id}>New version of {asset.title}</option>)}</select></label>
       <label>Image prompt<textarea required maxLength={2000} value={prompt} onChange={event => setPrompt(event.target.value)}/></label>
-      <fieldset><legend>Original references</legend><label className="reference-upload">Upload a reference image<input type="file" accept="image/png,image/jpeg,image/webp" disabled={busy || running} onChange={event => { void upload(event.target.files?.[0]); event.target.value = ''; }}/><small>PNG, JPEG or WebP, up to 5 MB. Selected references are sent to OpenAI. Exact label fidelity still needs review.</small></label>
-        {referenceAssets.map((asset: MarketingAsset) => <label className="check-option" key={asset.id}><input type="checkbox" checked={references.includes(asset.id)} disabled={!references.includes(asset.id) && references.length >= 4} onChange={event => setReferences(current => event.target.checked ? [...current, asset.id] : current.filter(id => id !== asset.id))}/>{asset.title}<small>{asset.versions[0].provenance}</small></label>)}
+      <fieldset><legend>Saved references and image-specific additions</legend><label className="reference-upload">Upload a reference image<input type="file" accept="image/png,image/jpeg,image/webp" disabled={busy || running} onChange={event => { void upload(event.target.files?.[0]); event.target.value = ''; }}/><small>PNG, JPEG or WebP, up to 5 MB. Selected references are sent to OpenAI. Exact label fidelity still needs review.</small></label>
+        {referenceAssets.map((asset: MarketingAsset) => <label className="check-option" key={asset.id}><input type="checkbox" aria-label={asset.title} checked={selectedIds.includes(asset.id)} disabled={defaultIds.includes(asset.id) || !selectedIds.includes(asset.id) && selectedIds.length >= 4} onChange={event => setReferences(current => event.target.checked ? [...current, asset.id] : current.filter(id => id !== asset.id))}/>{asset.title}<small>{defaultIds.includes(asset.id) ? 'Brand default / ' : ''}{kit?.referenceCategories[asset.id]?.replaceAll('_', ' ') ?? 'reference'}</small></label>)}
       </fieldset>
       <fieldset><legend>PNG export dimensions</legend><div className="preset-row">{['1080x1350', '1080x1080', 'custom'].map(value => <label key={value} className={'preset-option ' + (preset === value ? 'active' : '')}><input type="radio" name="dimensions" checked={preset === value} onChange={() => choosePreset(value)}/>{value === 'custom' ? 'Custom' : value.replace('x', ' x ')}</label>)}</div>
         {preset === 'custom' && <div className="form-two"><label>Width<input type="number" required min="64" max="4096" value={width} onChange={event => setWidth(event.target.value)}/></label><label>Height<input type="number" required min="64" max="4096" value={height} onChange={event => setHeight(event.target.value)}/></label></div>}
         <small>OpenAI renders at a supported size. The result is fitted to your export with transparent padding where needed; nothing is cropped.</small>
       </fieldset>
       {settings.mode === 'test' && <label className="check-option"><input type="checkbox" checked={simulateError} onChange={event => setSimulateError(event.target.checked)}/>Simulate one transient sample error</label>}
-      <button className="primary" disabled={busy || running || !campaignId || !settings.ready || settings.remainingAttempts === 0}>{running ? 'Generating image...' : 'Generate image'}</button>
+      <button className="primary" disabled={busy || running || !campaignId || !settings.ready || settings.remainingAttempts === 0 || selectedIds.length > 4}>{running ? 'Generating image...' : 'Generate image'}</button>
       {settings.mode === 'openai' && <small>One image per request. Generation and explicit retries use your OpenAI API billing.</small>}
     </form><div className="generation-results"><div className="block-heading"><div><span className="eyebrow">JOB HISTORY</span><h3>Generated images</h3></div></div>
       {data.generationJobs.map((job: GenerationJob) => <GenerationCard key={job.id} job={job} data={data} identity={identity} busy={busy} act={act}/>)}
@@ -259,6 +268,7 @@ function GenerationCard({ job, data, identity, busy, act }: any) {
     {job.status === 'running' && <div className="generation-progress" role="status"><span/>Creating your image. This may take a few minutes.</div>}
     {job.error && <p role="alert" className="inline-error">{job.error}</p>}
     {version && <><p className="version-meta">Version {version.number} / {statusLabel(version.status)} / {version.provenance}</p><ProtectedImage path={'/marketing/versions/' + version.id + '/file'} identity={identity} title={asset?.title}/><div className="file-actions"><button disabled={busy || version.status !== 'draft'} onClick={() => act('/marketing/versions/' + version.id + '/submit', 'Version submitted for review.')}>Submit version for review</button><DownloadButton path={'/marketing/versions/' + version.id + '/file?download=1'} identity={identity} fileName={'artwork-v' + version.number + '.png'} onError={setDownloadError}/></div></>}
+    <details className="job-brand-provenance"><summary>{job.brandKitSnapshot ? 'Brand kit v' + job.brandKitSnapshot.revision + ' used for this image' : 'Created before saved brand kits'}</summary>{job.effectivePrompt && <pre>{job.effectivePrompt}</pre>}</details>
     {job.usage && <small>OpenAI usage: {job.usage.totalTokens} tokens. Dollar cost is not returned by this request.</small>}
     {job.providerRequestId && <small className="provider-request-id">Provider request: {job.providerRequestId}</small>}
     {downloadError && <small role="alert" className="inline-error">{downloadError}</small>}
@@ -326,43 +336,4 @@ export function SalesAssetsPanel({ identity }: { identity: string }) {
     {error ? <div className="alert error" role="alert">{error}</div> : visible.map(asset => <article className="sales-asset-row" key={`${asset.assetId}-${asset.versionId}`}><div><strong>{asset.title}</strong><small>{asset.brand} · v{asset.version} · {asset.kind.replaceAll('_', ' ')}</small><small>{asset.productSku ?? 'No SKU'}{asset.batchId ? ` · Batch ${asset.batchId}` : ''}{asset.campaign ? ` · ${asset.campaign}` : ''}</small><small>Published {pacific(asset.publication.publishedAt)} by {asset.publication.publishedBy}</small><small>{asset.provenance}</small></div>{asset.kind === 'creative' ? <ProtectedImage path={`/assets/${asset.assetId}/versions/${asset.versionId}/file`} identity={identity} title={asset.title}/> : <ProtectedDocument path={`/assets/${asset.assetId}/versions/${asset.versionId}/file`} identity={identity}/>}<DownloadButton path={`/assets/${asset.assetId}/versions/${asset.versionId}/file?download=1`} identity={identity} fileName={asset.fileName} onError={setDownloadError}/></article>)}
     {downloadError && <p className="inline-error" role="alert">{downloadError}</p>}{!visible.length && !error && <div className="empty-inline">No Assets have been published to your audience.</div>}
   </section>;
-}
-
-function ProtectedDocument({ path, identity }: { path: string; identity: string }) {
-  const [text, setText] = useState('');
-  const [error, setError] = useState('');
-  useEffect(() => {
-    let active = true; setText(''); setError('');
-    fetch('/api' + path, { headers: { 'X-Demo-Identity': identity } }).then(async response => {
-      if (!response.ok) throw new Error('Document preview unavailable.');
-      return response.text();
-    }).then(value => { if (active) setText(value); }).catch(reason => { if (active) setError(reason.message); });
-    return () => { active = false; };
-  }, [identity, path]);
-  return <details className="document-preview"><summary>Preview document</summary>{error ? <p role="alert">{error}</p> : text ? <pre>{text}</pre> : <p role="status">Loading preview?</p>}</details>;
-}
-
-function ProtectedImage({ path, identity, title }: { path: string; identity: string; title: string }) {
-  const [source, setSource] = useState('');
-  useEffect(() => {
-    setSource('');
-    let active = true; let objectUrl = '';
-    fetch(`/api${path}`, { headers: { 'X-Demo-Identity': identity } }).then(response => {
-      if (!response.ok) throw new Error('Preview unavailable.'); return response.blob();
-    }).then(blob => { objectUrl = URL.createObjectURL(blob); if (active) setSource(objectUrl); else URL.revokeObjectURL(objectUrl); }).catch(() => { if (active) setSource(''); });
-    return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
-  }, [path, identity]);
-  return source ? <img className="asset-preview" src={source} alt={title}/> : <span className="preview-placeholder" role="status">Preview unavailable</span>;
-}
-
-function DownloadButton({ path, identity, fileName, onError }: { path: string; identity: string; fileName: string; onError: (message: string) => void }) {
-  return <button className="download-button" title={`Download ${fileName}`} aria-label={`Download ${fileName}`} onClick={async () => {
-    onError('');
-    try {
-      const response = await fetch(`/api${path}`, { headers: { 'X-Demo-Identity': identity } });
-      if (!response.ok) throw new Error((await response.json()).error ?? 'Download denied.');
-      const blob = await response.blob(); const url = URL.createObjectURL(blob); const anchor = document.createElement('a');
-      anchor.href = url; anchor.download = fileName; anchor.click(); URL.revokeObjectURL(url);
-    } catch (reason) { onError(reason instanceof Error ? reason.message : 'Download failed.'); }
-  }}>↓</button>;
 }

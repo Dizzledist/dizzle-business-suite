@@ -170,3 +170,54 @@ test('unconfigured OpenAI is clearly explained and generation stays disabled', a
   await expect(page.getByLabel('Simulate one transient sample error')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/openai-setup.png', fullPage: true, animations: 'disabled' });
 });
+
+test('brand kits save a reusable library and automatically guide future images', async ({ page }) => {
+  await page.goto('/');
+  await page.getByLabel('Test identity').selectOption('marketing');
+  await page.getByRole('tab', { name: 'Brand Kits', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Brand kits', exact: true })).toBeVisible();
+  await page.getByLabel('Image type', { exact: true }).fill('Editorial product photography');
+  await page.getByLabel('Visual style', { exact: true }).fill('Burgundy side lighting and matte charcoal backgrounds');
+  await page.getByLabel('Color palette', { exact: true }).fill('#111111 and #b62030');
+  await page.getByLabel('Logo and packaging rules').fill('Keep original logo proportions and packaging details');
+  await page.getByLabel('Things to avoid').fill('Neon green, cartoon effects and distorted labels');
+  const buffer = await sharp({ create: { width: 32, height: 32, channels: 3, background: '#b62030' } }).png().toBuffer();
+  await page.getByLabel('Add reference images', { exact: true }).setInputFiles([
+    { name: 'Cheddr logo.png', mimeType: 'image/png', buffer },
+    { name: 'Cheddr style.png', mimeType: 'image/png', buffer },
+  ]);
+  await expect(page.getByLabel('Use Cheddr style by default')).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Saving reference images' })).toHaveCount(0);
+  await page.getByLabel('Category for Cheddr logo').selectOption('logo');
+  await page.getByLabel('Category for Cheddr style').selectOption('style');
+  await page.getByLabel('Use Cheddr logo by default').check();
+  await page.getByLabel('Use Cheddr style by default').check();
+  await page.getByRole('button', { name: 'Save reference choices', exact: true }).click();
+  await expect(page.getByText('Saved kit · v1', { exact: true })).toBeVisible();
+  await page.getByLabel('Find brand references').fill('Cheddr');
+  await page.getByLabel('Brand reference category filter').selectOption('logo');
+  await expect(page.locator('.brand-reference-card')).toHaveCount(1);
+  await page.getByLabel('Brand reference category filter').selectOption('all');
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: 'test-results/brand-kit-desktop.png', fullPage: true, animations: 'disabled' });
+  await page.getByLabel('Brand kit brand').selectOption('dizzle');
+  await expect(page.getByRole('textbox', { name: 'Visual style', exact: true })).toHaveValue('');
+  await page.reload();
+  await page.getByLabel('Test identity').selectOption('marketing');
+  await page.getByRole('tab', { name: 'Brand Kits', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: 'Visual style', exact: true })).toHaveValue('Burgundy side lighting and matte charcoal backgrounds');
+  await page.getByRole('tab', { name: 'Image Studio', exact: true }).click();
+  await expect(page.getByText('Using saved brand kit v1', { exact: true })).toBeVisible();
+  await expect(page.getByRole('checkbox', { name: 'Cheddr logo', exact: true })).toBeChecked();
+  await expect(page.getByRole('checkbox', { name: 'Cheddr logo', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Generate image', exact: true }).click();
+  const job = page.locator('.generation-card').first();
+  await expect(job.locator('.status-mark')).toHaveText('succeeded');
+  await job.getByText('Brand kit v1 used for this image', { exact: true }).click();
+  await expect(job.locator('.job-brand-provenance pre')).toContainText('Burgundy side lighting');
+  await expect(job.locator('.job-brand-provenance pre')).toContainText('Cheddr logo (logo reference)');
+  await page.getByRole('tab', { name: 'Brand Kits', exact: true }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+  await page.screenshot({ path: 'test-results/brand-kit-mobile.png', fullPage: true, animations: 'disabled' });
+});

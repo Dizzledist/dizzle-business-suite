@@ -26,6 +26,12 @@ const generationSchema = z.object({
   simulateTransientError: z.boolean().default(false), assetId: z.string().optional(), requestKey: z.string().uuid(),
 }).strict();
 const retrySchema = z.object({ requestKey: z.string().uuid() }).strict();
+const brandKitSchema = z.object({
+  expectedRevision: z.number().int().nonnegative(), imageType: z.string().trim().max(120), visualStyle: z.string().trim().max(2000),
+  palette: z.string().trim().max(1000), typography: z.string().trim().max(1000), logoRules: z.string().trim().max(1500), avoid: z.string().trim().max(1500), guidelines: z.string().trim().max(4000),
+  defaultReferenceIds: z.array(z.string().min(1).max(100)).max(4),
+  referenceCategories: z.record(z.string().min(1).max(100), z.enum(['logo', 'style', 'product', 'brand_bible', 'other'])).refine(value => Object.keys(value).length <= 500),
+}).strict();
 const referenceSchema = z.object({ brandId: z.string().min(1), title: z.string().trim().min(1).max(160), base64: z.string().min(4).max(6_700_000).regex(/^[A-Za-z0-9+/]+={0,2}$/) }).strict();
 const publishSchema = z.object({ audienceMode: z.enum(['all', 'selected']), repIds: z.array(z.string()).max(100).default([]) }).strict();
 const retireSchema = z.object({ reason: z.string().trim().min(1).max(500) }).strict();
@@ -59,6 +65,8 @@ export function createApi(workflow = new Workflow(), options: { generator?: Imag
       const actor = workflow.authenticate(typeof id === 'string' ? id : undefined);
       if (req.method === 'GET' && path === '/api/workspace') return send(res, 200, workflow.workspace(actor));
       if (req.method === 'GET' && path === '/api/marketing/workspace') return send(res, 200, marketing.workspace(actor));
+      const brandKit = /^\/api\/marketing\/brand-kits\/([a-z0-9-]+)$/.exec(path);
+      if (req.method === 'PUT' && brandKit) return send(res, 200, marketing.updateBrandKit(actor, brandKit[1], brandKitSchema.parse(await body(req, 100_000))));
       if (req.method === 'POST' && path === '/api/marketing/campaigns') return send(res, 201, marketing.createCampaign(actor, campaignSchema.parse(await body(req))));
       if (req.method === 'POST' && path === '/api/marketing/content') return send(res, 201, marketing.createContent(actor, contentSchema.parse(await body(req))));
       const contentUpdate = /^\/api\/marketing\/content\/([a-z0-9-]+)$/.exec(path);

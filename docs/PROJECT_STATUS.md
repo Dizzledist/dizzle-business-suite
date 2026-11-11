@@ -2,7 +2,15 @@
 
 Updated: November 11, 2026 (America/Los_Angeles).
 
-## Current task: OpenAI image generation
+## Current task: reusable Brand Kits
+
+Active lead: Cheddr with Codex, November 11. User requests saved sample references, brand-bible images, logos and written branding guidelines so Image Studio reuses a consistent style. Implement per-brand settings/library and automatic generation guidance/default references using the existing private asset store. Shared contracts/API/generation snapshots require both builders' review; preserve existing permissions and image billing guards. No extra paid generation is needed for verification; use isolated providers.
+
+Implemented: Brand Kits left navigation, per-brand written rules, batch raster uploads, categorized/searchable/paginated library, four reusable default references, revision-safe saves and server-composed generation guidance. Every new job retains its exact kit snapshot/effective prompt; retries keep the original direction. Existing saved images/history remain intact. See [Brand Kit setup](BRAND_KITS.md), MKT09 and the latest handoff for checks/publication. No new role, provider setting, account permission or production infrastructure is introduced.
+
+Verification: `npm run check` passes typecheck, 56 API/provider/store tests, build and 8 Chromium tests. The new browser case saves/reopens brand settings and generates using defaults through an isolated provider. All 82 relative Markdown links resolve; no additional paid OpenAI call was made for this feature.
+
+## Previous task: OpenAI image generation
 
 Active lead: Cheddr with Codex, November 11. Explicit user request authorizes server-side OpenAI image generation in the existing Image Studio. Scope: key configuration, bounded provider calls, asynchronous job states/retry, raster output, protected file persistence and existing approval/publication consumption. Shared API/contracts need both builders' review; invoice, account and Warehouse logic remain unchanged. Tests use an isolated mock provider; real account verification depends on a locally supplied key. No external campaign sends, merge or deployment.
 

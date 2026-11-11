@@ -36,6 +36,13 @@ export type ContentStatus = 'draft' | 'in_review' | 'approved' | 'scheduled';
 export type AssetVersionStatus = 'draft' | 'in_review' | 'approved' | 'retired';
 export type AssetKind = 'creative' | 'price_list' | 'coa' | 'reference';
 export interface Brand { id: string; name: string; }
+export type BrandReferenceCategory = 'logo' | 'style' | 'product' | 'brand_bible' | 'other';
+export interface BrandKit {
+  brandId: string; revision: number; imageType: string; visualStyle: string; palette: string;
+  typography: string; logoRules: string; avoid: string; guidelines: string;
+  defaultReferenceIds: string[]; referenceCategories: Record<string, BrandReferenceCategory>;
+  updatedBy: string | null; updatedAt: string | null;
+}
 export interface Campaign {
   id: string; organizationId: string; brandId: string; title: string; objective: string; owner: string; createdBy: string; createdAt: string;
 }
@@ -71,11 +78,14 @@ export interface GenerationJob {
   model: string; quality: string; providerSize: string | null; providerRequestId: string | null;
   usage: { inputTokens: number; outputTokens: number; totalTokens: number } | null;
   attemptDates: string[];
+  brandKitSnapshot?: BrandKit;
+  effectivePrompt?: string;
 }
 export interface MarketingWorkspaceData {
   identity: Identity; brands: Brand[]; campaigns: Campaign[]; content: ContentItem[];
   assets: MarketingAsset[]; generationJobs: GenerationJob[]; eligibleReps: { id: string; name: string }[];
   fixtureNotice: string;
+  brandKits: BrandKit[];
   imageGeneration: { mode: 'openai' | 'test'; ready: boolean; model: string; quality: string; message: string; remainingAttempts: number; maxDailyAttempts: number; persistent: boolean };
 }
 export interface SalesAssetView {

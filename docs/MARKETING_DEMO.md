@@ -4,6 +4,8 @@ Updated November 11, 2026. Cheddr leads implementation; both builders review sha
 
 ## Run and reproduce
 
+Brand Kit update, November 11: **Brand Kits** in the left panel now holds per-brand written rules and a searchable categorized reference library. Upload logos, product photos, style examples and brand-bible page images once, mark defaults, and save. Image Studio automatically applies the current saved rules and default images to each new job. See [Brand Kit setup](BRAND_KITS.md) for steps, revision behavior and limits.
+
 Navigation update, November 11: Home, Calendar, Image Studio, Review and Assets are in the left workspace panel. On narrow screens, use the menu button at the top left to open that same panel; Escape or the close button dismisses it. Keyboard users can move between sections with Up/Down/Home/End. Calendar shows the plan first; **New campaign** or **New content** opens the relevant editor, and **Close editor** returns to the plan. Image Studio has its own brand selector; the page-level brand filter applies to the other sections.
 
 Use Node 24.x, `npm ci`, then `npm run dev`. Open **http://127.0.0.1:5173**. If another preview occupies the defaults, use PowerShell:

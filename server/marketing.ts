@@ -4,7 +4,7 @@ import { ImageGenerationError, OpenAIImageGenerator, type ImageGenerator, type G
 import { MarketingStore } from './marketing-store';
 import type {
   AssetPublication, AssetVersion, Brand, Campaign, ContentItem, GenerationJob, Identity,
-  MarketingAsset, MarketingGrant, MarketingWorkspaceData, SalesAssetView,
+  MarketingAsset, MarketingGrant, MarketingWorkspaceData, SalesAssetView, BrandKit,
 } from '../shared/contracts';
 import { ApiError, Workflow } from './workflow';
 
@@ -25,6 +25,7 @@ type GenerationInput = {
   brandId: string; campaignId: string; prompt: string; referenceAssetIds: string[];
   width: number; height: number; simulateTransientError: boolean; assetId?: string; requestKey: string;
 };
+type BrandKitInput = Pick<BrandKit, 'imageType' | 'visualStyle' | 'palette' | 'typography' | 'logoRules' | 'avoid' | 'guidelines' | 'defaultReferenceIds' | 'referenceCategories'> & { expectedRevision: number };
 
 const escapeXml = (value: string) => value.replace(/[<>&"']/g, character => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[character]!);
 function fixtureArtwork(brand: string, prompt: string, width: number, height: number, version: number) {
@@ -38,13 +39,15 @@ export class MarketingService {
   private assets: MarketingAsset[] = [];
   private jobs: GenerationJob[] = [];
   private files = new Map<string, FileRecord>();
+  private brandKits: BrandKit[] = brands.map(brand => ({ brandId: brand.id, revision: 0, imageType: '', visualStyle: '', palette: '', typography: '', logoRules: '', avoid: '', guidelines: '', defaultReferenceIds: [], referenceCategories: {}, updatedBy: null, updatedAt: null }));
 
   constructor(private workflow: Workflow, private generator: ImageGenerator = new OpenAIImageGenerator(), private store?: MarketingStore) {
     this.seed();
-    const saved = store?.load() as { schema?: number; campaigns?: Campaign[]; content?: ContentItem[]; assets?: MarketingAsset[]; jobs?: GenerationJob[]; files?: [string, { mimeType: string; fileName: string; body: string }][] } | null;
+    const saved = store?.load() as { schema?: number; campaigns?: Campaign[]; content?: ContentItem[]; assets?: MarketingAsset[]; jobs?: GenerationJob[]; brandKits?: BrandKit[]; files?: [string, { mimeType: string; fileName: string; body: string }][] } | null;
     if (saved) {
       if (saved.schema !== 1 || ![saved.campaigns, saved.content, saved.assets, saved.jobs, saved.files].every(Array.isArray)) throw new Error('Unsupported saved marketing state. Preserve it before recovery.');
       this.campaigns = saved.campaigns!; this.content = saved.content!; this.assets = saved.assets!; this.jobs = saved.jobs!;
+      if (saved.brandKits) this.brandKits = this.brandKits.map(blank => saved.brandKits!.find(kit => kit.brandId === blank.brandId) ?? blank);
       this.files = new Map(saved.files!.map(([id, file]) => [id, { ...file, body: Buffer.from(file.body, 'base64') }]));
       for (const job of this.jobs) if (job.status === 'running') { job.status = 'failed'; job.retryable = false; job.outcomeUnknown = true; job.error = 'The API restarted during generation. Check OpenAI usage before starting another image.'; }
     }
@@ -52,7 +55,7 @@ export class MarketingService {
   }
 
   private persist() {
-    this.store?.save({ schema: 1, campaigns: this.campaigns, content: this.content, assets: this.assets, jobs: this.jobs,
+    this.store?.save({ schema: 1, campaigns: this.campaigns, content: this.content, assets: this.assets, jobs: this.jobs, brandKits: this.brandKits,
       files: [...this.files.entries()].map(([id, file]) => [id, { ...file, body: Buffer.from(file.body).toString('base64') }]) });
   }
   private attemptsToday() {
@@ -71,6 +74,7 @@ export class MarketingService {
     this.content = [];
     this.assets = [];
     this.jobs = [];
+    this.brandKits = this.brandKits.map(kit => ({ ...kit, revision: 0, imageType: '', visualStyle: '', palette: '', typography: '', logoRules: '', avoid: '', guidelines: '', defaultReferenceIds: [], referenceCategories: {}, updatedBy: null, updatedAt: null }));
     this.files.clear();
     this.seed();
   }
@@ -90,6 +94,7 @@ export class MarketingService {
     this.require(actor, 'workspace:read');
     return {
       identity: { ...actor }, brands: brands.map(brand => ({ ...brand })),
+      brandKits: structuredClone(this.brandKits),
       campaigns: this.campaigns.map(campaign => ({ ...campaign })),
       content: this.content.map(item => ({ ...item })),
       assets: this.assets.filter(asset => !['price_list', 'coa'].includes(asset.kind) || actor.marketingGrants.includes('asset:read:all')).map(asset => ({ ...asset, versions: asset.versions.map(version => ({ ...version })), publications: asset.publications.map(publication => ({ ...publication, repIds: [...publication.repIds] })) })),
@@ -99,6 +104,32 @@ export class MarketingService {
       imageGeneration: { mode: this.generator.mode, ready: this.generator.ready, model: this.generator.model, quality: this.generator.quality, message: this.generator.message,
         remainingAttempts: Math.max(0, 10 - this.attemptsToday()), maxDailyAttempts: 10, persistent: !!this.store },
     };
+  }
+
+  updateBrandKit(actor: Identity, brandId: string, input: BrandKitInput) {
+    this.require(actor, 'campaign:write'); this.brand(brandId);
+    const kit = this.brandKits.find(candidate => candidate.brandId === brandId)!;
+    if (input.expectedRevision !== kit.revision) throw new ApiError(409, 'This brand kit changed. Refresh the kit before saving to avoid overwriting another edit.');
+    const defaults = [...new Set(input.defaultReferenceIds)];
+    if (defaults.length > 4) throw new ApiError(400, 'Choose at most four default reference images.');
+    for (const id of new Set([...defaults, ...Object.keys(input.referenceCategories)])) {
+      const asset = this.assets.find(candidate => candidate.id === id && candidate.brandId === brandId && candidate.organizationId === actor.organizationId && candidate.kind === 'reference');
+      if (!asset) throw new ApiError(400, 'Brand references must belong to this brand and organization.');
+    }
+    const { expectedRevision: _, ...fields } = input;
+    Object.assign(kit, structuredClone(fields), { defaultReferenceIds: defaults, revision: kit.revision + 1, updatedBy: actor.id, updatedAt: new Date().toISOString() });
+    this.persist(); return structuredClone(kit);
+  }
+
+  private brandPrompt(kit: BrandKit, prompt: string, references: string[]) {
+    const lines = [
+      'CREATIVE BRIEF:', prompt,
+      'Apply the following saved brand direction to the brief. Keep this direction when visual preferences conflict.',
+      `BRAND DIRECTION: ${this.brand(kit.brandId).name} (kit revision ${kit.revision})`,
+      ...([['Image type', kit.imageType], ['Visual style', kit.visualStyle], ['Palette', kit.palette], ['Typography and layout', kit.typography], ['Logo and packaging rules', kit.logoRules], ['Avoid', kit.avoid], ['Additional guidelines', kit.guidelines]] as const).filter(([, value]) => value.trim()).map(([label, value]) => `${label}: ${value}`),
+      ...(references.length ? ['REFERENCE ORDER:', ...references.map((id, index) => `Image ${index + 1}: ${this.asset(id).title} (${kit.referenceCategories[id] ?? 'other'} reference).`), 'Use style and brand-bible references for visual direction; use logo and product references to preserve brand identity. Do not turn guide-page layouts into the final composition unless requested.'] : []),
+    ];
+    return lines.join('\n');
   }
 
   createCampaign(actor: Identity, input: CampaignInput) {
@@ -175,8 +206,9 @@ export class MarketingService {
     if (input.simulateTransientError && this.generator.mode !== 'test') throw new ApiError(400, 'Simulation is available in isolated tests only.');
     const campaign = this.campaign(input.campaignId);
     if (campaign.brandId !== input.brandId) throw new ApiError(400, 'Campaign and brand must match.');
-    const references = [...new Set(input.referenceAssetIds)];
-    if (references.length > 4) throw new ApiError(400, 'Choose at most four original references.');
+    const kit = structuredClone(this.brandKits.find(candidate => candidate.brandId === input.brandId)!);
+    const references = [...new Set([...kit.defaultReferenceIds, ...input.referenceAssetIds])];
+    if (references.length > 4) throw new ApiError(400, 'Brand defaults plus extra references exceed four images. Remove an extra reference or update the brand kit.');
     for (const referenceId of references) {
       const reference = this.asset(referenceId);
       if (reference.kind !== 'reference' || reference.brandId !== input.brandId) throw new ApiError(400, 'References must be original files from this brand.');
@@ -195,7 +227,7 @@ export class MarketingService {
       campaignId: campaign.id, prompt: input.prompt.trim(), referenceAssetIds: references, width: input.width, height: input.height,
       status: 'running', error: null, attempts: 1, createdBy: actor.id, createdAt: now, requestKey: input.requestKey,
       fingerprint, retryKeys: [], retryable: false, outcomeUnknown: false, model: this.generator.model, quality: this.generator.quality,
-      providerSize: null, providerRequestId: null, usage: null, attemptDates: [now] };
+      providerSize: null, providerRequestId: null, usage: null, attemptDates: [now], brandKitSnapshot: kit, effectivePrompt: this.brandPrompt(kit, input.prompt.trim(), references) };
     this.jobs.unshift(job); this.persist();
     if (input.simulateTransientError) { job.status = 'failed'; job.retryable = true; job.error = 'Isolated test provider error. Retry to continue.'; this.persist(); }
     else void this.executeGeneration(job, asset);
@@ -224,7 +256,7 @@ export class MarketingService {
         const reference = this.asset(id); const version = reference.versions.at(-1)!; const file = this.files.get(version.id)!;
         return { body: Buffer.from(file.body), mimeType: file.mimeType };
       });
-      const image = await this.generator.generate({ prompt: job.prompt, width: job.width, height: job.height, references, requestKey: job.retryKeys.at(-1) ?? job.requestKey });
+      const image = await this.generator.generate({ prompt: job.effectivePrompt ?? job.prompt, width: job.width, height: job.height, references, requestKey: job.retryKeys.at(-1) ?? job.requestKey });
       // An ephemeral reset may have discarded an in-flight test job.
       if (!this.jobs.includes(job)) return;
       this.completeGeneration(job, asset, image); job.status = 'succeeded';

@@ -6,6 +6,8 @@ This repository contains the shared foundation and a Phase 1 local React/TypeScr
 
 The marketing branch includes campaigns, internal content scheduling, server-side OpenAI PNG generation, review and permission-scoped rep Assets. See [OpenAI setup](docs/OPENAI_IMAGE_GENERATION.md) for private key configuration and saved image history, and the [marketing demo](docs/MARKETING_DEMO.md) for workflow steps. Select **Marketing editor** to start; use **Owner → Marketing** to review and publish. Real generation requires your own configured OpenAI project key.
 
+**Brand Kits** in the left panel stores each brand's logos, product originals, style examples, brand-bible page images and written guidelines. Save up to four default references; Image Studio automatically reuses those images and rules on new requests. [Brand Kit setup](docs/BRAND_KITS.md).
+
 ## Run the local workflow
 
 Use Node.js 24.x, then run from the repository root:
