@@ -40,6 +40,7 @@ export type BrandReferenceCategory = 'logo' | 'style' | 'product' | 'brand_bible
 export interface BrandKit {
   brandId: string; revision: number; imageType: string; visualStyle: string; palette: string;
   typography: string; logoRules: string; avoid: string; guidelines: string;
+  brandBibleMarkdown?: string; brandBibleFileName?: string;
   defaultReferenceIds: string[]; referenceCategories: Record<string, BrandReferenceCategory>;
   updatedBy: string | null; updatedAt: string | null;
 }

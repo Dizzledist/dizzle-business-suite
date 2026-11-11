@@ -12,7 +12,7 @@ import type { BrandKit } from '../shared/contracts';
 import { TestImageGenerator } from './fixtures/image-generator';
 
 const fields = (kit: BrandKit) => ({ expectedRevision: kit.revision, imageType: kit.imageType, visualStyle: kit.visualStyle, palette: kit.palette,
-  typography: kit.typography, logoRules: kit.logoRules, avoid: kit.avoid, guidelines: kit.guidelines, defaultReferenceIds: kit.defaultReferenceIds, referenceCategories: kit.referenceCategories });
+  typography: kit.typography, logoRules: kit.logoRules, avoid: kit.avoid, guidelines: kit.guidelines, brandBibleMarkdown: kit.brandBibleMarkdown, brandBibleFileName: kit.brandBibleFileName, defaultReferenceIds: kit.defaultReferenceIds, referenceCategories: kit.referenceCategories });
 
 describe('saved brand direction', () => {
   function setup(directory?: string) {
@@ -27,9 +27,11 @@ describe('saved brand direction', () => {
 
   it('always composes saved rules and defaults on the server and snapshots the exact revision', async () => {
     const { service, author, kit, reference, generator, request } = setup();
-    service.updateBrandKit(author, 'cheddr', { ...fields(kit), visualStyle: 'Matte charcoal, soft red side lighting', palette: '#111111, #b62030', logoRules: 'Keep the original logo proportions', defaultReferenceIds: [reference.id], referenceCategories: { [reference.id]: 'logo' } });
+    service.updateBrandKit(author, 'cheddr', { ...fields(kit), brandBibleMarkdown: '# Complete brand bible\n' + 'Detailed brand direction. '.repeat(250), brandBibleFileName: 'brand-bible.md', visualStyle: 'Matte charcoal, soft red side lighting', palette: '#111111, #b62030', logoRules: 'Keep the original logo proportions', defaultReferenceIds: [reference.id], referenceCategories: { [reference.id]: 'logo' } });
     const job = service.createGeneration(author, request);
     await vi.waitFor(() => expect(generator.calls).toHaveLength(1));
+    expect(generator.calls[0].prompt).toContain('WRITTEN BRAND BIBLE:\n# Complete brand bible');
+    expect(job.brandKitSnapshot?.brandBibleFileName).toBe('brand-bible.md');
     expect(generator.calls[0].prompt).toContain('Matte charcoal, soft red side lighting');
     expect(generator.calls[0].prompt).toContain('Keep the original logo proportions');
     expect(generator.calls[0].prompt).toContain('Image 1: ' + reference.title + ' (logo reference)');
@@ -47,10 +49,10 @@ describe('saved brand direction', () => {
     const directory = mkdtempSync(join(tmpdir(), 'dizzle-brand-kits-'));
     try {
       const { service, workflow, generator, author, kit, reference } = setup(directory);
-      service.updateBrandKit(author, 'cheddr', { ...fields(kit), visualStyle: 'Editorial glass photography', defaultReferenceIds: [reference.id], referenceCategories: { [reference.id]: 'style' } });
+      service.updateBrandKit(author, 'cheddr', { ...fields(kit), brandBibleMarkdown: '# Persistent overview\nKeep warm editorial lighting.', brandBibleFileName: 'overview.MD', visualStyle: 'Editorial glass photography', defaultReferenceIds: [reference.id], referenceCategories: { [reference.id]: 'style' } });
       expect(() => service.updateBrandKit(author, 'cheddr', { ...fields(kit), visualStyle: 'Stale overwrite' })).toThrow('changed');
       const loaded = new MarketingService(workflow, generator, new MarketingStore(directory));
-      expect(loaded.workspace(author).brandKits.find(item => item.brandId === 'cheddr')).toMatchObject({ revision: 1, visualStyle: 'Editorial glass photography', defaultReferenceIds: [reference.id] });
+      expect(loaded.workspace(author).brandKits.find(item => item.brandId === 'cheddr')).toMatchObject({ revision: 1, brandBibleMarkdown: '# Persistent overview\nKeep warm editorial lighting.', brandBibleFileName: 'overview.MD', visualStyle: 'Editorial glass photography', defaultReferenceIds: [reference.id] });
       expect(loaded.workspace(author).brandKits.find(item => item.brandId === 'dizzle')).toMatchObject({ revision: 0, visualStyle: '', defaultReferenceIds: [] });
       expect(loaded.marketingFile(author, reference.versions[0].id).body).toBeTruthy();
     } finally { rmSync(directory, { recursive: true, force: true }); }
@@ -58,13 +60,15 @@ describe('saved brand direction', () => {
 
   it('retries with the original saved kit even after brand rules change', async () => {
     const { service, author, kit, reference, generator, request } = setup();
-    const saved = service.updateBrandKit(author, 'cheddr', { ...fields(kit), visualStyle: 'Original burgundy lighting', defaultReferenceIds: [reference.id] });
+    const saved = service.updateBrandKit(author, 'cheddr', { ...fields(kit), brandBibleMarkdown: '# Original written bible', visualStyle: 'Original burgundy lighting', defaultReferenceIds: [reference.id] });
     const failed = service.createGeneration(author, { ...request, simulateTransientError: true });
-    service.updateBrandKit(author, 'cheddr', { ...fields(saved), visualStyle: 'New white lighting', defaultReferenceIds: [] });
+    service.updateBrandKit(author, 'cheddr', { ...fields(saved), brandBibleMarkdown: '# Changed bible', visualStyle: 'New white lighting', defaultReferenceIds: [] });
     service.retryGeneration(author, failed.id, crypto.randomUUID());
     await vi.waitFor(() => expect(generator.calls).toHaveLength(1));
     expect(generator.calls[0].prompt).toContain('Original burgundy lighting');
     expect(generator.calls[0].prompt).not.toContain('New white lighting');
+    expect(generator.calls[0].prompt).toContain('# Original written bible');
+    expect(generator.calls[0].prompt).not.toContain('# Changed bible');
     expect(generator.calls[0].references).toHaveLength(1);
   });
 
@@ -95,8 +99,11 @@ describe('brand kit HTTP permissions', () => {
       expect(response.ok).toBe(false);
       expect((await fetch(base + '/api/marketing/workspace', { headers: { 'X-Demo-Identity': actor } })).ok).toBe(false);
     }
-    const response = await fetch(base + '/api/marketing/brand-kits/cheddr', { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...fields(kit), visualStyle: 'Approved local author edit' }) });
+    const oversized = await fetch(base + '/api/marketing/brand-kits/cheddr', { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...fields(kit), brandBibleMarkdown: 'x'.repeat(20_001) }) });
+    expect(oversized.status).toBe(400);
+    const markdown = '# Full overview\n' + 'Detailed written brand direction. '.repeat(200);
+    const response = await fetch(base + '/api/marketing/brand-kits/cheddr', { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...fields(kit), visualStyle: 'Approved local author edit', brandBibleMarkdown: markdown, brandBibleFileName: 'overview.md' }) });
     expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({ revision: 1, updatedBy: 'marketing' });
+    expect(await response.json()).toMatchObject({ revision: 1, updatedBy: 'marketing', brandBibleMarkdown: markdown, brandBibleFileName: 'overview.md' });
   });
 });

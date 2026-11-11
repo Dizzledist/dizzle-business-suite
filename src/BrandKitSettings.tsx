@@ -3,10 +3,10 @@ import type { BrandKit, BrandReferenceCategory, MarketingWorkspaceData } from '.
 import { ProtectedImage, DownloadButton } from './AssetFiles';
 import './brand-kits.css';
 
-type EditableKit = Pick<BrandKit, 'imageType' | 'visualStyle' | 'palette' | 'typography' | 'logoRules' | 'avoid' | 'guidelines' | 'defaultReferenceIds' | 'referenceCategories'>;
+type EditableKit = Pick<BrandKit, 'imageType' | 'visualStyle' | 'palette' | 'typography' | 'logoRules' | 'avoid' | 'guidelines' | 'brandBibleMarkdown' | 'brandBibleFileName' | 'defaultReferenceIds' | 'referenceCategories'>;
 function editable(kit: BrandKit): EditableKit {
   return { imageType: kit.imageType, visualStyle: kit.visualStyle, palette: kit.palette, typography: kit.typography, logoRules: kit.logoRules,
-    avoid: kit.avoid, guidelines: kit.guidelines, defaultReferenceIds: [...kit.defaultReferenceIds], referenceCategories: { ...kit.referenceCategories } };
+    avoid: kit.avoid, guidelines: kit.guidelines, brandBibleMarkdown: kit.brandBibleMarkdown ?? '', brandBibleFileName: kit.brandBibleFileName ?? '', defaultReferenceIds: [...kit.defaultReferenceIds], referenceCategories: { ...kit.referenceCategories } };
 }
 const categories: { id: BrandReferenceCategory; label: string }[] = [
   { id: 'logo', label: 'Logo' }, { id: 'product', label: 'Product photo' }, { id: 'style', label: 'Style example' },
@@ -21,6 +21,7 @@ export function BrandKitSettings({ data, identity, busy, act }: Props) {
   const [brandId, setBrandId] = useState(data.brands.find(brand => brand.id === 'cheddr')?.id ?? data.brands[0].id);
   const saved = data.brandKits.find(kit => kit.brandId === brandId)!;
   const [form, setForm] = useState<EditableKit>(() => editable(saved));
+  const [bibleError, setBibleError] = useState('');
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
   const [page, setPage] = useState(0);
@@ -28,7 +29,7 @@ export function BrandKitSettings({ data, identity, busy, act }: Props) {
   const [fileError, setFileError] = useState('');
   const canEdit = data.identity.marketingGrants.includes('campaign:write');
   const canUpload = data.identity.marketingGrants.includes('creative:generate');
-  useEffect(() => { setForm(editable(saved)); setFileError(''); }, [brandId, saved.revision]);
+  useEffect(() => { setForm(editable(saved)); setFileError(''); setBibleError(''); }, [brandId, saved.revision]);
   useEffect(() => { setPage(0); }, [brandId, query, category]);
   const dirty = JSON.stringify(form) !== JSON.stringify(editable(saved));
   const library = data.assets.filter(asset => asset.kind === 'reference' && asset.brandId === brandId);
@@ -43,6 +44,20 @@ export function BrandKitSettings({ data, identity, busy, act }: Props) {
   async function save(event: React.FormEvent) {
     event.preventDefault();
     await act('/marketing/brand-kits/' + brandId, 'Brand kit saved. Future images will use these settings.', { ...form, expectedRevision: saved.revision }, 'PUT');
+  }
+  async function importBible(file: File) {
+    setBibleError('');
+    if (!/\.md$/i.test(file.name)) { setBibleError('Choose a Markdown (.md) file.'); return; }
+    if (file.size > 80_000) { setBibleError('Use a Markdown file up to 80 KB and 20,000 characters. Nothing was imported.'); return; }
+    setUploading(true);
+    try {
+      const text = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
+      if (!text.trim() || text.includes('\0')) throw new Error('Use a nonempty UTF-8 Markdown text file.');
+      if (text.length > 20_000) throw new Error('The overview exceeds 20,000 characters. Nothing was imported or shortened.');
+      if (form.brandBibleMarkdown && !window.confirm('Replace the current written brand bible with this file?')) return;
+      setForm(current => ({ ...current, brandBibleMarkdown: text, brandBibleFileName: file.name.slice(0, 255) }));
+    } catch (error) { setBibleError(error instanceof TypeError ? 'Save the Markdown file as UTF-8 text and try again.' : error instanceof Error ? error.message : 'The file could not be read.'); }
+    finally { setUploading(false); }
   }
   async function upload(files: File[]) {
     if (!files.length) return;
@@ -68,6 +83,13 @@ export function BrandKitSettings({ data, identity, busy, act }: Props) {
     </div>
     <form id="brand-kit-editor" className="brand-kit-form" onSubmit={save}>
       <div className="brand-rules-heading"><div><span className="eyebrow">THE BRAND DIRECTION</span><h2>Define the visual language.</h2><p>These rules are added to every new image request for this brand.</p></div></div>
+      <section className="brand-bible-import" aria-label="Written brand bible">
+        <h3>Written brand bible</h3><p>Import your full overview as Markdown. Its text is saved with this brand and included in future image requests.</p>
+        <label className="brand-upload-zone">Upload brand bible (.md)<input aria-label="Upload brand bible Markdown" type="file" accept=".md,text/markdown,text/plain" disabled={!canEdit || busy || uploading} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void importBible(file); }}/><small>UTF-8 .md, up to 80 KB / 20,000 characters. Review below, then Save brand kit.</small></label>
+        {bibleError && <p role="alert" className="inline-error">{bibleError}</p>}
+        <label>Brand bible text<textarea value={form.brandBibleMarkdown ?? ''} maxLength={20_000} disabled={!canEdit || uploading} onChange={event => setForm(current => ({ ...current, brandBibleMarkdown: event.target.value }))} placeholder="Your imported Markdown appears here. You can also paste or edit it."/></label>
+        <div className="brand-bible-meta"><small>{form.brandBibleFileName || 'No file imported'} · {(form.brandBibleMarkdown ?? '').length.toLocaleString()}/20,000 characters</small><button type="button" disabled={!canEdit || busy || uploading || !form.brandBibleMarkdown && !form.brandBibleFileName} onClick={() => { if (window.confirm('Remove the written brand bible? Save the kit to apply this change.')) setForm(current => ({ ...current, brandBibleMarkdown: '', brandBibleFileName: '' })); }}>Remove written bible</button></div>
+      </section>
       <div className="brand-rules-grid">
         <label>Image type<input value={form.imageType} maxLength={120} disabled={!canEdit} onChange={event => field('imageType', event.target.value)} placeholder="Product photography, editorial lifestyle, illustrated posters..."/></label>
         <label>Color palette<textarea value={form.palette} maxLength={1000} disabled={!canEdit} onChange={event => field('palette', event.target.value)} placeholder="Primary/accent colors, hex codes and background preferences"/></label>

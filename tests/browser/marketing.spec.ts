@@ -176,6 +176,14 @@ test('brand kits save a reusable library and automatically guide future images',
   await page.getByLabel('Test identity').selectOption('marketing');
   await page.getByRole('tab', { name: 'Brand Kits', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Brand kits', exact: true })).toBeVisible();
+  const bibleText = '# Cheddr brand bible\n\n' + 'Use warm editorial lighting and real product texture. '.repeat(110);
+  const bibleUpload = page.getByLabel('Upload brand bible Markdown', { exact: true });
+  await bibleUpload.setInputFiles({ name: 'wrong.txt', mimeType: 'text/plain', buffer: Buffer.from('wrong format') });
+  await expect(page.getByRole('alert')).toContainText('Choose a Markdown (.md) file');
+  await bibleUpload.setInputFiles({ name: 'too-long.md', mimeType: 'text/markdown', buffer: Buffer.from('x'.repeat(20_001)) });
+  await expect(page.getByRole('alert')).toContainText('Nothing was imported or shortened');
+  await bibleUpload.setInputFiles({ name: 'Cheddr-overview.MD', mimeType: 'text/markdown', buffer: Buffer.from(bibleText) });
+  await expect(page.getByRole('textbox', { name: 'Brand bible text', exact: true })).toHaveValue(bibleText);
   await page.getByLabel('Image type', { exact: true }).fill('Editorial product photography');
   await page.getByLabel('Visual style', { exact: true }).fill('Burgundy side lighting and matte charcoal backgrounds');
   await page.getByLabel('Color palette', { exact: true }).fill('#111111 and #b62030');
@@ -206,6 +214,8 @@ test('brand kits save a reusable library and automatically guide future images',
   await page.getByLabel('Test identity').selectOption('marketing');
   await page.getByRole('tab', { name: 'Brand Kits', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Visual style', exact: true })).toHaveValue('Burgundy side lighting and matte charcoal backgrounds');
+  await expect(page.getByRole('textbox', { name: 'Brand bible text', exact: true })).toHaveValue(bibleText);
+  await expect(page.getByText('Cheddr-overview.MD', { exact: false })).toBeVisible();
   await page.getByRole('tab', { name: 'Image Studio', exact: true }).click();
   await expect(page.getByText('Using saved brand kit v1', { exact: true })).toBeVisible();
   await expect(page.getByRole('checkbox', { name: 'Cheddr logo', exact: true })).toBeChecked();
@@ -215,6 +225,7 @@ test('brand kits save a reusable library and automatically guide future images',
   await expect(job.locator('.status-mark')).toHaveText('succeeded');
   await job.getByText('Brand kit v1 used for this image', { exact: true }).click();
   await expect(job.locator('.job-brand-provenance pre')).toContainText('Burgundy side lighting');
+  await expect(job.locator('.job-brand-provenance pre')).toContainText(bibleText);
   await expect(job.locator('.job-brand-provenance pre')).toContainText('Cheddr logo (logo reference)');
   await page.getByRole('tab', { name: 'Brand Kits', exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });

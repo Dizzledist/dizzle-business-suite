@@ -29,6 +29,7 @@ const retrySchema = z.object({ requestKey: z.string().uuid() }).strict();
 const brandKitSchema = z.object({
   expectedRevision: z.number().int().nonnegative(), imageType: z.string().trim().max(120), visualStyle: z.string().trim().max(2000),
   palette: z.string().trim().max(1000), typography: z.string().trim().max(1000), logoRules: z.string().trim().max(1500), avoid: z.string().trim().max(1500), guidelines: z.string().trim().max(4000),
+  brandBibleMarkdown: z.string().max(20_000).optional(), brandBibleFileName: z.string().max(255).optional(),
   defaultReferenceIds: z.array(z.string().min(1).max(100)).max(4),
   referenceCategories: z.record(z.string().min(1).max(100), z.enum(['logo', 'style', 'product', 'brand_bible', 'other'])).refine(value => Object.keys(value).length <= 500),
 }).strict();
@@ -66,7 +67,7 @@ export function createApi(workflow = new Workflow(), options: { generator?: Imag
       if (req.method === 'GET' && path === '/api/workspace') return send(res, 200, workflow.workspace(actor));
       if (req.method === 'GET' && path === '/api/marketing/workspace') return send(res, 200, marketing.workspace(actor));
       const brandKit = /^\/api\/marketing\/brand-kits\/([a-z0-9-]+)$/.exec(path);
-      if (req.method === 'PUT' && brandKit) return send(res, 200, marketing.updateBrandKit(actor, brandKit[1], brandKitSchema.parse(await body(req, 100_000))));
+      if (req.method === 'PUT' && brandKit) return send(res, 200, marketing.updateBrandKit(actor, brandKit[1], brandKitSchema.parse(await body(req, 300_000))));
       if (req.method === 'POST' && path === '/api/marketing/campaigns') return send(res, 201, marketing.createCampaign(actor, campaignSchema.parse(await body(req))));
       if (req.method === 'POST' && path === '/api/marketing/content') return send(res, 201, marketing.createContent(actor, contentSchema.parse(await body(req))));
       const contentUpdate = /^\/api\/marketing\/content\/([a-z0-9-]+)$/.exec(path);

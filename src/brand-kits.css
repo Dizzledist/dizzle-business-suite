@@ -66,3 +66,10 @@
   .brand-library-save { flex-direction: column; align-items: start; }
   .studio-kit-summary > span { display: block; margin: 9px 0 0; }
 }
+
+.brand-bible-import { margin-bottom: 26px; padding-bottom: 24px; border-bottom: 1px solid #343b46; }
+.brand-bible-import h3 { margin-top: 0; }
+.brand-bible-import > p { color: #a7afbe; font-size: 12px; line-height: 1.6; }
+.brand-bible-import > label { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+.brand-bible-import textarea { min-height: 190px; font-family: monospace; }
+.brand-bible-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; color: #a7afbe; }

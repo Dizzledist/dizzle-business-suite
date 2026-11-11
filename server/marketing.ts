@@ -25,7 +25,7 @@ type GenerationInput = {
   brandId: string; campaignId: string; prompt: string; referenceAssetIds: string[];
   width: number; height: number; simulateTransientError: boolean; assetId?: string; requestKey: string;
 };
-type BrandKitInput = Pick<BrandKit, 'imageType' | 'visualStyle' | 'palette' | 'typography' | 'logoRules' | 'avoid' | 'guidelines' | 'defaultReferenceIds' | 'referenceCategories'> & { expectedRevision: number };
+type BrandKitInput = Pick<BrandKit, 'imageType' | 'visualStyle' | 'palette' | 'typography' | 'logoRules' | 'avoid' | 'guidelines' | 'brandBibleMarkdown' | 'brandBibleFileName' | 'defaultReferenceIds' | 'referenceCategories'> & { expectedRevision: number };
 
 const escapeXml = (value: string) => value.replace(/[<>&"']/g, character => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' })[character]!);
 function fixtureArtwork(brand: string, prompt: string, width: number, height: number, version: number) {
@@ -39,7 +39,7 @@ export class MarketingService {
   private assets: MarketingAsset[] = [];
   private jobs: GenerationJob[] = [];
   private files = new Map<string, FileRecord>();
-  private brandKits: BrandKit[] = brands.map(brand => ({ brandId: brand.id, revision: 0, imageType: '', visualStyle: '', palette: '', typography: '', logoRules: '', avoid: '', guidelines: '', defaultReferenceIds: [], referenceCategories: {}, updatedBy: null, updatedAt: null }));
+  private brandKits: BrandKit[] = brands.map(brand => ({ brandId: brand.id, revision: 0, imageType: '', visualStyle: '', palette: '', typography: '', logoRules: '', avoid: '', guidelines: '', brandBibleMarkdown: '', brandBibleFileName: '', defaultReferenceIds: [], referenceCategories: {}, updatedBy: null, updatedAt: null }));
 
   constructor(private workflow: Workflow, private generator: ImageGenerator = new OpenAIImageGenerator(), private store?: MarketingStore) {
     this.seed();
@@ -74,7 +74,7 @@ export class MarketingService {
     this.content = [];
     this.assets = [];
     this.jobs = [];
-    this.brandKits = this.brandKits.map(kit => ({ ...kit, revision: 0, imageType: '', visualStyle: '', palette: '', typography: '', logoRules: '', avoid: '', guidelines: '', defaultReferenceIds: [], referenceCategories: {}, updatedBy: null, updatedAt: null }));
+    this.brandKits = this.brandKits.map(kit => ({ ...kit, revision: 0, imageType: '', visualStyle: '', palette: '', typography: '', logoRules: '', avoid: '', guidelines: '', brandBibleMarkdown: '', brandBibleFileName: '', defaultReferenceIds: [], referenceCategories: {}, updatedBy: null, updatedAt: null }));
     this.files.clear();
     this.seed();
   }
@@ -127,6 +127,7 @@ export class MarketingService {
       'Apply the following saved brand direction to the brief. Keep this direction when visual preferences conflict.',
       `BRAND DIRECTION: ${this.brand(kit.brandId).name} (kit revision ${kit.revision})`,
       ...([['Image type', kit.imageType], ['Visual style', kit.visualStyle], ['Palette', kit.palette], ['Typography and layout', kit.typography], ['Logo and packaging rules', kit.logoRules], ['Avoid', kit.avoid], ['Additional guidelines', kit.guidelines]] as const).filter(([, value]) => value.trim()).map(([label, value]) => `${label}: ${value}`),
+      ...(kit.brandBibleMarkdown ? ['WRITTEN BRAND BIBLE:', kit.brandBibleMarkdown] : []),
       ...(references.length ? ['REFERENCE ORDER:', ...references.map((id, index) => `Image ${index + 1}: ${this.asset(id).title} (${kit.referenceCategories[id] ?? 'other'} reference).`), 'Use style and brand-bible references for visual direction; use logo and product references to preserve brand identity. Do not turn guide-page layouts into the final composition unless requested.'] : []),
     ];
     return lines.join('\n');

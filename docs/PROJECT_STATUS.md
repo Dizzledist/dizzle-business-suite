@@ -4,6 +4,8 @@ Updated: November 11, 2026 (America/Los_Angeles).
 
 ## Current task: reusable Brand Kits
 
+Implemented follow-up: Cheddr with Codex, November 11. User authorizes importing a full written brand-bible overview from `.md` in Brand Kits. Scope: private saved Markdown text, editor/import controls and automatic job guidance; existing kit permissions/storage/revisions apply. Shared contract/API review required. Markdown import/editor, saved filename/text and automatic prompt inclusion are implemented. Full check passes: 56 API/provider/store tests, 8 Chromium tests, typecheck/build; no paid provider call performed.
+
 Active lead: Cheddr with Codex, November 11. User requests saved sample references, brand-bible images, logos and written branding guidelines so Image Studio reuses a consistent style. Implement per-brand settings/library and automatic generation guidance/default references using the existing private asset store. Shared contracts/API/generation snapshots require both builders' review; preserve existing permissions and image billing guards. No extra paid generation is needed for verification; use isolated providers.
 
 Implemented: Brand Kits left navigation, per-brand written rules, batch raster uploads, categorized/searchable/paginated library, four reusable default references, revision-safe saves and server-composed generation guidance. Every new job retains its exact kit snapshot/effective prompt; retries keep the original direction. Existing saved images/history remain intact. See [Brand Kit setup](BRAND_KITS.md), MKT09 and the latest handoff for checks/publication. No new role, provider setting, account permission or production infrastructure is introduced.
