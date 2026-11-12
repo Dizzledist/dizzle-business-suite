@@ -26,6 +26,10 @@ export class Workflow {
     return actor.organizationId === invoice.organizationId && (this.broad(actor) ||
       (actor.roles.includes('sales_rep') && invoice.assignedRep === actor.id));
   }
+  isAssignedToAccount(actor: Identity, accountId: string) {
+    return actor.roles.includes('sales_rep') && this.invoices.some(invoice =>
+      invoice.organizationId === actor.organizationId && invoice.accountId === accountId && invoice.assignedRep === actor.id);
+  }
   private invoice(actor: Identity, id: string): InvoiceRecord {
     const invoice = this.invoices.find(i => i.id === id);
     if (!invoice || !this.canRead(actor, invoice)) throw new ApiError(404, 'Invoice not found.');

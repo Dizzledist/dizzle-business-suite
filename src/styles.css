@@ -616,3 +616,300 @@ footer p {
     font-size: 10px;
   }
 }
+
+:root {
+  --marketing-red: #b62030;
+  --marketing-red-light: #ee5965;
+  --marketing-charcoal: #17171b;
+  --marketing-line: #34343b;
+  --marketing-muted: #a9a9b1;
+}
+.department-select {
+  display: grid;
+  gap: 7px;
+  margin: 32px 0 12px;
+  color: #a7a7b0;
+  font-size: 11px;
+}
+.department-select select {
+  width: 100%;
+  padding: 9px 10px;
+  border-color: #49414a;
+  background: #232126;
+}
+.marketing-page {
+  padding: 34px 0 30px;
+  animation: marketing-enter .24s ease-out both;
+}
+@keyframes marketing-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.marketing-heading,
+.calendar-toolbar,
+.studio-heading,
+.block-heading,
+.asset-record-heading,
+.asset-version-row,
+.job-title,
+.calendar-item,
+.sales-asset-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+}
+.marketing-heading {
+  align-items: end;
+  margin: 8px 0 26px;
+}
+.marketing-heading h1,
+.studio-heading h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+.marketing-heading p { max-width: 610px; margin-bottom: 0; }
+.brand-filter,
+.filters label,
+.planner-form label,
+.studio-form > label,
+.review-note {
+  display: grid;
+  gap: 6px;
+  color: #c3c0c3;
+  font-size: 11px;
+}
+.brand-filter { min-width: 205px; }
+.marketing-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--marketing-line);
+}
+.marketing-tabs button {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 0;
+  padding: 12px 15px;
+  color: #a7a5aa;
+  background: transparent;
+  font-size: 12px;
+}
+.marketing-tabs button.selected {
+  color: #fff;
+  border-bottom: 2px solid var(--marketing-red-light);
+}
+.marketing-notice {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 12px 0;
+  border-bottom: 1px solid #2e2e34;
+}
+.marketing-notice span,
+.sample-stamp {
+  color: #f2939b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.marketing-notice p { margin: 0; font-size: 11px; }
+.marketing-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 24px 0 18px;
+  border-top: 1px solid var(--marketing-line);
+  border-bottom: 1px solid var(--marketing-line);
+}
+.marketing-metrics > div {
+  display: flex;
+  flex-direction: column;
+  padding: 17px 22px 18px 0;
+  border-right: 1px solid var(--marketing-line);
+}
+.marketing-metrics > div + div { padding-left: 22px; }
+.marketing-metrics > div:last-child { border: 0; }
+.marketing-metrics span { color: #c5c2c6; font-size: 12px; }
+.marketing-metrics strong { margin: 2px 0; font: 40px/1.1 Georgia, "Times New Roman", serif; }
+.marketing-metrics small { font-size: 10px; }
+.marketing-shortcuts { display: flex; gap: 9px; margin: 18px 0 34px; }
+.marketing-shortcuts button { background: #252126; border-color: #48363a; font-size: 12px; }
+.marketing-shortcuts span { color: #f08089; margin-left: 12px; }
+.marketing-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 38px; }
+.marketing-block { min-width: 0; margin: 10px 0 34px; }
+.block-heading { align-items: center; margin-bottom: 14px; }
+.block-heading h2 { font-size: 17px; }
+.text-action { border: 0; background: transparent; padding: 5px 0; color: #f08a93; font-size: 11px; }
+.text-action:hover:not(:disabled) { background: transparent; color: #fff; }
+.content-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 14px;
+  padding: 14px 0;
+  border-top: 1px solid #303037;
+}
+.content-row > div { display: grid; gap: 4px; }
+.content-row strong,.asset-row strong { font-size: 12px; }
+.content-row small,.asset-row small { color: var(--marketing-muted); font-size: 10px; }
+.content-row time { grid-column: 1 / -1; color: #aaa7ad; font-size: 10px; }
+.status-mark {
+  align-self: flex-start;
+  padding: 4px 7px;
+  border: 1px solid #514c4e;
+  border-radius: 3px;
+  color: #d3ced1;
+  background: #252327;
+  font-size: 9px;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+.status-approved,.status-scheduled,.status-succeeded { color: #b4dfc5; border-color: #41634d; background: #1d3025; }
+.status-in_review { color: #f3cf92; border-color: #685338; background: #342b1e; }
+.status-failed { color: #ffabb2; border-color: #79404a; background: #3a2024; }
+.empty-inline { padding: 17px 0; color: #9c9aa1; border-top: 1px solid #303037; font-size: 12px; }
+.calendar-view,.studio-view,.review-view,.assets-view { padding-top: 24px; }
+.calendar-toolbar { align-items: end; margin-bottom: 20px; }
+.calendar-toolbar h2,.section-heading h2 { font-size: 20px; }
+.filters { display: flex; gap: 10px; }
+.filters select { min-width: 140px; }
+.planner-grid { display: grid; grid-template-columns: minmax(250px, .7fr) minmax(360px, 1.3fr); gap: 28px; align-items: start; }
+.planner-form,.studio-form { display: grid; gap: 13px; padding: 18px; border: 1px solid #39343a; background: #1b1a1e; }
+.planner-form h3 { margin: 0 0 3px; font-size: 15px; }
+.planner-form input,.planner-form select,.planner-form textarea,.studio-form input:not([type=checkbox]):not([type=radio]),.studio-form select,.studio-form textarea,.review-note textarea { width: 100%; min-width: 0; font-size: 12px; }
+.planner-form textarea,.studio-form textarea,.review-note textarea { min-height: 74px; resize: vertical; }
+.form-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.planner-form .primary,.studio-form .primary { justify-content: center; background: var(--marketing-red); border-color: var(--marketing-red); }
+.calendar-list { margin-top: 36px; }
+.calendar-list .section-heading small { font-size: 10px; }
+.date-group { margin: 18px 0 28px; }
+.date-group > h3 { padding-bottom: 8px; border-bottom: 1px solid #544247; color: #f1dce0; font: 16px Georgia, "Times New Roman", serif; }
+.calendar-item { align-items: center; padding: 14px 0; border-bottom: 1px solid #303037; }
+.calendar-item-main { flex: 1; min-width: 0; display: grid; gap: 5px; }
+.calendar-item-main > span,.calendar-item-main small { color: #aaa7ad; font-size: 10px; }
+.calendar-item-main p { margin: 3px 0; font-size: 12px; }
+.calendar-item-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 200px; }
+.calendar-item-actions button,.review-actions button,.file-actions button,.publish-controls > button { padding: 7px 9px; font-size: 10px; }
+.calendar-item-actions button:first-of-type,.review-actions button:first-child { border-color: #70404a; background: #3a2228; }
+.inline-error { color: #ff9ca6; font-size: 11px; }
+.studio-heading { align-items: center; margin-bottom: 20px; }
+.studio-heading h2 { margin: 0 0 6px; font-size: 26px; }
+.studio-heading p { margin: 0; font-size: 12px; }
+.sample-stamp { border: 1px solid #7d3b44; padding: 8px 10px; }
+.studio-grid { display: grid; grid-template-columns: minmax(320px, .9fr) minmax(350px, 1.1fr); gap: 28px; align-items: start; }
+.studio-form fieldset { display: grid; gap: 9px; margin: 0; padding: 12px; border: 1px solid #39343a; }
+.studio-form legend { padding: 0 5px; color: #d5cfd2; font-size: 11px; }
+.check-option { display: flex; align-items: center; gap: 8px; color: #ddd9dc; font-size: 11px; }
+.check-option small { display: block; margin-left: auto; font-size: 9px; }
+.check-option input,.preset-option input,.rep-picker input { accent-color: var(--marketing-red-light); }
+.preset-row { display: flex; flex-wrap: wrap; gap: 7px; }
+.preset-option { display: flex; gap: 6px; align-items: center; border: 1px solid #484149; padding: 7px 9px; color: #c8c3c7; font-size: 10px; }
+.preset-option.active { border-color: #b54b56; color: #fff; }
+.generation-results { min-width: 0; }
+.generation-card { padding: 14px 0; border-top: 1px solid #37343a; }
+.job-title { align-items: center; }
+.job-title > div { display: grid; gap: 4px; }
+.job-title strong { font-size: 12px; }
+.job-title small,.version-meta { color: #aaa7ad; font-size: 10px; }
+.generation-card > p { margin: 10px 0; font-size: 12px; }
+.generation-card > small { color: #aaa7ad; font-size: 10px; }
+.generation-card .asset-preview { width: 100%; max-height: 440px; aspect-ratio: 4 / 5; margin: 12px 0; object-fit: contain; background: #121214; }
+.asset-preview { display: block; width: min(100%, 220px); max-height: 220px; object-fit: contain; background: #131316; border: 1px solid #37343a; }
+.asset-row > div:first-child { display: grid; gap: 5px; }
+.asset-version-row .status-mark { justify-self: start; }
+.preview-placeholder { display: inline-flex; min-height: 48px; align-items: center; color: #96939a; font-size: 10px; }
+.file-actions { display: flex; gap: 8px; }
+.download-button { min-width: 38px; padding: 7px 10px; color: #fff; }
+.review-view > .section-heading { align-items: center; }
+.review-note { max-width: 600px; margin: 14px 0 24px; }
+.review-row { display: flex; justify-content: space-between; gap: 18px; padding: 16px 0; border-top: 1px solid #37343a; }
+.review-row > div:first-child { min-width: 0; }
+.review-row p { margin: 7px 0; font-size: 12px; }
+.review-row small { color: #a7a3a8; font-size: 10px; }
+.review-actions { display: flex; flex-wrap: wrap; gap: 7px; align-content: start; }
+.version-review .asset-preview { margin-top: 12px; }
+.assets-view > .section-heading { align-items: end; }
+.assets-view > .section-heading > small { max-width: 260px; text-align: right; }
+.asset-record { margin: 16px 0; padding: 16px 0; border-top: 1px solid #514047; }
+.asset-record-heading { align-items: center; padding-bottom: 12px; }
+.asset-record-heading > div:first-child,.asset-version-row > div:first-child { display: grid; gap: 5px; }
+.asset-record-heading strong { font-size: 13px; }
+.asset-record-heading small,.asset-version-row small,.publication-row small { color: #aaa7ad; font-size: 10px; }
+.asset-version-row { align-items: center; flex-wrap: wrap; padding: 12px 0; border-top: 1px solid #302f34; }
+.asset-version-row > div:first-child { flex: 1; min-width: 220px; }
+.asset-version-actions { display: flex; align-items: center; gap: 8px; }
+.publish-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; width: 100%; padding: 10px 0; }
+.publish-controls > label { display: flex; align-items: center; gap: 8px; color: #c7c1c5; font-size: 10px; }
+.publish-controls select { width: auto; min-width: 150px; padding: 7px 9px; }
+.rep-picker { display: flex; flex-wrap: wrap; gap: 12px; }
+.rep-picker label { display: flex; align-items: center; gap: 5px; font-size: 10px; }
+.publication-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; padding: 9px 0; border-top: 1px solid #29282d; font-size: 10px; }
+.publication-row > span { text-transform: capitalize; color: #d7d1d5; }
+.publication-row .text-action { margin-left: auto; }
+.sales-assets { margin: 38px 0 20px; padding-top: 20px; border-top: 1px solid #494047; }
+.sales-assets .section-heading { align-items: center; }
+.sales-asset-row { align-items: center; padding: 14px 0; border-top: 1px solid #343138; }
+.sales-asset-row > div:first-child { flex: 1; min-width: 0; display: grid; gap: 5px; }
+.sales-asset-row strong { font-size: 12px; }
+.sales-asset-row small { color: #aaa7ad; font-size: 10px; }
+.sales-asset-row .asset-preview { width: 100px; height: 100px; }
+.document-preview { max-width: 100%; min-width: 0; font-size: 12px; }
+.document-preview summary { cursor: pointer; color: #f2939b; }
+.document-preview pre { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 320px; }
+.sales-assets > label { display: grid; gap: 8px; margin-bottom: 16px; }
+.sales-assets > label input { width: 100%; }
+.marketing-page { overflow-wrap: anywhere; }
+.planner-form input,.studio-form input:not([type=checkbox]):not([type=radio]),.sales-assets input {
+  padding: 10px;
+  border: 1px solid #42424b;
+  border-radius: 6px;
+  background: #222228;
+  color: #fff;
+}
+.document-kind { color: #e6bdc2; font-size: 10px; }
+.alert.warning { background: #342b1e; color: #f3d9aa; border: 1px solid #685338; }
+@media (max-width: 900px) {
+  .planner-grid,.studio-grid { grid-template-columns: 1fr; }
+  .marketing-columns { gap: 22px; }
+  .studio-grid { gap: 25px; }
+}
+@media (max-width: 650px) {
+  .department-select { width: 132px; margin: 0 8px; font-size: 9px; }
+  .department-select select { padding: 6px; font-size: 10px; }
+  .marketing-page { padding-top: 22px; }
+  .marketing-heading { display: grid; align-items: start; gap: 16px; }
+  .marketing-heading h1 { font-size: 29px; }
+  .brand-filter { width: 100%; }
+  .marketing-tabs button { padding: 11px 12px; }
+  .marketing-notice { align-items: start; }
+  .marketing-notice p { line-height: 1.45; }
+  .marketing-metrics { grid-template-columns: 1fr; }
+  .marketing-metrics > div,.marketing-metrics > div + div { display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; padding: 11px 0; border-right: 0; border-bottom: 1px solid var(--marketing-line); }
+  .marketing-metrics > div:last-child { border-bottom: 0; }
+  .marketing-metrics strong { grid-column: 2; grid-row: 1 / 3; font-size: 28px; }
+  .marketing-shortcuts { overflow-x: auto; }
+  .marketing-shortcuts button { flex: 0 0 auto; }
+  .marketing-columns { grid-template-columns: 1fr; gap: 0; }
+  .calendar-toolbar { display: grid; align-items: start; }
+  .filters { width: 100%; }
+  .filters label { flex: 1; min-width: 0; }
+  .filters select { min-width: 0; }
+  .planner-form,.studio-form { padding: 14px; }
+  .calendar-item { align-items: start; flex-direction: column; }
+  .calendar-item-actions { justify-content: flex-start; max-width: none; }
+  .studio-heading { align-items: start; flex-direction: column; }
+  .studio-heading h2 { font-size: 23px; }
+  .review-row { flex-direction: column; }
+  .review-actions { justify-content: flex-start; }
+  .asset-record-heading { align-items: start; }
+  .asset-version-row { align-items: start; }
+  .asset-version-actions { width: 100%; }
+  .asset-version-actions .asset-preview { width: min(100%, 190px); }
+  .assets-view > .section-heading { align-items: start; flex-direction: column; }
+  .assets-view > .section-heading > small { text-align: left; }
+  .sales-asset-row { align-items: flex-start; flex-wrap: wrap; }
+  .sales-asset-row > div:first-child { flex-basis: calc(100% - 60px); }
+  .sales-asset-row .asset-preview { width: 72px; height: 72px; }
+}

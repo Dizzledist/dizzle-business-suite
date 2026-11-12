@@ -1,0 +1,15 @@
+.calendar-item { flex-wrap: wrap; }
+.social-posting { flex-basis: 100%; border-top: 1px solid #343b46; padding-top: 16px; min-width: 0; }
+.social-posting .asset-preview { width: 180px; height: 180px; object-fit: contain; display: block; background: #0f1014; }
+.social-posting small { display: block; color: #a7afbe; line-height: 1.6; }
+.social-post-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+.social-post-actions .download-button { width: auto; }
+.social-posting form { display: grid; gap: 12px; max-width: 650px; margin: 16px 0; }
+.social-posting label { display: grid; gap: 6px; }
+.social-job { display: grid; gap: 7px; padding: 16px; background: #20242c; border-radius: 8px; margin: 10px 0; }
+.social-job a { color: #f0a6b4; overflow-wrap: anywhere; }
+.social-job button { justify-self: start; }
+.state-needs_review, .state-failed { border-left: 3px solid #e9b45d; }
+.state-published { border-left: 3px solid #6eb89d; }
+.social-draft-controls { border: 1px solid #414855; padding: 14px; border-radius: 8px; }
+.social-draft-controls p, .social-posting p { font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }

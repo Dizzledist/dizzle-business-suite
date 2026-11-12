@@ -95,3 +95,87 @@ Source: user's explicit request to build the local invoice-to-warehouse demo aft
 | L05 | HTTP integration tests + Playwright Chromium user flows; PR Actions run typecheck/tests/build/browser checks | No deployment permissions or live credentials; approved acceptance specs have only the scoped coverage documented in LOCAL_DEMO |
 
 See [LOCAL_DEMO](LOCAL_DEMO.md) for reproducible behavior and [CONTRACTS](CONTRACTS.md) for consumer boundaries. Owner/admin and sales manager release permissions remain distinct from fixture simulation grants; price lists, COAs and marketing are outside this branch.
+
+## Parallel marketing and sales workstreams, November 9, 2026
+
+Source: Cheddr's explicit request for a separate marketing branch while the sales manager develops sales/dashboard/pipeline, with the work ultimately combined into one department-aware web app. This supersedes the prior task-bound marketing exclusion for branch setup and coordination; it does not alter D01-D04 or approved R01-R03.
+
+| ID | Confirmed direction / setup choice | Limits and review |
+|---|---|---|
+| MKT01 | Cheddr leads `feat/marketing-workspace` from reviewed main; sales manager continues the sales workstream on its own branch | Separate worktrees preserve existing previews. Branch setup does not merge either feature or authorize deployment |
+| MKT02 | One application serves authorized department dashboards after sign-in; existing multi-role and least-privilege rules apply | Reaffirms scope/D03. Dashboard routing, department membership/grant schema, default landing and multi-role UI need joint implementation review; no runtime change in this task |
+| MKT03 | Reuse one reviewed identity, account-assignment, integration and shared Assets service across department modules | Sales CRM identity and PR #2 Assets contracts remain review candidates. No duplicate auth/connector/stock logic; account access and historical sales credit remain distinct |
+
+See [MARKETING_WORKSPACE](MARKETING_WORKSPACE.md) for current references and handoff procedure. Separate PRs and shared integration testing are the coordination plan, not permission to merge pending PRs. Both builders review shared contracts before changing them.
+
+## Marketing implementation authorization and local choices, November 9, 2026
+
+Source: Cheddr supplied the original "Build the Marketing Workspace" prompt and explicitly instructed Codex to "finish where it left off." This authorizes completing the uncommitted prototype on `feat/marketing-workspace` in existing draft PR #5, including checks, documentation, commit and push. Both builders still review shared changes; no production policy sign-off is inferred.
+
+| ID | Decision or local implementation choice | Superseded rule / limits |
+|---|---|---|
+| MKT04 | Implement local marketing home, campaigns/calendar, sample generation, review, internal Assets publication and Sales preview; document future build slices | Supersedes MKT01's setup-only boundary and historical Phase 1 marketing exclusion for this task. No live provider calls, external sends, production storage, merge or deployment |
+| MKT05 | Conservative demo rules: Marketing editor authors; explicitly granted Owner reviews/publishes; no creator/latest-editor self-review; approved exact versions only; all mode snapshots current eligible recipients; current grants/account assignment are rechecked | PR #2 M01-M04 remain open production decisions. Multiple approved versions can be explicitly published until each publication is retired. No expiry, automatic replacement, verified document imports or immutable review-decision ledger claimed. Restricted document metadata/files require the read-all grant in marketing; reps additionally require current assignment for price lists |
+| MKT06 | Reuse server-defined Phase 1 identities and assignment predicate, append marketing action grants/departments, keep generation behind `GenerationAdapter`, and reuse the Sales CRM local-port helper verbatim from `a81ddae` | Implements a local navigation/permission demonstration, not production login or department administration. Sales CRM sessions and Warehouse grants remain separate integration work. Tests use isolated 5373/3201; optional preview variables are DIZZLE_WEB_PORT and DIZZLE_API_PORT |
+
+Approved R01-R03 and financial/source ownership rules remain unchanged. See [MARKETING_DEMO](MARKETING_DEMO.md) for exact fixtures and [HANDOFF](HANDOFF.md) for evidence and integration review needs.
+
+## Marketing visual design revision, November 11, 2026
+
+Source: Cheddr requested more intuitive Home/Calendar/Image Studio/etc. navigation in a left panel and a polished visual design. **MKT07:** Replace the marketing horizontal tab strip with persistent left navigation on desktop and a dismissible left drawer on mobile. Use a scoped charcoal/deep-red/white visual system, contextual page titles, actionable counts, clear creative/review hierarchy and a plan-first Calendar with explicit form-opening controls. This supersedes the original tab-strip presentation only. Identity, action grants, fixture data, approval/publication behavior and shared service boundaries remain unchanged. Active lead: Cheddr with Codex; both builders review shared App shell changes. Continue existing draft PR #5; no merge or deployment is authorized.
+
+## OpenAI image-generation task, November 11, 2026
+
+Source: Cheddr explicitly requests "real image generation through OpenAI and not SVGs." **MKT08:** Implement server-only OpenAI generation/edits, raster-reference upload, async job status, PNG preview/download and protected local history in existing PR #5. This supersedes MKT04/MKT06's sample-adapter/no-paid-provider-call boundary for this image task only. Existing approval/publication, identity and financial rules remain unchanged; no external campaign sends, Zoho changes, merge or deployment.
+
+Local implementation choices: native server fetch to fixed OpenAI endpoints (no automatic retries), model/quality from private configuration, one image/in-flight job, ten attempts per UTC day, three attempts per retryable job, saved client request UUIDs and explicit uncertain-outcome holds. These count limits are not dollar budgets or production policy. Standard provider image sizes are fitted to requested PNG exports without cropping. Original raster uploads remain byte-identical; copies are converted for provider input. Metadata/files are atomically saved outside the web workspace under a checkout-specific local data directory. Invoice Reset demo preserves marketing history. Tests inject key-free PNG providers; no runtime fake-generator flag exists. Existing synthetic SVG fixtures remain labelled as sample library/reference data.
+
+Both builders review changed generation/API/state contracts before integration. Production storage/backups, multi-process identity/locking, exact-product composition, full audit ledger and shared private provider configuration remain separate work. The user asked about existing Zoho credentials: the Sales branch documents an external private environment and encrypted refresh-token path; only its example file was found here. No Zoho secret was copied or changed. A live account test remains dependent on a privately supplied OpenAI key; report actual paid calls separately from mock-test results.
+
+## Reusable Brand Kits, November 11, 2026
+
+Source: user requests a settings area for many sample references, brand-bible images, logos and branding guidelines to avoid uploading references on every generation. **MKT09:** Add per-brand saved visual direction, categorized/searchable original-image library, bulk upload, up to four default references and automatic server-side application to new image jobs. Store the exact kit revision/effective prompt with each job; later kit edits must not rewrite old jobs or retries. This supersedes manual-only per-job reference selection, not existing image-review or publishing rules.
+
+Local choices: existing campaign-write grant edits kits; existing creative-generation grant uploads; no new role/production authority. Defaults plus extras share the existing four-image request limit. Written rules are manual; brand-bible pages are raster images, not automatic PDF/font ingestion or model training. Save conflicts require revision refresh. Existing snapshot schema is extended additively with optional kits and job snapshots; older history is preserved. Consistency is guided, not guaranteed exact pixel/logo reproduction. Both builders review API/shared-type changes. No extra paid generation is needed to test this feature; fixture providers verify prompt/reference composition.
+
+
+## MKT10: written Markdown brand bible, November 11, 2026
+
+Source: user explicitly requests a `.MD` upload for the full written brand-bible overview. Add a separate saved Markdown overview and source filename to each kit, retaining the existing short visual-rule fields. The browser imports UTF-8 text up to 80 KB / 20,000 characters without truncation; the API validates text/name limits. Text is editable, revisioned with the kit and included in server-composed generation prompts/job snapshots. This supersedes MKT09's manual-entry-only written-rule limitation. Existing permissions/review, four-image limit and paid-provider guards remain. No Markdown execution, linked-file fetching, PDF/font ingestion or model training.
+
+
+## MKT11: approved social publishing build, November 11, 2026
+
+Source: user explicitly requests scheduled approved single-image Instagram feed/X publishing on the marketing branch / PR #5, durable queue/worker, reconciliation, manual fallback and AI drafting, with live publishing OFF until an explicitly authorized test post. This supersedes the setup-only/internal-scheduling implementation boundary for this scoped build, not the requirement for named approval of actual external content/recipients, shared identity review or separate deployment authorization.
+
+Implement exact account/image/caption/time approval, immutable queue snapshots, atomic claims and cancellation/edit fencing, uncertainty holds without automatic public-write retry, server-only encrypted OAuth credentials and provider-specific media transport. Proposed hosting remains unprovisioned; this local queue uses versioned isolated SQLite on one host and does not establish PostgreSQL/multi-host infrastructure. Current fixture authentication remains forbidden for deployment. AI proposals have no approval/queue authority. Existing campaign-write/review/workspace grants are conservative local mappings, not new production permission policy. Hard-off code gates remain false; no live post, OAuth exchange, purchase, deployment or Zoho action is authorized by this implementation task. Both builders review shared contracts/API/storage/media/worker before integration.
+
+
+## MKT12: prepare first private hosted pilot, November 11, 2026
+
+Source: user requests review of PR #5 at reported 96e8fc8 and preparation of one-host Cheddr staging with test adapters, production-auth review and exact first-live-post checklist. Follow-up owner answer confirms X handle @cheddrco_ and developer app not configured. Prepare X first, with readiness blocked; no ready Instagram account is inferred. No deployment, provider OAuth, paid calls or live send is authorized or performed. Both live gates remain false.
+
+Use private SSH-only fixture staging, one host/local persistent root and current queue model; no new employee-auth layer or unreviewed PostgreSQL replacement. Explicit DIZZLE_MARKETING_DIR prevents state.json changing with a release checkout; DIZZLE_PUBLISHING_DIR is pinned to the same root in pilot templates. Existing local defaults remain. Optional SOCIAL_EXPECTED_HANDLE rejects mismatched OAuth identity before token save. Public staging requires shared reviewed real identity and worker execution-time grant revalidation; one live job also needs a reviewed account/job scope and fresh exact approval. Source candidate remains a draft; the proposal does not queue or approve it. This refines MKT11 hosting preparation without superseding access/revocation or named approval rules.
+
+
+## MKT13: execution authorization and single-post pilot, November 11, 2026
+
+Source: user requests two controls on PR #5 / reported 609c7ab: recheck current approving-employee publishing permission/destination at execution, and allow one explicitly selected job bound to verified numeric X ID/caption/image/time. Preserve test-only checks and hard-off live gates. Both controls are implemented: current API Workflow grants/active/read/org, current approval/creative and fresh account metadata are checked at claim and immediately before public write; failure or missing authority holds Needs Review. New isolated version-1 pilot-control store fixes one full-payload fingerprint/job/account and consumes one durable attempt before adapter work. No reset/reassignment/retry releases it. This supersedes MKT12's unimplemented-control blocker and the older API-independent sending demo: API authority must now be online; browser closure is fine.
+
+This reuses shared existing employee authority, not a parallel auth/grant file. Current local fixture-header transport remains unsuitable for exposure/live use. Shared reviewed real sessions/employee grants, durable revocation/offboarding and authenticated worker delegation must replace fixture identity before public staging. New control store stays under the same private persistent root, with no queue-schema/business migration. Current API/profile/image/payload mismatch, second job, tampering, replay and uncertainty are covered with isolated tests. @cheddrco_ numeric identity remains unknown until actual OAuth, no selection or send performed, no live gate change. Both builders review endpoint/worker/adapter/control-store integration.
+
+## AUTH01 � shared Google Workspace implementation, November 12, 2026
+
+Source: user's explicit shared-authentication task for the hosted publishing pilot; active lead Cheddr with Codex. Authorizes a separate task branch, real Google Workspace session implementation and server-managed current grants, scoped worker authentication and fixture-only validation. Supersedes earlier task-bound identity scaffolding hold for this slice. It does not authorize deployment, production migrations, real provider writes, live publishing or a merge.
+
+Conflict recorded: Sales branch a81ddae selected password login on November 8 and deferred Google. It is unmerged with no Sales PR found. The current instruction selects Google for this new shared slice; Sales password code is unchanged. Both builders must jointly review common session/schema/principal/grant adoption and an explicit preserving migration or isolated empty staging plan. No silent email-based linking or parallel deployed identity authorities.
+
+Proposed technical choices for review: generic opaque cookie sessions adapted from the pending Sales primitives, Google OIDC with immutable issuer/subject binding, private explicit SQLite schema/operator, server-side grants read per request, and a separate hashed/expiring/revocable organization-scoped worker credential. The worker may ask only whether one server-resolved job remains authorized, never supply an actor or grant. Unknown verified users remain pending. All consumer wiring is still pending; see [shared authentication](SHARED_AUTHENTICATION.md). Existing approved business permissions and canonical employee/account assignment rules remain binding.
+
+## AUTH02 � Marketing shared sign-in adoption, November 12, 2026
+
+Source: current user's explicit integration task. Cheddr with Codex leads `feat/marketing-shared-signin`, combining PR #5 at 2ad2e46 and PR #6 at 9f6a9b5 on main d4afc22. Supersedes AUTH01's Marketing adoption deferral on this integration branch only; source PRs remain unchanged and draft. Candidate code is not treated as review-approved by its inclusion here.
+
+Marketing mounts the shared Google session/CSRF boundary and derives current action grants without Sales roles or account assignments. A configured organization replaces fixed demo-o1 in hosted state; hosted startup has no fixture records/accounts and refuses foreign stored data. Invoice/warehouse/demo routes remain closed. The actual approval/image/account resolver serves authenticated worker requests; current workspace/review/publish grants are required at execution, with rechecks immediately before write and no cached delegation. Existing immutable selected-job and hard-off live gates remain.
+
+Sales password login is not changed. Synthetic dry-run migration planning preserves canonical IDs, roles, teams, assignment/mapping and historical actor references, with explicit verified Google bindings and grants. Full versioned Sales migration, role/assignment adapter, principal evidence, offboarding and password-session retirement require joint Sales manager/Cheddr sign-off. Real migration/hosting/live sending remain separately authorized operations. See [integration guide](MARKETING_SHARED_SIGNIN.md).

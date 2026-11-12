@@ -1,0 +1,28 @@
+[Unit]
+Description=Dizzle Cheddr test-only social publishing worker
+After=network.target dizzle-pilot-api.service
+Requires=dizzle-pilot-api.service
+RequiresMountsFor=/var/lib/dizzle/cheddr-staging
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=dizzle-staging
+Group=dizzle-staging
+WorkingDirectory=/opt/dizzle/social-pilot
+EnvironmentFile=/etc/dizzle/cheddr-staging.env
+ExecStartPre=/usr/bin/node --import tsx scripts/social-staging-preflight.ts
+ExecStart=/usr/bin/node --import tsx scripts/social-worker.ts
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=45
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/dizzle/cheddr-staging
+
+[Install]
+WantedBy=multi-user.target

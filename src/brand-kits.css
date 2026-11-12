@@ -1,0 +1,75 @@
+.brand-settings { border-top: 1px solid #333640; padding-top: 24px; }
+.brand-settings-toolbar { position: sticky; top: 0; z-index: 8; background: #101114; display: flex; align-items: center; justify-content: space-between; gap: 25px; margin-bottom: 28px; padding: 14px 0; border-bottom: 1px solid #292f39; }
+.brand-settings-toolbar > button { width: auto; white-space: nowrap; flex-shrink: 0; }
+.brand-settings-toolbar > label { display: grid; gap: 8px; font-size: 11px; color: #aeb9c8; min-width: 220px; }
+.brand-settings-toolbar > div { display: grid; gap: 8px; justify-items: end; }
+.brand-settings-toolbar small { font-size: 10px; color: #8894a5; }
+.brand-kit-form { border: 1px solid #343b46; background: #191c22; border-radius: 10px; padding: 25px; }
+.brand-rules-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 23px; }
+.brand-rules-heading h2 { margin: 0; font-size: 20px; font-weight: 550; }
+.brand-rules-heading p { margin: 9px 0 0; color: #929fb0; font-size: 12px; line-height: 1.7; }
+.brand-rules-heading .eyebrow { color: #cb8d9c; font-size: 9px; letter-spacing: 1.4px; }
+.brand-rules-heading > button { white-space: nowrap; width: auto; flex-shrink: 0; }
+.brand-rules-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.brand-rules-grid label { display: grid; align-content: start; gap: 9px; color: #c0c7d1; font-size: 12px; }
+.brand-rules-grid input,.brand-rules-grid textarea,.brand-library-controls input { min-width: 0; width: 100%; color: #edf0f5; background: #232731; border: 1px solid #424b59; padding: 12px; border-radius: 6px; font: inherit; font-size: 12px; }
+.brand-rules-grid textarea { min-height: 105px; resize: vertical; line-height: 1.8; }
+.brand-rules-grid input::placeholder,.brand-rules-grid textarea::placeholder { color: #7e8b9e; }
+.brand-guidelines { grid-column: 1/-1; }
+.brand-kit-save-note { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 20px; font-size: 10px; color: #c7a6ae; }
+.brand-reference-library { margin-top: 35px; }
+.brand-upload-zone { display: grid; gap: 12px; padding: 22px; border: 1px dashed #6b4e5b; border-radius: 8px; background: #221d25; color: #e4c1ca; font-size: 13px; }
+.brand-upload-zone input { max-width: 100%; font-size: 12px; color: #c5aeb9; }
+.brand-upload-zone small { font-size: 10px; color: #a48c9a; }
+.brand-library-controls { display: flex; align-items: end; gap: 18px; padding: 25px 0 5px; }
+.brand-library-controls label { display: grid; gap: 8px; color: #a5b0c1; font-size: 11px; }
+.brand-library-controls label:first-child { flex: 1; }
+.brand-library-controls > span { font-size: 11px; color: #d0abb6; padding-bottom: 10px; white-space: nowrap; }
+.brand-reference-explanation { color: #919fb3; font-size: 11px; line-height: 1.8; margin: 14px 0 23px; max-width: 850px; }
+.brand-reference-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.brand-reference-card { min-width: 0; background: #1a1e25; border: 1px solid #343d49; border-radius: 8px; overflow: hidden; }
+.brand-reference-card.is-default { border-color: #b36e7f; }
+.is-marketing .brand-reference-card .asset-preview { width: 100%; height: 165px; max-height: none; border: 0; border-bottom: 1px solid #343d49; object-fit: contain; background: #14171c; }
+.brand-reference-card > div { display: grid; gap: 13px; padding: 17px; }
+.brand-reference-card strong { color: #e1e6ee; font-size: 12px; overflow-wrap: anywhere; }
+.brand-reference-card label:not(.brand-default-check) { display: grid; gap: 7px; font-size: 10px; color: #98a4b7; }
+.brand-reference-card select { font-size: 11px; padding: 8px 9px; background: #242b35; border-color: #454f5f; }
+.brand-default-check { display: flex; align-items: center; gap: 8px; color: #d9bcc5; font-size: 11px; }
+.brand-default-check input { accent-color: #df8e9f; }
+.brand-original-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.brand-original-meta small { color: #7f8da2; font-size: 9px; }
+.brand-original-meta button { min-width: 28px; font-size: 11px; padding: 5px 8px; }
+.brand-library-pagination { display: flex; justify-content: center; align-items: center; gap: 18px; margin-top: 25px; font-size: 11px; color: #a8b3c4; }
+.brand-library-save { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 22px 0; margin-top: 22px; border-top: 1px solid #3b3e48; font-size: 11px; color: #c9a6b1; }
+.brand-library-save > button { width: auto; flex-shrink: 0; }
+.studio-kit-summary { margin: 0 0 25px; padding: 17px 20px; border-left: 2px solid #bd7789; border-radius: 0 6px 6px 0; background: #241f28; }
+.studio-kit-summary strong { font-size: 13px; color: #e2c4ce; }
+.studio-kit-summary > span { font-size: 10px; color: #b99caa; margin-left: 15px; }
+.studio-kit-summary p { font-size: 11px; color: #a294a8; line-height: 1.8; margin: 10px 0 0; }
+.job-brand-provenance { padding: 14px 0; font-size: 11px; color: #ac8e9e; }
+.job-brand-provenance summary { cursor: pointer; }
+.job-brand-provenance pre { white-space: pre-wrap; overflow-wrap: anywhere; color: #a9b2c1; font-size: 10px; line-height: 1.8; }
+@media (max-width: 1100px) { .brand-reference-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) {
+  .brand-settings-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+  .brand-settings-toolbar > label { width: 100%; min-width: 0; }
+  .brand-settings-toolbar > div { justify-items: start; grid-column: 1/-1; grid-row: 2; }
+  .brand-settings-toolbar > button { grid-column: 2; grid-row: 1; align-self: end; }
+  .brand-kit-form { padding: 18px; }
+  .brand-rules-heading { align-items: start; flex-direction: column; }
+  .brand-rules-grid { grid-template-columns: 1fr; }
+  .brand-kit-save-note { align-items: start; flex-direction: column; }
+  .brand-library-controls { flex-wrap: wrap; align-items: start; }
+  .brand-library-controls label:first-child { flex-basis: 100%; }
+  .brand-library-controls > span { align-self: end; }
+  .brand-reference-grid { grid-template-columns: 1fr; }
+  .brand-library-save { flex-direction: column; align-items: start; }
+  .studio-kit-summary > span { display: block; margin: 9px 0 0; }
+}
+
+.brand-bible-import { margin-bottom: 26px; padding-bottom: 24px; border-bottom: 1px solid #343b46; }
+.brand-bible-import h3 { margin-top: 0; }
+.brand-bible-import > p { color: #a7afbe; font-size: 12px; line-height: 1.6; }
+.brand-bible-import > label { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+.brand-bible-import textarea { min-height: 190px; font-family: monospace; }
+.brand-bible-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; color: #a7afbe; }

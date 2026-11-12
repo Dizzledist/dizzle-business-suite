@@ -1,8 +1,18 @@
 # Dizzle AI Business Suite
 
+The integration branch adds [shared Google Workspace sign-in for Marketing](docs/MARKETING_SHARED_SIGNIN.md). Run `npm run demo:signin` at **http://127.0.0.1:5474** for the test-provider session demo with temporary data. Hosted setup uses `marketing:serve` with private configuration. Live publishing stays off.
+
 Dizzle is a web app for the AI Business Suite described in the [project brief](docs/PROJECT_SCOPE.md).
 
 This repository contains the shared foundation and a Phase 1 local React/TypeScript app and API demonstrating the invoice-to-warehouse workflow with synthetic data. No live Zoho integration or production infrastructure is configured.
+
+The marketing branch includes campaigns, internal content scheduling, server-side OpenAI PNG generation, review and permission-scoped rep Assets. See [OpenAI setup](docs/OPENAI_IMAGE_GENERATION.md) for private key configuration and saved image history, and the [marketing demo](docs/MARKETING_DEMO.md) for workflow steps. Select **Marketing editor** to start; use **Owner → Marketing** to review and publish. Real generation requires your own configured OpenAI project key.
+
+**Brand Kits** in the left panel stores each brand's logos, product originals, style examples, brand-bible page images and written guidelines. Save up to four default references; Image Studio automatically reuses those images and rules on new requests. [Brand Kit setup](docs/BRAND_KITS.md).
+
+**Approved social publishing:** Calendar now has connected Instagram/X destinations, exact-image review, a persistent queue, a separate test worker and manual posting records. Live publishing remains hard-disabled. See [provider/account setup and hosting requirements](docs/SOCIAL_PUBLISHING.md).
+
+The [first Cheddr staging pilot](docs/SOCIAL_PILOT_STAGING.md) targets `@cheddrco_` after X app setup. It includes private one-host templates, stable shared storage, restart verification and an exact live-test proposal. It now enforces fresh execution authorization and a durable single selected job/attempt. It is not deployed and does not expose fixture authentication publicly.
 
 ## Run the local workflow
 
@@ -13,7 +23,7 @@ npm ci
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173**. Start as Sales manager, select DZ-1001, and either receive a verified fixture payment or release against documented terms with a reason. Replay events, repeat release requests and switch to rep/warehouse identities to inspect the resulting scope and job. **Reset demo** restores the sample records. State is in memory and resets on restart.
+Open **http://127.0.0.1:5173**. Start as Sales manager, select DZ-1001, and either receive a verified fixture payment or release against documented terms with a reason. Replay events, repeat release requests and switch to rep/warehouse identities to inspect the resulting scope and job. **Reset demo** restores the invoice/payment samples. Those fixtures reset on restart; marketing files and history are saved separately and survive reset/restart.
 
 See [local demo and acceptance coverage](docs/LOCAL_DEMO.md) for exact steps, API routes, test identities, verification assumptions and deferred production requirements. The identity selector is a local test facility, not production authentication.
 
@@ -22,10 +32,13 @@ npx playwright install chromium
 npm run check
 ```
 
-Checks run TypeScript, HTTP integration tests, the client build and Chromium browser tests. Stop an active demo before browser tests so they can start fresh local servers. GitHub Actions runs the same checks on pull requests.
+Checks run TypeScript, HTTP integration tests, the client build and Chromium browser tests. Browser checks use isolated ports 5373/3201; keep those free. GitHub Actions runs the same checks on pull requests. `npm run dev` supports `DIZZLE_WEB_PORT` and `DIZZLE_API_PORT` for separate previews.
 
 ## Shared development foundation
 
+- [Marketing workspace and parallel sales/marketing development](docs/MARKETING_WORKSPACE.md)
+
+- [Proposed shared Google Workspace sessions and worker authority](docs/SHARED_AUTHENTICATION.md) — private API module, review/adoption plan and setup; existing fixture dashboards are not hosted authentication.
 - [Builder conventions and session rules](AGENTS.md)
 - [Project scope and confirmed baseline](docs/PROJECT_SCOPE.md)
 - [Project status and next tasks](docs/PROJECT_STATUS.md)

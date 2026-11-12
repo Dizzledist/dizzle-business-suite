@@ -1,10 +1,24 @@
 # Repository conventions
 
+## Marketing sign-in integration task, November 12, 2026
+
+The current user authorizes an isolated branch combining PR #5/#6 candidates, shared employee session/CSRF adoption for hosted Marketing, authenticated worker checks and a synthetic Sales migration rehearsal. This supersedes the earlier Marketing consumer-adoption deferral on this branch only. Preserve both source PRs; joint review remains required. No Sales login replacement, real migration, deployment, merge to main or live publishing is authorized. See [integration guide](docs/MARKETING_SHARED_SIGNIN.md).
+
+## Current task supersession, November 12, 2026
+
+The user's shared authentication task authorizes a separate branch from current main for Google Workspace employee sessions, server-managed grants and scoped publishing-worker authentication with isolated tests. This supersedes the earlier task-bound production-identity scaffolding exclusion for this implementation slice only. Sales authentication remains unmerged and requires joint review; no parallel deployed authority, production migration, live publishing, merge or deployment is authorized. See [shared authentication](docs/SHARED_AUTHENTICATION.md).
+
 ## Baseline and current boundary
 
 Read [README](README.md), [project scope](docs/PROJECT_SCOPE.md), [status](docs/PROJECT_STATUS.md) and the latest [handoff](docs/HANDOFF.md) at the start of every session. The scope is the agreed business baseline; record subsequent explicit decisions in [DECISIONS](docs/DECISIONS.md) with source, date and superseded rule. Do not silently resolve contradictions.
 
 Phase 0 documentation was merged in PR #1. The user's November 6 Phase 1 task authorizes a minimal local React/TypeScript app and API with synthetic invoice/payment/warehouse fixtures, API-enforced test identities, isolated tests and PR CI. This supersedes the earlier scaffolding hold for this scoped task only. No live Zoho, production infrastructure, real identity provider, outbound sends, department dashboards or marketing Assets belong in this task. See [local demo](docs/LOCAL_DEMO.md) for run commands, fixture assumptions and acceptance coverage.
+
+Current task supersession, November 9: Phase 1 PR #3 is merged. Cheddr authorizes a separate marketing branch/worktree and coordination for parallel sales/marketing development toward one permission-aware app. This session is branch setup and documentation only; the earlier task-bound marketing exclusion does not prohibit this workstream. See [marketing workspace](docs/MARKETING_WORKSPACE.md) for ownership, shared-review boundaries and the next implementation slice. Reuse reviewed shared identity/services; do not infer that the unmerged Sales CRM or Warehouse branches are already on main. No live integration, merge or deployment is part of this setup.
+
+Later November 9 implementation supersession: Cheddr supplied the Marketing Workspace build prompt and requested completion of the existing prototype on `feat/marketing-workspace`, draft PR #5. This authorizes fixture-backed marketing home, calendar/campaigns, sample image studio, review, internal Assets publication and rep consumption, shared local identity/navigation adjustments, focused tests and documentation. It supersedes the setup-only boundary for this task. Follow [marketing demo](docs/MARKETING_DEMO.md); keep real generation, external publishing/sends, production storage, Sales CRM/Warehouse integration, merge and deployment separate.
+
+November 11 image-generation supersession: Cheddr explicitly requests real OpenAI images instead of sample SVG generation. This authorizes the server-side image adapter, private key loading, bounded image API calls, raster reference uploads, PNG output and protected local marketing persistence for this task. See [OpenAI setup](docs/OPENAI_IMAGE_GENERATION.md). It supersedes the earlier sample-generation/no-provider-call restriction for images only. Test providers remain isolated and key-free; record whether a live call actually occurred. Do not change Zoho credentials, deploy fixture identities, send campaigns, merge or deploy as part of this work.
 
 ## Builder responsibilities
 

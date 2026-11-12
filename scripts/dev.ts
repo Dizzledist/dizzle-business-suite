@@ -1,9 +1,11 @@
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { localPorts } from '../shared/local-ports';
+const { web } = localPorts(process.env);
 
 const run = (relative: string, args: string[]) => spawn(process.execPath, [fileURLToPath(new URL(relative, import.meta.url)), ...args], { stdio: 'inherit' });
 const processes = [run('../node_modules/tsx/dist/cli.mjs', ['watch', 'server/index.ts']),
-  run('../node_modules/vite/bin/vite.js', ['--host', '127.0.0.1', '--port', '5173', '--strictPort'])];
+  run('../node_modules/vite/bin/vite.js', ['--host', '127.0.0.1', '--port', String(web), '--strictPort'])];
 let stopping = false;
 function stop(code = 0) {
   if (stopping) return;
