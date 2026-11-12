@@ -131,3 +131,5 @@ Review: [draft shared-auth PR #6](https://github.com/Dizzledist/dizzle-business-
 ## Shared Marketing integration outcome, November 12, 2026
 
 See [MARKETING_SHARED_SIGNIN](MARKETING_SHARED_SIGNIN.md) for the implemented boundary, private settings/storage, localhost demo and Sales manager adoption plan. Final local evidence: typecheck and 180 tests pass; build and 10 browser cases pass. Existing source PR #5/#6 remain draft/unmerged with no submitted reviews found; this is proposed integration for joint review. No real Google/X login, data migration or deployment is claimed. Hosted Marketing now mounts shared sessions/CSRF and authenticated trusted worker resolution; Sales/assignment adoption and actual Google/host/account configuration remain blockers. Live gates remain off.
+
+Review: [draft integration PR #7](https://github.com/Dizzledist/dizzle-business-suite/pull/7), implementation c60113f; both source candidates remain preserved for review.
