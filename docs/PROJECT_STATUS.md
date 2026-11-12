@@ -1,3 +1,7 @@
+# Current integration task ? November 12, 2026
+
+Lead: Cheddr with Codex. Branch feat/marketing-shared-signin combines pinned PR #5 2ad2e46 and PR #6 9f6a9b5 from current main d4afc22. Both sources remain draft/unmodified; no prior review approval is inferred. Scope: shared session/CSRF Marketing adoption, trusted worker resolver, fixture checks and Sales migration rehearsal. Live publishing/deployment/real data migration remain unauthorized.
+
 # Project status
 
 Updated: November 11, 2026 (America/Los_Angeles).
@@ -123,3 +127,7 @@ Department dashboards, marketing studio/Assets, live integration, infrastructure
 Shared task outcome: Proposed shared implementation and setup/adoption guide are in [SHARED_AUTHENTICATION](SHARED_AUTHENTICATION.md). Local `npm run check` passed typecheck, 68 tests, build and 3 Chromium tests. Existing fixture dashboards and both consumer branches remain untouched. The standalone module's publishing resolver intentionally remains unavailable until PR #5 adopts the trusted interface. Real Google login, employee provisioning, Sales migration, consumer wiring, host/TLS and X account setup remain blockers to public staging. Live publishing stays off.
 
 Review: [draft shared-auth PR #6](https://github.com/Dizzledist/dizzle-business-suite/pull/6), implementation `3a54481`. Shared foundation is proposed for joint review; Sales and PR #5 adoption remain separate follow-up work.
+
+## Shared Marketing integration outcome, November 12, 2026
+
+See [MARKETING_SHARED_SIGNIN](MARKETING_SHARED_SIGNIN.md) for the implemented boundary, private settings/storage, localhost demo and Sales manager adoption plan. Final local evidence: typecheck and 180 tests pass; build and 10 browser cases pass. Existing source PR #5/#6 remain draft/unmerged with no submitted reviews found; this is proposed integration for joint review. No real Google/X login, data migration or deployment is claimed. Hosted Marketing now mounts shared sessions/CSRF and authenticated trusted worker resolution; Sales/assignment adoption and actual Google/host/account configuration remain blockers. Live gates remain off.

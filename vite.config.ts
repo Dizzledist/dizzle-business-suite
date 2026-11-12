@@ -5,5 +5,5 @@ const ports = localPorts(process.env);
 
 export default defineConfig({
   plugins: [react()],
-  server: { host: '127.0.0.1', port: ports.web, strictPort: true, proxy: { '/api': `http://127.0.0.1:${ports.api}` } },
+  server: { host: '127.0.0.1', port: ports.web, strictPort: true, proxy: { '/api': { target: `http://127.0.0.1:${ports.api}`, changeOrigin: false } } },
 });

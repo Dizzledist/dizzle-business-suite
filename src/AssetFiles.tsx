@@ -1,3 +1,4 @@
+import { apiFetch } from './transport';
 import { useEffect, useState } from 'react';
 
 export function ProtectedDocument({ path, identity }: { path: string; identity: string }) {
@@ -5,7 +6,7 @@ export function ProtectedDocument({ path, identity }: { path: string; identity: 
   const [error, setError] = useState('');
   useEffect(() => {
     let active = true; setText(''); setError('');
-    fetch('/api' + path, { headers: { 'X-Demo-Identity': identity } }).then(async response => {
+    apiFetch('/api' + path, {}, identity).then(async response => {
       if (!response.ok) throw new Error('Document preview unavailable.');
       return response.text();
     }).then(value => { if (active) setText(value); }).catch(reason => { if (active) setError(reason.message); });
@@ -19,7 +20,7 @@ export function ProtectedImage({ path, identity, title }: { path: string; identi
   useEffect(() => {
     setSource('');
     let active = true; let objectUrl = '';
-    fetch(`/api${path}`, { headers: { 'X-Demo-Identity': identity } }).then(response => {
+    apiFetch(`/api${path}`, {}, identity).then(response => {
       if (!response.ok) throw new Error('Preview unavailable.'); return response.blob();
     }).then(blob => { objectUrl = URL.createObjectURL(blob); if (active) setSource(objectUrl); else URL.revokeObjectURL(objectUrl); }).catch(() => { if (active) setSource(''); });
     return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
@@ -31,7 +32,7 @@ export function DownloadButton({ path, identity, fileName, onError, label }: { p
   return <button className="download-button" title={`Download ${fileName}`} aria-label={label ?? `Download ${fileName}`} onClick={async () => {
     onError('');
     try {
-      const response = await fetch(`/api${path}`, { headers: { 'X-Demo-Identity': identity } });
+      const response = await apiFetch(`/api${path}`, {}, identity);
       if (!response.ok) throw new Error((await response.json()).error ?? 'Download denied.');
       const blob = await response.blob(); const url = URL.createObjectURL(blob); const anchor = document.createElement('a');
       anchor.href = url; anchor.download = fileName; anchor.click(); URL.revokeObjectURL(url);

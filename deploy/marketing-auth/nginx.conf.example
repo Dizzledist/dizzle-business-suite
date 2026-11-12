@@ -1,0 +1,19 @@
+# Review template only: supply owned host/certificates, review service configuration, run nginx -t.
+server {
+    listen 443 ssl;
+    server_name YOUR_OWNED_HOST;
+    ssl_certificate /PRIVATE/REVIEWED/fullchain.pem;
+    ssl_certificate_key /PRIVATE/REVIEWED/privkey.pem;
+    root /opt/dizzle/marketing/dist;
+    client_max_body_size 8m;
+    location ^~ /api/internal/ { return 404; }
+    location /api/ {
+        proxy_pass http://127.0.0.1:3443;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-Host "";
+        proxy_set_header X-Forwarded-Proto "";
+        access_log off;
+    }
+    location / { try_files $uri $uri/ /index.html; }
+    # No private-file alias. Instagram media needs its separate reviewed signed route.
+}

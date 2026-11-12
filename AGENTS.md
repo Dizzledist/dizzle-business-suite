@@ -1,5 +1,9 @@
 # Repository conventions
 
+## Marketing sign-in integration task, November 12, 2026
+
+The current user authorizes an isolated branch combining PR #5/#6 candidates, shared employee session/CSRF adoption for hosted Marketing, authenticated worker checks and a synthetic Sales migration rehearsal. This supersedes the earlier Marketing consumer-adoption deferral on this branch only. Preserve both source PRs; joint review remains required. No Sales login replacement, real migration, deployment, merge to main or live publishing is authorized. See [integration guide](docs/MARKETING_SHARED_SIGNIN.md).
+
 ## Current task supersession, November 12, 2026
 
 The user's shared authentication task authorizes a separate branch from current main for Google Workspace employee sessions, server-managed grants and scoped publishing-worker authentication with isolated tests. This supersedes the earlier task-bound production-identity scaffolding exclusion for this implementation slice only. Sales authentication remains unmerged and requires joint review; no parallel deployed authority, production migration, live publishing, merge or deployment is authorized. See [shared authentication](docs/SHARED_AUTHENTICATION.md).

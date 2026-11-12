@@ -1,5 +1,7 @@
 # Dizzle AI Business Suite
 
+The integration branch adds [shared Google Workspace sign-in for Marketing](docs/MARKETING_SHARED_SIGNIN.md). Run `npm run demo:signin` at **http://127.0.0.1:5474** for the test-provider session demo with temporary data. Hosted setup uses `marketing:serve` with private configuration. Live publishing stays off.
+
 Dizzle is a web app for the AI Business Suite described in the [project brief](docs/PROJECT_SCOPE.md).
 
 This repository contains the shared foundation and a Phase 1 local React/TypeScript app and API demonstrating the invoice-to-warehouse workflow with synthetic data. No live Zoho integration or production infrastructure is configured.

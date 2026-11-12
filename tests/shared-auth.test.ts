@@ -92,7 +92,7 @@ describe('shared employee sessions and scoped worker requests', () => {
   });
   it('denies revoked employee publishing permission, changed approval and changed destination', async () => {
     const token = store.issueWorkload('worker-1', 'demo-o1', 3_600_000, 'operator'); store.changeAccess('owner', 'demo-o1', true, ['asset:review'], 'operator'); expect((await worker(token)).status).toBe(403);
-    store.changeAccess('owner', 'demo-o1', true, ['asset:review', 'asset:publish'], 'operator'); resource.approvalCurrent = false; expect((await worker(token)).status).toBe(409); resource.approvalCurrent = true; resource.destinationMatches = false; expect((await worker(token)).status).toBe(409);
+    store.changeAccess('owner', 'demo-o1', true, ['workspace:read', 'asset:review', 'asset:publish'], 'operator'); resource.approvalCurrent = false; expect((await worker(token)).status).toBe(409); resource.approvalCurrent = true; resource.destinationMatches = false; expect((await worker(token)).status).toBe(409);
   });
   it('enforces both worker and approving-employee organization boundaries', async () => {
     const foreign = store.issueWorkload('foreign-worker', 'demo-o2', 3_600_000, 'operator'); expect((await worker(foreign)).status).toBe(403);

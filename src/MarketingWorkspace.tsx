@@ -1,3 +1,4 @@
+import { apiFetch } from './transport';
 import { useEffect, useRef, useState } from 'react';
 import type { AssetPublication, ContentItem, GenerationJob, MarketingAsset, MarketingWorkspaceData, SalesAssetView } from '../shared/contracts';
 import { MarketingIcon, type MarketingSection } from './MarketingNavigation';
@@ -42,11 +43,11 @@ export function MarketingWorkspace({ identity, section, setSection }: { identity
   const [reviewNotes, setReviewNotes] = useState('');
   const generation = useRef(0);
   async function api<T>(path: string, method = 'GET', payload?: unknown): Promise<T> {
-    const response = await fetch(`/api${path}`, {
+    const response = await apiFetch(`/api${path}`, {
       method,
-      headers: { 'X-Demo-Identity': identity, ...(payload === undefined ? {} : { 'Content-Type': 'application/json' }) },
+      headers: { ...(payload === undefined ? {} : { 'Content-Type': 'application/json' }) },
       ...(payload === undefined ? {} : { body: JSON.stringify(payload) }),
-    });
+    }, identity);
     const result = await response.json();
     if (!response.ok) throw new Error(result.error ?? 'Request failed.');
     return result;
@@ -326,7 +327,7 @@ export function SalesAssetsPanel({ identity }: { identity: string }) {
   useEffect(() => {
     let active = true;
     setLoading(true); setError(''); setAssets([]); setDownloadError('');
-    fetch('/api/assets', { headers: { 'X-Demo-Identity': identity } }).then(async response => {
+    apiFetch('/api/assets', {}, identity).then(async response => {
       const body = await response.json(); if (!response.ok) throw new Error(body.error ?? 'Assets unavailable.'); return body;
     }).then(body => { if (active) setAssets(body.assets); }).catch(reason => { if (active) setError(String(reason.message)); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };

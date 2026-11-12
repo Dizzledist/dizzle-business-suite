@@ -1,5 +1,7 @@
 # First Cheddr hosted social pilot: preparation and review
 
+November 12 integration follow-up: [Marketing shared sign-in](MARKETING_SHARED_SIGNIN.md) replaces fixture authority on a separate integration branch. The older fixture units/preflight below must not be installed unchanged as the authenticated hosted service. Source PR #5 is preserved; real account/hosting/live approval requirements remain unresolved.
+
 November 11, 2026. Reviewed draft [PR #5](https://github.com/Dizzledist/dizzle-business-suite/pull/5) at **96e8fc8c364248fc26614efc0993c862ef0de5b0** before changes. The owner confirmed the target is **@cheddrco_** and its X developer app is **not configured**. X is the prepared first platform because it avoids public media hosting; readiness is blocked, not assumed. No Instagram app/account was found ready either.
 
 This is a prepared **private, fixture-only staging setup**, not a deployment or live-post authorization. No host, DNS, TLS certificate, developer app, credit purchase or account connection has been created. Both live provider gates remain hard-off. General provider details remain in [SOCIAL_PUBLISHING](SOCIAL_PUBLISHING.md).

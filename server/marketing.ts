@@ -11,9 +11,9 @@ import type {
   AssetPublication, AssetVersion, Brand, Campaign, ContentItem, GenerationJob, Identity,
   MarketingAsset, MarketingGrant, MarketingWorkspaceData, SalesAssetView, BrandKit,
 } from '../shared/contracts';
-import { ApiError, Workflow } from './workflow';
+import { ApiError } from './workflow';
 
-const organizationId = 'demo-o1';
+export interface MarketingAuthority { identities: Identity[]; isAssignedToAccount(actor: Identity, accountId: string): boolean; }
 const fixtureNotice = 'Synthetic business fixtures and isolated test images. Live social publishing is OFF; test destinations simulate posts. Ephemeral test state resets on API restart or Reset demo.';
 const brands: Brand[] = [
   { id: 'dizzle', name: 'Dizzle Dist' }, { id: 'cheddr', name: 'Cheddr' },
@@ -47,9 +47,9 @@ export class MarketingService {
   private brandKits: BrandKit[] = brands.map(brand => ({ brandId: brand.id, revision: 0, imageType: '', visualStyle: '', palette: '', typography: '', logoRules: '', avoid: '', guidelines: '', brandBibleMarkdown: '', brandBibleFileName: '', defaultReferenceIds: [], referenceCategories: {}, updatedBy: null, updatedAt: null }));
 
   readonly publishingQueue: PublishingQueue;
-  constructor(private workflow: Workflow, private generator: ImageGenerator = new OpenAIImageGenerator(), private store?: MarketingStore, queue?: PublishingQueue, readonly socialAccounts: SocialAccount[] = testAccounts, private drafter: CaptionDrafter = new OpenAICaptionDrafter()) {
+  constructor(private workflow: MarketingAuthority, private generator: ImageGenerator = new OpenAIImageGenerator(), private store?: MarketingStore, queue?: PublishingQueue, readonly socialAccounts: SocialAccount[] = testAccounts, private drafter: CaptionDrafter = new OpenAICaptionDrafter(), private organizationId = 'demo-o1', private seedFixtures = true) {
     this.publishingQueue = queue ?? new PublishingQueue();
-    this.seed();
+    if (this.seedFixtures) this.seed();
     const saved = store?.load() as { schema?: number; campaigns?: Campaign[]; content?: ContentItem[]; assets?: MarketingAsset[]; jobs?: GenerationJob[]; brandKits?: BrandKit[]; files?: [string, { mimeType: string; fileName: string; body: string }][] } | null;
     if (saved) {
       if (saved.schema !== 1 || ![saved.campaigns, saved.content, saved.assets, saved.jobs, saved.files].every(Array.isArray)) throw new Error('Unsupported saved marketing state. Preserve it before recovery.');
@@ -58,6 +58,7 @@ export class MarketingService {
       this.files = new Map(saved.files!.map(([id, file]) => [id, { ...file, body: Buffer.from(file.body, 'base64') }]));
       for (const job of this.jobs) if (job.status === 'running') { job.status = 'failed'; job.retryable = false; job.outcomeUnknown = true; job.error = 'The API restarted during generation. Check OpenAI usage before starting another image.'; }
     }
+    if ([...this.campaigns, ...this.content, ...this.assets, ...this.jobs].some(record => record.organizationId !== this.organizationId)) throw new Error('Marketing store organization mismatch. No implicit migration allowed.');
     this.persist();
   }
 
@@ -83,16 +84,16 @@ export class MarketingService {
     this.jobs = [];
     this.brandKits = this.brandKits.map(kit => ({ ...kit, revision: 0, imageType: '', visualStyle: '', palette: '', typography: '', logoRules: '', avoid: '', guidelines: '', brandBibleMarkdown: '', brandBibleFileName: '', defaultReferenceIds: [], referenceCategories: {}, updatedBy: null, updatedAt: null }));
     this.files.clear();
-    this.seed();
+    if (this.seedFixtures) this.seed();
   }
 
   private require(actor: Identity, grant: MarketingGrant) {
-    if (!actor.active || !actor.read || actor.organizationId !== organizationId) throw new ApiError(403, 'Marketing access is not available in this organization.');
+    if (!actor.active || !actor.read || actor.organizationId !== this.organizationId) throw new ApiError(403, 'Marketing access is not available in this organization.');
     if (!actor.marketingGrants.includes(grant)) throw new ApiError(403, 'This action is not authorized for the current identity.');
   }
 
   private reps(asset?: MarketingAsset) {
-    return this.workflow.identities.filter(identity => identity.active && identity.organizationId === organizationId &&
+    return this.workflow.identities.filter(identity => identity.active && identity.organizationId === this.organizationId &&
       identity.roles.includes('sales_rep') && identity.marketingGrants.includes('asset:read:published') &&
       (!asset?.restrictedAccountId || this.workflow.isAssignedToAccount(identity, asset.restrictedAccountId)));
   }
@@ -100,7 +101,7 @@ export class MarketingService {
   workspace(actor: Identity): MarketingWorkspaceData {
     this.require(actor, 'workspace:read');
     return {
-      socialAccounts: structuredClone(this.socialAccounts), publishingJobs: this.publishingQueue.list(), livePublishingEnabled: false,
+      socialAccounts: structuredClone(this.socialAccounts), publishingJobs: this.publishingQueue.list().filter(job => job.payload.organizationId === this.organizationId), livePublishingEnabled: false,
       identity: { ...actor }, brands: brands.map(brand => ({ ...brand })),
       brandKits: structuredClone(this.brandKits),
       campaigns: this.campaigns.map(campaign => ({ ...campaign })),
@@ -108,7 +109,7 @@ export class MarketingService {
       assets: this.assets.filter(asset => !['price_list', 'coa'].includes(asset.kind) || actor.marketingGrants.includes('asset:read:all')).map(asset => ({ ...asset, versions: asset.versions.map(version => ({ ...version })), publications: asset.publications.map(publication => ({ ...publication, repIds: [...publication.repIds] })) })),
       generationJobs: this.jobs.map(job => ({ ...job, referenceAssetIds: [...job.referenceAssetIds] })),
       eligibleReps: this.reps().map(rep => ({ id: rep.id, name: rep.name })),
-      fixtureNotice: this.store ? 'Business records include synthetic fixtures. Marketing drafts and files are saved locally; Reset demo resets invoice/payment fixtures only.' : fixtureNotice,
+      fixtureNotice: !this.seedFixtures ? 'Private Marketing pilot. Live publishing is OFF.' : this.store ? 'Business records include synthetic fixtures. Marketing drafts and files are saved locally; Reset demo resets invoice/payment fixtures only.' : fixtureNotice,
       imageGeneration: { mode: this.generator.mode, ready: this.generator.ready, model: this.generator.model, quality: this.generator.quality, message: this.generator.message,
         remainingAttempts: Math.max(0, 10 - this.attemptsToday()), maxDailyAttempts: 10, persistent: !!this.store },
     };
@@ -144,7 +145,7 @@ export class MarketingService {
   createCampaign(actor: Identity, input: CampaignInput) {
     this.require(actor, 'campaign:write');
     this.brand(input.brandId);
-    const campaign: Campaign = { id: `campaign-${randomUUID()}`, organizationId, ...input, createdBy: actor.id, createdAt: new Date().toISOString() };
+    const campaign: Campaign = { id: `campaign-${randomUUID()}`, organizationId: this.organizationId, ...input, createdBy: actor.id, createdAt: new Date().toISOString() };
     this.campaigns.push(campaign);
     this.persist(); return { ...campaign };
   }
@@ -155,7 +156,7 @@ export class MarketingService {
     this.validateLinkedVersion(input.linkedAssetId, input.linkedVersionId, campaign.brandId);
     this.validateDestination(input, campaign.brandId);
     const item: ContentItem = {
-      id: `content-${randomUUID()}`, organizationId, ...input, campaignId: campaign.id, brandId: campaign.brandId,
+      id: `content-${randomUUID()}`, organizationId: this.organizationId, ...input, campaignId: campaign.id, brandId: campaign.brandId,
       status: 'draft', createdBy: actor.id, editedBy: actor.id, approvedBy: null, approvedAt: null,
       approvalSnapshot: null, reviewNote: null, scheduledAt: null,
     };
@@ -211,7 +212,7 @@ export class MarketingService {
       const bytes = await this.socialImage(actor, id);
       if (item.status !== 'approved' || item.approvalSnapshot !== this.contentSnapshot(item)) throw new ApiError(409, 'Content changed; renew approval.');
       const account = this.socialAccounts.find(account => account.id === item.destinationAccountId)!;
-      this.publishingQueue.enqueue({ contentId: item.id, organizationId, account: structuredClone(account), caption: item.caption, publishAt: item.plannedAt, aiGenerated: this.version(item.linkedVersionId!).sourceType === 'generated_artwork', versionId: item.linkedVersionId!, imageHash: createHash('sha256').update(bytes).digest('hex'), approvalSnapshot: item.approvalSnapshot!, approvedBy: item.approvedBy!, approvedAt: item.approvedAt! }, bytes, new Date().toISOString());
+      this.publishingQueue.enqueue({ contentId: item.id, organizationId: this.organizationId, account: structuredClone(account), caption: item.caption, publishAt: item.plannedAt, aiGenerated: this.version(item.linkedVersionId!).sourceType === 'generated_artwork', versionId: item.linkedVersionId!, imageHash: createHash('sha256').update(bytes).digest('hex'), approvalSnapshot: item.approvalSnapshot!, approvedBy: item.approvedBy!, approvedAt: item.approvedAt! }, bytes, new Date().toISOString());
     }
     item.status = 'scheduled'; item.scheduledAt = new Date().toISOString();
     this.persist(); return { ...item };
@@ -243,7 +244,7 @@ export class MarketingService {
       this.assets.push(asset);
     }
     const now = new Date().toISOString();
-    const job: GenerationJob = { id: 'generation-' + randomUUID(), organizationId, assetId: asset.id, versionId: null,
+    const job: GenerationJob = { id: 'generation-' + randomUUID(), organizationId: this.organizationId, assetId: asset.id, versionId: null,
       campaignId: campaign.id, prompt: input.prompt.trim(), referenceAssetIds: references, width: input.width, height: input.height,
       status: 'running', error: null, attempts: 1, createdBy: actor.id, createdAt: now, requestKey: input.requestKey,
       fingerprint, retryKeys: [], retryable: false, outcomeUnknown: false, model: this.generator.model, quality: this.generator.quality,
@@ -304,7 +305,7 @@ export class MarketingService {
     const mimeType = `image/${metadata.format}`;
     const asset = this.newAsset({ brandId: input.brandId, kind: 'reference', title: input.title, campaignId: null, productSku: null,
       batchId: null, restrictedAccountId: null, createdBy: actor.id, sourceType: 'original_reference' });
-    const version: AssetVersion = { id: 'version-' + randomUUID(), organizationId, assetId: asset.id, number: 1, status: 'draft', mimeType,
+    const version: AssetVersion = { id: 'version-' + randomUUID(), organizationId: this.organizationId, assetId: asset.id, number: 1, status: 'draft', mimeType,
       width: metadata.width ?? null, height: metadata.height ?? null, createdBy: actor.id, createdAt: new Date().toISOString(),
       reviewedBy: null, reviewedAt: null, reviewNote: null, provenance: 'User-uploaded original reference; original bytes retained. Not an approved sales asset.', sourceType: 'original_reference' };
     asset.versions.push(version); this.assets.push(asset);
@@ -344,7 +345,7 @@ export class MarketingService {
       publication.repIds.join(',') === selected.join(',') && publication.status === 'published');
     if (existing) return { ...existing, repIds: [...existing.repIds] };
     const publication: AssetPublication = {
-      id: `publication-${randomUUID()}`, organizationId, assetId: asset.id, versionId: id,
+      id: `publication-${randomUUID()}`, organizationId: this.organizationId, assetId: asset.id, versionId: id,
       audienceMode, repIds: selected, status: 'published', publishedBy: actor.id,
       publishedAt: new Date().toISOString(), retiredBy: null, retiredAt: null, retireReason: null,
     };
@@ -362,7 +363,7 @@ export class MarketingService {
   }
 
   publishedAssets(actor: Identity): SalesAssetView[] {
-    if (actor.organizationId !== organizationId) throw new ApiError(403, 'Asset access is not available in this organization.');
+    if (actor.organizationId !== this.organizationId) throw new ApiError(403, 'Asset access is not available in this organization.');
     const isRep = actor.roles.includes('sales_rep') && actor.marketingGrants.includes('asset:read:published');
     const canReadAll = actor.marketingGrants.includes('asset:read:all');
     if (!isRep && !canReadAll) throw new ApiError(403, 'Published Assets access is required.');
@@ -409,7 +410,7 @@ export class MarketingService {
   private completeGeneration(job: GenerationJob, asset: MarketingAsset, image: GeneratedImage) {
     const number = Math.max(0, ...asset.versions.map(version => version.number)) + 1;
     const id = 'version-' + randomUUID();
-    const version: AssetVersion = { id, organizationId, assetId: asset.id, number, status: 'draft', mimeType: 'image/png',
+    const version: AssetVersion = { id, organizationId: this.organizationId, assetId: asset.id, number, status: 'draft', mimeType: 'image/png',
       width: image.width, height: image.height, createdBy: job.createdBy, createdAt: new Date().toISOString(),
       reviewedBy: null, reviewedAt: null, reviewNote: null,
       provenance: (this.generator.mode === 'test' ? 'Isolated test PNG' : 'OpenAI image generation') + ' / ' + job.model + ' / ' + job.quality + '; original ' + image.providerSize + '; fitted without cropping to ' + image.width + 'x' + image.height + '.', sourceType: 'generated_artwork' };
@@ -418,7 +419,7 @@ export class MarketingService {
   }
 
   private newAsset(input: Pick<MarketingAsset, 'brandId' | 'kind' | 'title' | 'campaignId' | 'productSku' | 'batchId' | 'restrictedAccountId' | 'createdBy' | 'sourceType'>): MarketingAsset {
-    return { id: `asset-${randomUUID()}`, organizationId, brandId: input.brandId, kind: input.kind, title: input.title,
+    return { id: `asset-${randomUUID()}`, organizationId: this.organizationId, brandId: input.brandId, kind: input.kind, title: input.title,
       campaignId: input.campaignId, productSku: input.productSku, batchId: input.batchId,
       restrictedAccountId: input.restrictedAccountId, createdBy: input.createdBy, sourceType: input.sourceType,
       versions: [], publications: [] };
@@ -426,10 +427,10 @@ export class MarketingService {
 
   private seed() {
     const now = new Date().toISOString();
-    const campaign: Campaign = { id: 'campaign-cheddr-launch', organizationId, brandId: 'cheddr', title: 'Cheddr autumn launch', objective: 'Introduce the seasonal wholesale collection.', owner: 'Cheddr Marketing', createdBy: 'marketing', createdAt: now };
+    const campaign: Campaign = { id: 'campaign-cheddr-launch', organizationId: this.organizationId, brandId: 'cheddr', title: 'Cheddr autumn launch', objective: 'Introduce the seasonal wholesale collection.', owner: 'Cheddr Marketing', createdBy: 'marketing', createdAt: now };
     this.campaigns.push(campaign);
     const scheduled: ContentItem = {
-      id: 'content-scheduled-sample', organizationId, campaignId: campaign.id, brandId: campaign.brandId,
+      id: 'content-scheduled-sample', organizationId: this.organizationId, campaignId: campaign.id, brandId: campaign.brandId,
       title: 'Autumn collection preview', objective: 'Build awareness with wholesale buyers.', owner: 'Cheddr Marketing',
       channel: 'Instagram', plannedAt: '2026-11-18T19:00:00.000Z', destinationAccount: '@cheddr',
       caption: 'A new season is taking shape. Ask your Dizzle representative for the collection details.',
@@ -463,7 +464,7 @@ export class MarketingService {
 
   private seedAsset(input: Parameters<MarketingService['newAsset']>[0] & { mimeType: string; body: string; fileName: string; provenance: string }) {
     const asset = this.newAsset(input);
-    const version: AssetVersion = { id: `version-${randomUUID()}`, organizationId, assetId: asset.id, number: 1,
+    const version: AssetVersion = { id: `version-${randomUUID()}`, organizationId: this.organizationId, assetId: asset.id, number: 1,
       status: 'approved', mimeType: input.mimeType, width: input.kind === 'creative' ? 1080 : null,
       height: input.kind === 'creative' ? 1350 : null, createdBy: input.createdBy, createdAt: new Date().toISOString(),
       reviewedBy: 'owner', reviewedAt: new Date().toISOString(), reviewNote: 'Approved sample fixture.',
@@ -474,7 +475,7 @@ export class MarketingService {
   }
 
   private publishSeed(asset: MarketingAsset, audienceMode: 'all' | 'selected', repIds: string[]) {
-    asset.publications.push({ id: `publication-${randomUUID()}`, organizationId, assetId: asset.id,
+    asset.publications.push({ id: `publication-${randomUUID()}`, organizationId: this.organizationId, assetId: asset.id,
       versionId: asset.versions[0].id, audienceMode, repIds: audienceMode === 'all' ? this.reps(asset).map(rep => rep.id).sort() : repIds, status: 'published', publishedBy: 'owner',
       publishedAt: new Date().toISOString(), retiredBy: null, retiredAt: null, retireReason: null });
   }
@@ -505,22 +506,25 @@ export class MarketingService {
     const kit = this.brandKits.find(kit => kit.brandId === brandId)!;
     return this.drafter.propose({ brief, platform, earliest: new Date().toISOString(), brandDirection: JSON.stringify(kit) });
   }
-  async authorizePublishing(actor: Identity, id: string, fingerprint: string, account?: SocialAccount | null) {
-    this.require(actor, 'asset:publish'); this.require(actor, 'asset:review');
+  async authorizePublishing(actor: Identity, id: string, fingerprint: string, account?: SocialAccount | null | (() => SocialAccount | null)) {
+    this.require(actor, 'workspace:read'); this.require(actor, 'asset:publish'); this.require(actor, 'asset:review');
     const job = this.publishingQueue.get(id), item = this.contentItem(job.payload.contentId);
-    assertPublishingAuthority(job, actor, account === undefined ? this.socialAccounts.find(a => a.id === job.payload.account.id) ?? null : account);
-    if (!['scheduled', 'publishing'].includes(job.state) || publishingFingerprint(job) !== fingerprint || item.status !== 'scheduled' ||
+    const currentAccount = () => typeof account === 'function' ? account() : account === undefined ? this.socialAccounts.find(a => a.id === job.payload.account.id) ?? null : account;
+    const validate = () => {
+    assertPublishingAuthority(job, actor, currentAccount());
+    if (!['scheduled', 'publishing'].includes(this.publishingQueue.get(id).state) || publishingFingerprint(this.publishingQueue.get(id)) !== fingerprint || item.status !== 'scheduled' ||
       item.caption !== job.payload.caption || item.plannedAt !== job.payload.publishAt || item.linkedVersionId !== job.payload.versionId || item.destinationAccountId !== job.payload.account.id || item.destinationAccount !== job.payload.account.handle ||
       item.approvalSnapshot !== job.payload.approvalSnapshot || item.approvedAt !== job.payload.approvedAt || item.approvedBy !== job.payload.approvedBy || item.approvalSnapshot !== this.contentSnapshot(item))
       throw new PublishingHold('Current approval or job payload no longer matches. Hold for review.');
     this.validateLinkedVersion(item.linkedAssetId, item.linkedVersionId, item.brandId);
+    }; validate();
     const original = this.files.get(item.linkedVersionId!)!;
     const jpeg = await sharp(original.body).rotate().resize({ width: 1440, withoutEnlargement: true }).flatten({ background: '#ffffff' }).toColourspace('srgb').jpeg({ quality: 95 }).toBuffer();
     if (createHash('sha256').update(jpeg).digest('hex') !== job.payload.imageHash) throw new PublishingHold('Queued image differs from the approved creative.');
-    assertPublishingAuthority(job, actor, account === undefined ? this.socialAccounts.find(a => a.id === job.payload.account.id) ?? null : account);
+    validate();
     return { fingerprint };
   }
-  cancelSocial(actor: Identity, id: string) { this.require(actor, 'campaign:write'); return this.publishingQueue.cancel(id, actor.id); }
+  cancelSocial(actor: Identity, id: string) { this.require(actor, 'campaign:write'); if (this.publishingQueue.get(id).payload.organizationId !== actor.organizationId) throw new ApiError(404, 'Job not found.'); return this.publishingQueue.cancel(id, actor.id); }
   markSocialPosted(actor: Identity, contentId: string, url: string, at: string, confirmExisting = false) {
     this.require(actor, confirmExisting ? 'asset:review' : 'campaign:write'); const item = this.contentItem(contentId);
     if (!item.approvedBy || item.approvalSnapshot !== this.contentSnapshot(item)) throw new ApiError(409, 'Current exact content approval is required.');

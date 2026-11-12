@@ -5,12 +5,15 @@ import { demoEvents } from '../shared/contracts';
 import { ApiError, Workflow } from './workflow';
 import { MarketingService } from './marketing';
 import type { ImageGenerator } from './image-generation';
-import { PublishingHold } from './publishing/authorization';
+import { PublishingHold, publishingFingerprint } from './publishing/authorization';
 import type { SocialAccount } from '../shared/publishing';
 import { join } from 'node:path';
 import { PublishingQueue } from './publishing/queue';
 import type { CaptionDrafter } from './publishing/drafts';
 import { MarketingStore } from './marketing-store';
+import { createSharedAuthApi, type SharedAuthOptions } from './auth/api';
+import { marketingActor } from './auth/marketing-actor';
+import type { Identity } from '../shared/contracts';
 
 const releaseSchema = z.object({
   reason: z.string().trim().min(1).max(500), termsId: z.string().min(1).max(100),
@@ -54,22 +57,24 @@ function send(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
   res.end(JSON.stringify(data));
 }
-export function createApi(workflow = new Workflow(), options: { generator?: ImageGenerator; store?: MarketingStore; publishingQueue?: PublishingQueue; accounts?: SocialAccount[]; resolveAccount?: (id: string) => SocialAccount | null; drafter?: CaptionDrafter } = {}) {
-  const marketing = new MarketingService(workflow, options.generator, options.store, options.publishingQueue ?? (options.store ? new PublishingQueue(join(options.store.directory, 'publishing.sqlite')) : undefined), options.accounts, options.drafter);
+export function createApi(workflow = new Workflow(), options: { generator?: ImageGenerator; store?: MarketingStore; publishingQueue?: PublishingQueue; accounts?: SocialAccount[]; resolveAccount?: (id: string) => SocialAccount | null; drafter?: CaptionDrafter; authentication?: Omit<SharedAuthOptions, 'resolvePublishingResource' | 'handleEmployeeRequest' | 'afterLogin'> } = {}) {
+  if (!options.authentication && (process.env.DIZZLE_AUTH_MODE === 'employee' || process.env.AUTH_PUBLIC_ORIGIN || process.env.NODE_ENV && !['development', 'test'].includes(process.env.NODE_ENV))) throw new Error('Fixture API is restricted to local development/tests.');
+  const marketing = new MarketingService(options.authentication ? { identities: [], isAssignedToAccount: () => false } : workflow, options.generator, options.store, options.publishingQueue ?? (options.store ? new PublishingQueue(join(options.store.directory, 'publishing.sqlite')) : undefined), options.accounts, options.drafter, options.authentication?.organizationId ?? 'demo-o1', !options.authentication);
   const ports = localPorts(process.env);
-  const server = createServer(async (req, res) => {
+  const handle = async (req: IncomingMessage, res: ServerResponse, authenticatedActor?: Identity) => {
     try {
-      const host = new URL(`http://${req.headers.host ?? ''}`);
-      if (!['127.0.0.1', 'localhost', '[::1]'].includes(host.hostname)) throw new ApiError(403, 'Local host required.');
-      if (req.headers.origin && ![`http://127.0.0.1:${ports.web}`, `http://localhost:${ports.web}`, `http://127.0.0.1:${ports.api}`].includes(req.headers.origin))
+      const host = new URL(options.authentication?.origin ?? `http://${req.headers.host ?? ''}`);
+      if (!authenticatedActor && !['127.0.0.1', 'localhost', '[::1]'].includes(host.hostname)) throw new ApiError(403, 'Local host required.');
+      if (!authenticatedActor && req.headers.origin && ![`http://127.0.0.1:${ports.web}`, `http://localhost:${ports.web}`, `http://127.0.0.1:${ports.api}`].includes(req.headers.origin))
         throw new ApiError(403, 'Local demo origin required.');
       const path = new URL(req.url ?? '/', host).pathname;
-      if (path === '/api/health' && req.method === 'GET') return send(res, 200, { status: 'local-fixture-only' });
+      if (!authenticatedActor && path === '/api/auth/mode' && req.method === 'GET') return send(res, 200, { mode: 'fixture' });
+      if (path === '/api/health' && req.method === 'GET') return send(res, 200, { status: authenticatedActor ? 'employee-marketing-live-off' : 'local-fixture-only' });
       // This header selects a SERVER-DEFINED test identity, not caller-provided roles.
       // It is deliberately not production authentication and only runs on loopback.
       const id = req.headers['x-demo-identity'];
-      const actor = workflow.authenticate(typeof id === 'string' ? id : undefined);
-      if (req.method === 'GET' && path === '/api/workspace') return send(res, 200, workflow.workspace(actor));
+      const actor = authenticatedActor ?? workflow.authenticate(typeof id === 'string' ? id : undefined);
+      if (req.method === 'GET' && path === '/api/workspace') return send(res, 200, authenticatedActor ? { identity: actor, invoices: [], jobs: [], fixtureNotice: 'Private Marketing pilot; live publishing OFF.' } : workflow.workspace(actor));
       if (req.method === 'GET' && path === '/api/marketing/workspace') return send(res, 200, marketing.workspace(actor));
       if (req.method === 'POST' && path === '/api/marketing/social/propose') {
         const input = z.object({ brandId: z.string(), brief: z.string().min(1).max(2000), platform: z.enum(['Instagram', 'X']) }).strict().parse(await body(req));
@@ -77,10 +82,10 @@ export function createApi(workflow = new Workflow(), options: { generator?: Imag
       }
       const authorizePublishing = /^\/api\/marketing\/publishing-jobs\/([a-z0-9-]+)\/authorize$/.exec(path);
       if (req.method === 'POST' && authorizePublishing) {
-        if (actor.organizationId !== 'demo-o1' || !actor.marketingGrants.includes('asset:publish') || !actor.marketingGrants.includes('asset:review')) throw new ApiError(403, 'Publishing review permission required.');
+        if (actor.organizationId !== (options.authentication?.organizationId ?? 'demo-o1') || !actor.marketingGrants.includes('asset:publish') || !actor.marketingGrants.includes('asset:review')) throw new ApiError(403, 'Publishing review permission required.');
         const input = z.object({ fingerprint: z.string().regex(/^[a-f0-9]{64}$/) }).strict().parse(await body(req));
         const job = marketing.publishingQueue.get(authorizePublishing[1]);
-        return send(res, 200, await marketing.authorizePublishing(actor, job.id, input.fingerprint, options.resolveAccount?.(job.payload.account.id)));
+        return send(res, 200, await marketing.authorizePublishing(actor, job.id, input.fingerprint, options.resolveAccount ? () => options.resolveAccount!(job.payload.account.id) : undefined));
       }
       const cancelSocial = /^\/api\/marketing\/publishing-jobs\/([a-z0-9-]+)\/cancel$/.exec(path);
       if (req.method === 'POST' && cancelSocial) return send(res, 200, marketing.cancelSocial(actor, cancelSocial[1]));
@@ -110,7 +115,7 @@ export function createApi(workflow = new Workflow(), options: { generator?: Imag
         return send(res, 200, marketing.reviewContent(actor, id, input.decision, input.notes));
       }
       if (req.method === 'POST' && path === '/api/marketing/references') {
-        if (!actor.marketingGrants.includes('creative:generate') || actor.organizationId !== 'demo-o1') throw new ApiError(403, 'Reference upload is not authorized.');
+        if (!actor.marketingGrants.includes('creative:generate') || actor.organizationId !== (options.authentication?.organizationId ?? 'demo-o1')) throw new ApiError(403, 'Reference upload is not authorized.');
         return send(res, 201, await marketing.uploadReference(actor, referenceSchema.parse(await body(req, 6_700_500))));
       }
       if (req.method === 'POST' && path === '/api/marketing/generation-jobs') return send(res, 202, marketing.createGeneration(actor, generationSchema.parse(await body(req))));
@@ -142,6 +147,7 @@ export function createApi(workflow = new Workflow(), options: { generator?: Imag
         res.writeHead(200, { 'Content-Type': file.mimeType, 'Content-Disposition': `${new URL(req.url ?? '/', host).searchParams.has('download') ? 'attachment' : 'inline'}; filename="${file.fileName}"`, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; sandbox" });
         return res.end(file.body);
       }
+      if (authenticatedActor) throw new ApiError(404, 'Route not found.');
       const invoiceMatch = /^\/api\/invoices\/([a-z0-9-]+)$/.exec(path);
       if (req.method === 'GET' && invoiceMatch) return send(res, 200, workflow.getInvoice(actor, invoiceMatch[1]));
       const jobMatch = /^\/api\/jobs\/([a-z0-9-]+)$/.exec(path);
@@ -168,7 +174,19 @@ export function createApi(workflow = new Workflow(), options: { generator?: Imag
       else if (error instanceof z.ZodError) send(res, 400, { error: 'Invalid request fields. Check the required values and permitted fields for this action.' });
       else send(res, 500, { error: 'Local API error.' });
     }
-  });
+  };
+  const server = options.authentication ? createSharedAuthApi({ ...options.authentication, afterLogin: '/',
+    handleEmployeeRequest: async (req, res, employee) => { await handle(req, res, marketingActor(employee)); },
+    resolvePublishingResource: async id => {
+      const job = marketing.publishingQueue.get(id), auth = options.authentication!;
+      const employee = auth.store.employee(job.payload.approvedBy, auth.organizationId);
+      if (!employee) throw new ApiError(403, 'Approving employee unavailable.');
+      const fingerprint = publishingFingerprint(job);
+      await marketing.authorizePublishing(marketingActor(employee), id, fingerprint,
+        () => options.resolveAccount ? options.resolveAccount(job.payload.account.id) : marketing.socialAccounts.find(a => a.id === job.payload.account.id) ?? null);
+      return { organizationId: job.payload.organizationId, approvedBy: job.payload.approvedBy, fingerprint, approvalCurrent: true, destinationMatches: true };
+    },
+  }) : createServer((req, res) => { void handle(req, res); });
   server.on('close', () => marketing.publishingQueue.close());
   return server;
 }

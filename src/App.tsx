@@ -3,12 +3,20 @@ import type { DemoEvent, InvoiceView, Workspace } from '../shared/contracts';
 import { MarketingWorkspace, SalesAssetsPanel } from './MarketingWorkspace';
 import { MarketingIcon, MarketingNavigation, marketingSections, type MarketingSection } from './MarketingNavigation';
 
+import { EmployeeMarketingApp } from './EmployeeMarketingApp';
+import { apiFetch, configureTransport } from './transport';
+
+export function App() {
+  const [mode, setMode] = useState<'employee' | 'fixture' | null>(null);
+  useEffect(() => { let active = true; fetch('/api/auth/mode', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(data => { if (active) { const next = data.mode === 'fixture' ? 'fixture' : 'employee'; configureTransport(next); setMode(next); } }).catch(() => { if (active) { configureTransport('employee'); setMode('employee'); } }); return () => { active = false; }; }, []);
+  return mode === null ? <main><p role="status">Loading sign-in?</p></main> : mode === 'fixture' ? <FixtureApp/> : <EmployeeMarketingApp/>;
+}
 const identities = [
   ['manager', 'Sales manager'], ['rep-a', 'Rep A'], ['rep-b', 'Rep B'], ['warehouse', 'Warehouse'],
   ['owner', 'Owner'], ['admin', 'Admin'], ['marketing', 'Marketing editor'], ['disabled', 'Disabled manager'], ['revoked', 'Revoked manager'], ['outside', 'Other organization'],
 ];
 const money = (amount: string) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(amount));
-export function App() {
+function FixtureApp() {
   const [identity, setIdentity] = useState('manager');
   const [department, setDepartment] = useState('sales');
   const [marketingSection, setMarketingSection] = useState<MarketingSection>('home');
@@ -22,11 +30,11 @@ export function App() {
   const [error, setError] = useState('');
   const generation = useRef(0);
   async function api<T>(path: string, payload?: unknown): Promise<T> {
-    const response = await fetch(`/api${path}`, {
+    const response = await apiFetch(`/api${path}`, {
       method: payload === undefined ? 'GET' : 'POST',
-      headers: { 'X-Demo-Identity': identity, ...(payload === undefined ? {} : { 'Content-Type': 'application/json' }) },
+      headers: { ...(payload === undefined ? {} : { 'Content-Type': 'application/json' }) },
       ...(payload === undefined ? {} : { body: JSON.stringify(payload) }),
-    });
+    }, identity);
     const result = await response.json();
     if (!response.ok) throw new Error(result.error ?? 'Request failed.');
     return result;
