@@ -26,6 +26,7 @@ Checks run TypeScript, HTTP integration tests, the client build and Chromium bro
 
 ## Shared development foundation
 
+- [Proposed shared Google Workspace sessions and worker authority](docs/SHARED_AUTHENTICATION.md) — private API module, review/adoption plan and setup; existing fixture dashboards are not hosted authentication.
 - [Builder conventions and session rules](AGENTS.md)
 - [Project scope and confirmed baseline](docs/PROJECT_SCOPE.md)
 - [Project status and next tasks](docs/PROJECT_STATUS.md)

@@ -14,9 +14,15 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "build": "tsc --noEmit && vite build",
-    "check": "npm run typecheck && npm test && npm run build && npm run test:e2e"
+    "check": "npm run typecheck && npm test && npm run build && npm run test:e2e",
+    "pretypecheck": "tsx scripts/prepare-marketing-consumer.ts",
+    "pretest": "tsx scripts/prepare-marketing-consumer.ts",
+    "prebuild": "tsx scripts/prepare-marketing-consumer.ts",
+    "auth:serve": "tsx server/identity-index.ts",
+    "auth:operator": "tsx scripts/identity-operator.ts"
   },
   "dependencies": {
+    "google-auth-library": "11.3.4",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "zod": "^4.6.7"

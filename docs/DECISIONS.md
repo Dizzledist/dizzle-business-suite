@@ -95,3 +95,11 @@ Source: user's explicit request to build the local invoice-to-warehouse demo aft
 | L05 | HTTP integration tests + Playwright Chromium user flows; PR Actions run typecheck/tests/build/browser checks | No deployment permissions or live credentials; approved acceptance specs have only the scoped coverage documented in LOCAL_DEMO |
 
 See [LOCAL_DEMO](LOCAL_DEMO.md) for reproducible behavior and [CONTRACTS](CONTRACTS.md) for consumer boundaries. Owner/admin and sales manager release permissions remain distinct from fixture simulation grants; price lists, COAs and marketing are outside this branch.
+
+## AUTH01 � shared Google Workspace implementation, November 12, 2026
+
+Source: user's explicit shared-authentication task for the hosted publishing pilot; active lead Cheddr with Codex. Authorizes a separate task branch, real Google Workspace session implementation and server-managed current grants, scoped worker authentication and fixture-only validation. Supersedes earlier task-bound identity scaffolding hold for this slice. It does not authorize deployment, production migrations, real provider writes, live publishing or a merge.
+
+Conflict recorded: Sales branch a81ddae selected password login on November 8 and deferred Google. It is unmerged with no Sales PR found. The current instruction selects Google for this new shared slice; Sales password code is unchanged. Both builders must jointly review common session/schema/principal/grant adoption and an explicit preserving migration or isolated empty staging plan. No silent email-based linking or parallel deployed identity authorities.
+
+Proposed technical choices for review: generic opaque cookie sessions adapted from the pending Sales primitives, Google OIDC with immutable issuer/subject binding, private explicit SQLite schema/operator, server-side grants read per request, and a separate hashed/expiring/revocable organization-scoped worker credential. The worker may ask only whether one server-resolved job remains authorized, never supply an actor or grant. Unknown verified users remain pending. All consumer wiring is still pending; see [shared authentication](SHARED_AUTHENTICATION.md). Existing approved business permissions and canonical employee/account assignment rules remain binding.

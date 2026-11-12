@@ -126,3 +126,11 @@ User authorized a local implementation on November 6; this does not resolve prov
 - Warehouse projection contains source reference, customer, required items, Orders status and review flag; it omits invoice balances and release-audit reasons. This concrete local projection is for both builders to review before broader warehouse implementation.
 
 The local route/data representation and fixtures are implementation choices, not changes to approved R01-R03. Both builders review shared consumers; no new Zoho behavior, warehouse stage, stock transaction, invoice creation or external messaging contract is introduced.
+
+## Proposed shared C1 runtime interface, November 12, 2026
+
+The current user authorizes shared real-session implementation; [SHARED_AUTHENTICATION](SHARED_AUTHENTICATION.md) records source/review status, Google/password conflict, schema and adoption boundaries. [shared/identity.ts](../shared/identity.ts) proposes `EmployeeContext` (canonical employee ID, organization and current server-managed grants) and a trusted `PublishingResourceResolver`. Neither browser nor worker may supply authoritative identity, organization, grants or approval facts. Google issuer/subject is bound privately to an employee; matching email is insufficient.
+
+The scoped worker submits job ID plus approved fingerprint and authenticates separately. The API resolves current approval/destination from the domain consumer and checks the active approving employee's current review/publish grants. Unavailable or denied authorization holds queued work for review. PR #5's durable one-selected-job control and immediate pre-write recheck remain mandatory. No business permission is added by this technical grant vocabulary.
+
+Affected consumers needing shared review: Sales CRM session/UI/domain actor mapping, Marketing API/files/AI and worker authorization, operator provisioning and both dashboards' CSRF integration. Main has no merged real-session code; Sales a81ddae and Marketing PR #5 2ad2e46 are unmerged. This contract is a proposed extraction, not evidence that either consumer already adopted it. No production Sales migration or account ownership replacement is included.

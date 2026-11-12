@@ -111,3 +111,25 @@ Next task: sales manager:
 Next task: user / marketing lead:
 Next safe shared foundation step:
 ```
+
+## Session 2026-11-12 / Cheddr with Codex: shared authentication foundation
+
+Task / active lead: User's shared Google Workspace employee-session and authenticated publishing-worker task; Cheddr with Codex. Separate worktree and branch `feat/shared-google-workspace-auth` from fetched main `d4afc223d7313274ecea75f3655d2188abbbbbd6`; clean starting tree. Marketing worktree/PR #5 remains at `2ad2e46`, Sales branch at `a81ddae`; neither consumer was changed.
+
+Branch / stable reference: `feat/shared-google-workspace-auth`, commit subject `feat: add shared Google Workspace sessions and worker authority`; draft PR against main will carry the publication reference. Main remains unchanged.
+
+What changed: Shared immutable Google principal/employee/current-grant interfaces, maintained Google OIDC verification, durable opaque secure-cookie sessions and CSRF, explicit version-1 private SQLite migration/operator, narrow hashed/expiring workload credentials and loopback authorization API/client. Pending identities receive no session/grants. Standalone auth host deliberately returns 503 for publishing until a trusted PR #5 resolver is adopted. No existing fixture dashboard is exposed or silently converted.
+
+Shared review: Sales session primitives are adapted with provenance, not accepted as reviewed. Main has no merged real-session implementation; no Sales PR found, PR #5 remains draft without submitted review. Current user's Google direction conflicts with Sales November 8 password decision; recorded in AUTH01 without changing Sales. Both builders must review common schema/cookie/grants, employee-ID preserving migration, Sales role/mapping and Marketing API/worker adoption together. No parallel deployed auth stores.
+
+Checks: `npm run check` passed typecheck, 67 Vitest tests, build and 3 Chromium tests; after adding a session-restart regression, final `npm run typecheck` and `npm test` passed with 68 tests. All 61 local Markdown links resolved; whitespace checks passed. Actual PR #5 queue/worker/pilot source pinned at 2ad2e46 is archived only into ignored fixture output. Isolated Google fixtures/mocked SDK verification and temporary SQLite/test adapters cover disabled/revoked/wrong-org/bad-worker authority, unavailable source -> Needs Review, pre-write revocation, selected-job payload changes and restart/replay/second-job denial. No real Google/X calls or live login validated. No separate lint configured. Node SQLite experimental and NO_COLOR/FORCE_COLOR warnings remain; npm install reported zero vulnerabilities and a transitive deprecation warning.
+
+Schema/environment: New explicit identity schema only, never startup migrations; no real database initialized. Names: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_WORKSPACE_DOMAIN, AUTH_PUBLIC_ORIGIN, DIZZLE_ORGANIZATION_ID, SHARED_IDENTITY_DB, SHARED_AUTH_PORT. Worker credential is privately written to an operator-selected file; consumer runtime path wiring remains pending. See SHARED_AUTHENTICATION for one-host identity/queue/pilot/encrypted-provider storage and ACL/backup requirements.
+
+External actions: Fetched/read origin and GitHub PR/commit metadata, read official Google/X documentation, installed npm dependency; task branch push/draft PR publication follows local checks. No consumer push, merge, deploy, real employee provisioning, production migration, OAuth connection, provider purchase or post. Live publishing gates unchanged/off.
+
+Blockers / next Sales manager: Open/review Sales session code jointly with this extraction; review Google/password adoption and canonical employee/schema/mapping migration, mount one shared sign-in and current session actor without losing domain permissions.
+
+Next marketing lead: PR #5 adopts the authenticated client and trusted job resolver, removes hosted fixture authority, uses common cookie/CSRF for API/files/AI, retains both execution checks and immutable pilot control. Verify real login privately before exposure. X app for @cheddrco_ is not configured; verified numeric ID, OAuth access/credits, owned host/TLS/operator and future exact approval packet remain pending. Prior proposed time is not reusable approval.
+
+Next safe shared step: Joint review of this draft foundation, then separate consumer adoption with private staging verification. No public deployment, migrations or live post authorized.

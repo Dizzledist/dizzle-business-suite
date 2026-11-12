@@ -1,5 +1,9 @@
 # Repository conventions
 
+## Current task supersession, November 12, 2026
+
+The user's shared authentication task authorizes a separate branch from current main for Google Workspace employee sessions, server-managed grants and scoped publishing-worker authentication with isolated tests. This supersedes the earlier task-bound production-identity scaffolding exclusion for this implementation slice only. Sales authentication remains unmerged and requires joint review; no parallel deployed authority, production migration, live publishing, merge or deployment is authorized. See [shared authentication](docs/SHARED_AUTHENTICATION.md).
+
 ## Baseline and current boundary
 
 Read [README](README.md), [project scope](docs/PROJECT_SCOPE.md), [status](docs/PROJECT_STATUS.md) and the latest [handoff](docs/HANDOFF.md) at the start of every session. The scope is the agreed business baseline; record subsequent explicit decisions in [DECISIONS](docs/DECISIONS.md) with source, date and superseded rule. Do not silently resolve contradictions.
