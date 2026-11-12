@@ -133,3 +133,5 @@ Blockers / next Sales manager: Open/review Sales session code jointly with this 
 Next marketing lead: PR #5 adopts the authenticated client and trusted job resolver, removes hosted fixture authority, uses common cookie/CSRF for API/files/AI, retains both execution checks and immutable pilot control. Verify real login privately before exposure. X app for @cheddrco_ is not configured; verified numeric ID, OAuth access/credits, owned host/TLS/operator and future exact approval packet remain pending. Prior proposed time is not reusable approval.
 
 Next safe shared step: Joint review of this draft foundation, then separate consumer adoption with private staging verification. No public deployment, migrations or live post authorized.
+
+Publication: [draft PR #6](https://github.com/Dizzledist/dizzle-business-suite/pull/6), implementation `3a54481d969042f80992acc60101ae996cfa792a`. Pushed only `feat/shared-google-workspace-auth`; no merge or consumer update. GitHub connector PR creation was unavailable (403 integration permission), so the repository's existing Git credential created the draft through GitHub's API. Hosted CI is tracked separately from local evidence.

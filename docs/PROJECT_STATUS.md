@@ -49,3 +49,5 @@ Q01-Q04 remain open: actual Zoho origin/organization/data-center mapping, paymen
 Department dashboards, marketing studio/Assets, live integration, infrastructure, deployment and operational cutover remain future tasks. Replit remains operational; this demo does not replace any production writer.
 
 Shared task outcome: Proposed shared implementation and setup/adoption guide are in [SHARED_AUTHENTICATION](SHARED_AUTHENTICATION.md). Local `npm run check` passed typecheck, 68 tests, build and 3 Chromium tests. Existing fixture dashboards and both consumer branches remain untouched. The standalone module's publishing resolver intentionally remains unavailable until PR #5 adopts the trusted interface. Real Google login, employee provisioning, Sales migration, consumer wiring, host/TLS and X account setup remain blockers to public staging. Live publishing stays off.
+
+Review: [draft shared-auth PR #6](https://github.com/Dizzledist/dizzle-business-suite/pull/6), implementation `3a54481`. Shared foundation is proposed for joint review; Sales and PR #5 adoption remain separate follow-up work.
