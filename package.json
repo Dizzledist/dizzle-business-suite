@@ -20,7 +20,8 @@
     "social:connect": "tsx scripts/social-connect.ts",
     "social:reconcile": "tsx scripts/social-reconcile.ts",
     "social:staging:check": "tsx scripts/social-staging-preflight.ts",
-    "social:pilot:verify": "vitest run tests/social-pilot.test.ts"
+    "social:pilot:verify": "vitest run tests/social-pilot.test.ts tests/publishing-controls.test.ts",
+    "social:pilot:select": "tsx scripts/social-pilot-select.ts"
   },
   "dependencies": {
     "react": "^19.3.1",

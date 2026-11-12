@@ -2,7 +2,15 @@
 
 Updated: November 11, 2026 (America/Los_Angeles).
 
-## Current task: first hosted social pilot preparation
+## Current task: execution authorization and one-post X pilot restriction
+
+Active lead: Cheddr with Codex. User authorizes fresh execution-time publishing permission/destination checks and a durable one-selected-job restriction bound to numeric X identity/caption/image/time for @cheddrco_. Verified draft PR #5 head 609c7ab before edits. Use existing identity service and test adapters; keep live gates false. Shared API/worker/control-storage review required; no public auth, OAuth, live sends or deployment.
+
+Implemented: worker default-deny execution controls, current API authorization at claim and immediately before public send, fresh connected-account metadata, exact current approval/creative validation and tampered image/payload holds. Runtime requires one immutable selection for @cheddrco_ and its verified numeric X ID; a full-payload fingerprint and durable consumed attempt block second jobs, changes, replay and uncertain retries. New control database stays in the same private persistent root. See [pilot selection and setup](SOCIAL_PILOT_STAGING.md). No real account/job was selected or sent; live gates remain false.
+
+Verification: npm run check passes typecheck, 112 tests across seven suites, build and 9 Chromium tests. Tests cover revocation/disable/read/org changes, current account disconnection/ID/handle/brand changes, before-send recheck, second job, caption/version/time/hash/byte tampering, restart/replay, uncertain response, competing worker connections, one-use adapter authorization and actual API grant/account denials. The independent worker now needs API authority online; no-browser execution remains supported. Local worker was restarted with new restrictions; production fixture identity transport still blocks public exposure/live use.
+
+## Previous task: first hosted social pilot preparation
 
 Active lead: Cheddr with Codex. User requests review of PR #5 / 96e8fc8, restart/due-time/exactly-once demonstration with test adapters, a private one-host Cheddr staging setup and concrete account/live-test approval checklist. Verified current draft PR head before changes. Scope: review evidence, stable private storage configuration, staging artifacts and test-only verification. Live publishing remains disabled; no account connection, public exposure or deployment. Shared storage/auth boundaries need both builders' review.
 

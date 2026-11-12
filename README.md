@@ -10,7 +10,7 @@ The marketing branch includes campaigns, internal content scheduling, server-sid
 
 **Approved social publishing:** Calendar now has connected Instagram/X destinations, exact-image review, a persistent queue, a separate test worker and manual posting records. Live publishing remains hard-disabled. See [provider/account setup and hosting requirements](docs/SOCIAL_PUBLISHING.md).
 
-The [first Cheddr staging pilot](docs/SOCIAL_PILOT_STAGING.md) targets `@cheddrco_` after X app setup. It includes private one-host templates, stable shared storage, restart verification and an exact live-test proposal. It is not deployed and does not expose fixture authentication publicly.
+The [first Cheddr staging pilot](docs/SOCIAL_PILOT_STAGING.md) targets `@cheddrco_` after X app setup. It includes private one-host templates, stable shared storage, restart verification and an exact live-test proposal. It now enforces fresh execution authorization and a durable single selected job/attempt. It is not deployed and does not expose fixture authentication publicly.
 
 ## Run the local workflow
 

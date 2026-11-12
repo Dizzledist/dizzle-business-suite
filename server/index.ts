@@ -12,7 +12,9 @@ const { api } = localPorts(process.env);
 
 if (process.env.NODE_ENV === 'production') throw new Error('Local fixture API cannot run in production mode.');
 const { store, directory: publishingDirectory } = publishingStorage();
-const accounts = [...testAccounts, ...new SocialAccountVault(publishingDirectory).accounts()];
-const server = createApi(undefined, { store, publishingQueue: new PublishingQueue(join(publishingDirectory, 'publishing.sqlite')), accounts });
+const vault = new SocialAccountVault(publishingDirectory);
+const currentAccounts = () => [...testAccounts, ...vault.accounts()];
+const accounts = currentAccounts();
+const server = createApi(undefined, { store, publishingQueue: new PublishingQueue(join(publishingDirectory, 'publishing.sqlite')), accounts, resolveAccount: id => currentAccounts().find(account => account.id === id) ?? null });
 server.listen(api, '127.0.0.1', () => console.log(`Dizzle fixture API: http://127.0.0.1:${api}`));
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => server.close(() => process.exit(0)));

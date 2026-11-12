@@ -1,3 +1,4 @@
+import { fixturePublishingControls } from './fixtures/publishing-controls';
 import { describe, it, expect, vi } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -20,13 +21,13 @@ const payload = (overrides: Partial<PublishPayload> = {}): PublishPayload => ({ 
 const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 describe('durable approved publishing queue', () => {
-  it('publishes a persisted test job in a separate worker process with no API or browser running', () => {
+  it('holds a persisted test job when a separate worker cannot obtain current API authorization', () => {
     const dir = mkdtempSync(join(tmpdir(), 'dizzle-worker-')); let queue: PublishingQueue | undefined;
     try {
       queue = new PublishingQueue(join(dir, 'publishing.sqlite'));
       const job = queue.enqueue(payload({ publishAt: '2020-01-01T00:00:00.000Z' }), image, now); queue.close(); queue = undefined;
-      const child = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/social-worker.ts', '--once'], { env: { ...process.env, DIZZLE_PUBLISHING_DIR: dir }, encoding: 'utf8', timeout: 15_000 });
-      expect(child.status).toBe(0); queue = new PublishingQueue(join(dir, 'publishing.sqlite')); expect(queue.get(job.id).state).toBe('published');
+      const child = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/social-worker.ts', '--once'], { env: { ...process.env, DIZZLE_PUBLISHING_DIR: dir, DIZZLE_API_PORT: '65530' }, encoding: 'utf8', timeout: 15_000 });
+      expect(child.status).toBe(0); queue = new PublishingQueue(join(dir, 'publishing.sqlite')); expect(queue.get(job.id).state).toBe('needs_review');
     } finally { queue?.close(); rmSync(dir, { recursive: true, force: true }); }
   });
   it('waits for simulated time, survives restart, and only one of two workers sends', async () => {
@@ -36,7 +37,7 @@ describe('durable approved publishing queue', () => {
       expect(a.enqueue(p, image, now).id).toBe(job.id); a.close();
       a = new PublishingQueue(join(dir, 'queue.sqlite')); b = new PublishingQueue(join(dir, 'queue.sqlite'));
       const adapter = new TestPublishingAdapter(); let clock = '2026-11-12T19:59:59.000Z';
-      const workerA = new PublishingWorker(a, () => adapter, () => clock), workerB = new PublishingWorker(b, () => adapter, () => clock);
+      const workerA = new PublishingWorker(a, () => adapter, () => clock, false, fixturePublishingControls()), workerB = new PublishingWorker(b, () => adapter, () => clock, false, fixturePublishingControls());
       expect(await workerA.tick()).toBe(false); clock = now;
       await Promise.all([workerA.tick(), workerB.tick()]);
       expect(adapter.calls).toEqual([job.id]); expect(b.get(job.id).state).toBe('published');
@@ -45,13 +46,13 @@ describe('durable approved publishing queue', () => {
   });
   it('keeps live destinations queued while the publishing switch is off', async () => {
     const q = new PublishingQueue(), adapter = new TestPublishingAdapter();
-    try { const job = q.enqueue(payload({ account: { ...testAccounts[0], mode: 'live' } }), image, now); expect(await new PublishingWorker(q, () => adapter, () => now).tick()).toBe(false); expect(q.get(job.id).state).toBe('scheduled'); expect(adapter.calls).toHaveLength(0); } finally { q.close(); }
+    try { const job = q.enqueue(payload({ account: { ...testAccounts[0], mode: 'live' } }), image, now); expect(await new PublishingWorker(q, () => adapter, () => now, false, fixturePublishingControls()).tick()).toBe(false); expect(q.get(job.id).state).toBe('scheduled'); expect(adapter.calls).toHaveLength(0); } finally { q.close(); }
   });
   it('holds uncertain writes, reconciles positively, and never blindly retries', async () => {
     const q = new PublishingQueue();
     try {
       const adapter = new TestPublishingAdapter(); adapter.publish = async (job, _image, checkpoint) => { adapter.calls.push(job.id); checkpoint({ testReceipt: job.id }); throw new PublishingError('Timed out', true); };
-      const job = q.enqueue(payload(), image, now), worker = new PublishingWorker(q, () => adapter, () => now);
+      const job = q.enqueue(payload(), image, now), worker = new PublishingWorker(q, () => adapter, () => now, false, fixturePublishingControls());
       await worker.tick(); expect(q.get(job.id).state).toBe('needs_review'); expect(await worker.tick()).toBe(false);
       expect(() => q.cancel(job.id, 'marketing')).toThrow(); expect(() => q.manual(job.id, 'marketing', 'https://www.instagram.com/p/one/', now)).toThrow();
       expect((await worker.reconcile(job.id)).state).toBe('published'); expect(adapter.calls).toHaveLength(1);
@@ -72,7 +73,7 @@ describe('fixed-host provider adapters', () => {
     const q = new PublishingQueue(); try {
       const transport = vi.fn().mockResolvedValue(response({ data: { id: '10001', username: 'renamed_account' } }));
       const adapter = new XAdapter(async () => 'private', transport);
-      await expect(adapter.publish(q.enqueue(payload({ account: testAccounts[1] }), image, now), image, () => {})).rejects.toThrow('identity/handle changed');
+      await expect(adapter.publish(q.enqueue(payload({ account: testAccounts[1] }), image, now), image, () => {}, async () => {})).rejects.toMatchObject({ uncertain: true });
       expect(transport).toHaveBeenCalledTimes(1);
     } finally { q.close(); }
   });
@@ -80,7 +81,7 @@ describe('fixed-host provider adapters', () => {
     const transport = vi.fn().mockResolvedValueOnce(response({ data: { id: '10001', username: 'cheddr_test' } })).mockResolvedValueOnce(response({ data: { id: '123', media_key: '3_123' } })).mockResolvedValueOnce(response({ data: { id: '456' } }));
     const adapter = new XAdapter(async () => 'private-token', transport); const q = new PublishingQueue();
     try { const job = q.enqueue(payload({ account: testAccounts[1] }), image, now); const checkpoints: any[] = [];
-      expect(await adapter.publish(job, image, v => checkpoints.push(v))).toEqual({ id: '456', url: 'https://x.com/i/status/456' });
+      expect(await adapter.publish(job, image, v => checkpoints.push(v), async () => {})).toEqual({ id: '456', url: 'https://x.com/i/status/456' });
       expect(transport.mock.calls[1][0]).toBe('https://api.x.com/2/media/upload'); expect(JSON.parse(transport.mock.calls[1][1].body).media).toBe(image.toString('base64'));
       expect(JSON.parse(transport.mock.calls[2][1].body).media.media_ids).toEqual(['123']); expect(checkpoints[0]).toEqual({ mediaId: '123', mediaKey: '3_123' });
     } finally { q.close(); }
@@ -97,13 +98,13 @@ describe('fixed-host provider adapters', () => {
       const transport = vi.fn().mockResolvedValueOnce(response({ data: [{ user_id: '10001', username: 'cheddr_test' }] })).mockResolvedValueOnce(response({ id: '111' })).mockResolvedValueOnce(response({ status_code: 'FINISHED' })).mockResolvedValueOnce(response({ id: '222' })).mockResolvedValueOnce(response({ error: 'private-token' }, 500));
       const adapter = new InstagramAdapter(async () => 'private-token', 'v27.0', async () => 'https://media.example.test/image.jpg?signature=private', transport);
       const job = q.enqueue(payload(), image, now); const checkpoints: any[] = [];
-      expect(await adapter.publish(job, image, value => checkpoints.push(value))).toEqual({ id: '222', url: undefined });
+      expect(await adapter.publish(job, image, value => checkpoints.push(value), async () => {})).toEqual({ id: '222', url: undefined });
       expect(transport.mock.calls[1][1].body.get('image_url')).toContain('https://media.example.test'); expect(transport.mock.calls[3][1].body.get('creation_id')).toBe('111'); expect(checkpoints.at(-1).postId).toBe('222');
     } finally { q.close(); }
   });
   it('redacts upstream failures and marks post-create network timeouts uncertain', async () => {
     const transport = vi.fn().mockResolvedValueOnce(response({ data: { id: '10001', username: 'cheddr_test' } })).mockResolvedValueOnce(response({ data: { id: '123' } })).mockRejectedValueOnce(new Error('secret-token'));
-    const q = new PublishingQueue(); try { const adapter = new XAdapter(async () => 'secret-token', transport); const job = q.enqueue(payload(), image, now); await expect(adapter.publish(job, image, () => {})).rejects.toMatchObject({ uncertain: true }); } finally { q.close(); }
+    const q = new PublishingQueue(); try { const adapter = new XAdapter(async () => 'secret-token', transport); const job = q.enqueue(payload(), image, now); await expect(adapter.publish(job, image, () => {}, async () => {})).rejects.toMatchObject({ uncertain: true }); } finally { q.close(); }
   });
 });
 describe('AI drafts have no publishing authority', () => {

@@ -17,9 +17,9 @@ npm run dev
 npm run social:worker
 ```
 
-The worker is a separate process. Closing the browser does not stop it. Closing the worker or sleeping/shutting down the computer does stop local scheduling; an always-on host is required for dependable unattended operation. Test destinations are clearly marked `@cheddr_test`; their receipts are simulations, never Instagram/X posts. The live worker gate is a literal `false` in `scripts/social-worker.ts`, with a separate false gate in the reconciliation command. There is no browser or environment toggle that enables live posting in this PR.
+The worker is a separate process. Closing the browser does not stop it. Current execution authorization now requires the API to remain available; if unavailable it holds the job for review. The runtime worker additionally requires an explicitly selected one-post Cheddr X job; see the staging runbook before starting it. Closing the worker or sleeping/shutting down the computer does stop local scheduling; an always-on host is required for dependable unattended operation. Test destinations are clearly marked `@cheddr_test`; their receipts are simulations, never Instagram/X posts. The live worker gate is a literal `false` in `scripts/social-worker.ts`, with a separate false gate in the reconciliation command. There is no browser or environment toggle that enables live posting in this PR.
 
-Worker claims are atomic across SQLite connections/processes. A two-minute lease and durable provider checkpoints protect each job. Expired claims become Needs Review, never a new send. Checkpoints fence old workers before public writes. No public POST is automatically retried, including after timeout, restart or malformed success response. A definite rejection becomes Failed; edit/renew approval for another attempt. An uncertain result cannot be canceled, edited, retried or marked as a new manual post.
+Worker claims are atomic across SQLite connections/processes. A two-minute lease and durable provider checkpoints protect each job. Expired claims become Needs Review, never a new send. Checkpoints fence old workers before public writes. No public POST is automatically retried, including after timeout, restart or malformed success response. A definite rejection becomes Failed. The one-post pilot reservation is never released for another automatic attempt; renewed content approval alone cannot reset it. An uncertain result cannot be canceled, edited, retried or marked as a new manual post.
 
 For an uncertain job:
 
@@ -94,7 +94,7 @@ For Instagram media, configure `SOCIAL_MEDIA_ORIGIN` (public HTTPS) and private 
 
 An operator must provision an always-on Node host, persistent disk, process supervision/restart policy, encrypted secret storage/backups, clock synchronization and TLS/media routing. This implementation can run its queue and worker on one host; separate Render API/worker services cannot be assumed to share a local disk. A multi-host design needs an explicitly reviewed PostgreSQL queue and private object-storage integration. Vercel frontend hosting alone does not run this worker. No provider hosting account, deployment operator, resources or cost commitments were selected here.
 
-Before a live test: finish identity/hosting/account setup, identify the operator, review the exact account/image/caption/time and explicitly authorize that one test post. Then separately review changing the worker's hard-off gate and bounded test scope. Connecting an account or approving a calendar item alone does not enable live publishing in this PR.
+Before a live test: finish shared real-identity/hosting/account setup, identify the operator, review the exact account/image/caption/time and explicitly authorize that one test post. Execution-time checks and the durable one-job restriction are now implemented against the existing API; production workload authentication and durable employee administration are still required. Then separately review changing the worker's hard-off gate and bounded test scope. Connecting an account or approving a calendar item alone does not enable live publishing in this PR.
 
 ## AI proposals
 

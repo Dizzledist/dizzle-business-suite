@@ -26,7 +26,9 @@ The marketing branch still uses the server-defined `X-Demo-Identity` fixture sel
 
 **Do not publicly proxy the UI or `/api`.** Removing the production guard, setting development mode on an internet-facing app, adding a proxy password or hiding the dropdown would not implement shared employee permissions. Private fixture staging may be accessed by a named operator through SSH forwarding with synthetic records only.
 
-Before any live hosted pilot, integrate the reviewed real identity/session/organization/grant boundary. The worker currently consumes frozen approval metadata; it does **not** re-query current employee/reviewer grants or offboarding at execution time. [PERMISSIONS](PERMISSIONS.md) requires revocation to apply to queued work. This must be addressed using the shared reviewed service, without creating a parallel auth layer. The global hard-off gate also needs a separately reviewed **one-job/account scope** before one live test; simply enabling every overdue live job is unacceptable. These are blockers, not completed features or permission to change gates now.
+The execution-time controls are now implemented and tested: the worker queries the existing API authorization service for current employee publishing/review grants, active/read/organization state, current connected destination and exact approved payload/image. It checks once at claim and again immediately before a public write. Missing/stale/denied authority goes to Needs Review without sending. Runtime uses the current API Workflow and freshly read connected-account metadata, not a copied employee-grant file or cached approval decision. The API must therefore remain running even when the browser is closed; an API outage holds work safely.
+
+The persistent one-job/account restriction below is implemented, but **public authentication is still blocked**. The API and worker authorization transport currently use local fixture identities. Before exposure or live use, integrate the shared reviewed real identity/session/organization/grant source, durable offboarding/revocation and authenticated workload delegation for worker lookups; never deploy X-Demo-Identity or impersonate an approver header in production. Fixture grant resets are not durable employee administration. No parallel auth layer was introduced. [PERMISSIONS](PERMISSIONS.md) remains authoritative. Keep both live gates false.
 
 Other blockers: X developer app/credits/scopes and verified numeric user ID; appointed host/operator; a private persistent disk and backup/restore procedure; exact image/content/future-time approval. The proposed source image is still a draft, not an approved real product image.
 
@@ -42,6 +44,7 @@ Use one Linux host with reviewed Node 24.x, one service user `dizzle-staging`, o
 | Marketing approval history and file bytes | `<root>/state.json`, API single writer |
 | Queue, frozen JPEGs, events, receipts | `<root>/publishing.sqlite` and its `-wal`/`-shm` sidecars, API/worker access |
 | Encrypted provider credentials | `<root>/social-accounts.json`, OAuth/refresh writer; API reads metadata only |
+| One-post selection and consumed attempt | `<root>/pilot-control.sqlite` and its sidecars; immutable selected job/fingerprint/numeric account, durable single-attempt reservation |
 | Refresh lock | `<root>/token-refresh.lock`, exclusive rotation lock; inspect after stopping workers if orphaned |
 | API | 127.0.0.1:3001; never publicly proxied |
 | Optional private test UI | 127.0.0.1:5173, SSH only |
@@ -53,6 +56,22 @@ Set **both** `DIZZLE_MARKETING_DIR` and `DIZZLE_PUBLISHING_DIR` to that same roo
 All processes must run as the same service user and use the same private EnvironmentFile and local disk. The AES-GCM vault key must remain stable across releases and be recoverable separately from encrypted backups. Never rotate it casually, expose it as VITE_* or replace the encrypted vault with plaintext tokens. Stop API/worker/connection/refresh processes for a coherent first-pilot backup, then back up the entire root including SQLite sidecars and a separately protected key reference. Restore into an isolated private directory, keep live gates off and rerun the pilot checks before use. Do not copy laptop business history, secrets or real customers into this synthetic staging environment.
 
 ## Prepared service/configuration artifacts
+
+### Select exactly one pilot job
+
+Stop the worker while preparing/approving/queueing the entry, then run under the same private server environment:
+
+```sh
+npm run social:pilot:select -- <approved-scheduled-job-id> <verified-numeric-X-account-id>
+```
+
+Selection uses the API's current authorization decision, not a user-supplied role or handle alone. It requires a scheduled, approved Cheddr X entry for `@cheddrco_`; the numeric ID must match the connected profile previously verified during OAuth. IDs in tests are synthetic; the owner's real numeric ID remains unknown until connection. Selection does not enable live publishing or make a provider call.
+
+The new **separate** version-1 `pilot-control.sqlite` has one immutable slot; it does not migrate the existing queue. Its full-payload fingerprint binds job ID, organization, numeric account ID/handle/mode, exact caption, approved image version/hash, scheduled UTC instant and approval identity/snapshot/time. The worker reserves its one attempt atomically before calling an adapter. Any different job, changed payload/image, other account, replay or already-consumed slot is held for review. The adapter must request a second fresh authorization immediately before its public write; it cannot receive two write permissions in one invocation.
+
+The restriction is durable across worker/queue restarts and multiple SQLite connections. An uncertain response, crash or later permission denial never releases the consumed attempt. There is no reset/reassign command. Do not delete the control database, restore an old unused copy, or start another root to bypass the restriction. Back up it and its sidecars together with queue/history; a restore must remain live-off pending reconciliation of provider receipts and consumption history. A new pilot is a separate explicit review, not an automatic retry.
+
+The runtime worker is now restricted to this selected pilot even for test destinations. Existing unselected due entries go to Needs Review. Older broad test-worker examples are historical; the test suites use explicit injected test-only controls or isolated one-post stores. `npm run social:pilot:verify` covers the restart demo and the new permission/scope controls without creating a real selection in the user's data directory.
 
 Templates are in [deploy/social-pilot](../deploy/social-pilot/cheddr-staging.env.example): API, worker and optional media systemd units, private environment example and provider-route nginx snippet. They were prepared on Windows and **have not been installed or executed on a Linux host**. Node/TypeScript preflight and application behavior are tested locally; Linux unit/proxy validation remains an operator step. Node's experimental SQLite and the existing Vite loader warning remain visible.
 
@@ -87,7 +106,7 @@ The service units intentionally use private development fixture mode and keep th
 - [ ] Stop the worker; run `npm run social:connect -- x cheddr` on the host as the service user with its private environment. One option is a reviewed `systemd-run` transient command using `--property=EnvironmentFile=/etc/dizzle/cheddr-staging.env`, the code WorkingDirectory and the same uid. Do not paste secrets into shell arguments/history.
 - [ ] Open the printed authorization URL and sign into **@cheddrco_**. Keep the SSH callback forward or temporary HTTPS callback route available. The callback listener lasts five minutes; code exchange starts immediately. No employee login flow is created by this provider connection.
 - [ ] Verify the returned handle **and numeric user ID** before accepting the connection. The optional expected-handle guard rejects a different authorized handle before writing credentials. Restart API to reload verified metadata; preserve the same key and encrypted file when restarting worker. Do not enable live gates.
-- [ ] Review the approval packet below and resolve every auth/hosting/one-job-scope blocker before requesting authorization for a real post.
+- [ ] Review the approval packet below and resolve every auth/hosting/one-job-scope blocker and select only the explicitly approved job before requesting authorization for a real post.
 
 Official references rechecked: [X OAuth/PKCE/scopes/callback matching](https://docs.x.com/fundamentals/authentication/oauth-2-0/authorization-code), [X image upload](https://docs.x.com/x-api/media/upload-media), [X current credits/prices](https://docs.x.com/x-api/getting-started/pricing). Console access/credits remain unverified; no purchase/read/write API call was made. Optional OpenAI image/caption secrets are deliberately omitted from this test-pilot environment.
 

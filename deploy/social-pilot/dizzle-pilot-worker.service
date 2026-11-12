@@ -1,6 +1,7 @@
 [Unit]
 Description=Dizzle Cheddr test-only social publishing worker
-After=network.target
+After=network.target dizzle-pilot-api.service
+Requires=dizzle-pilot-api.service
 RequiresMountsFor=/var/lib/dizzle/cheddr-staging
 StartLimitIntervalSec=60
 StartLimitBurst=3

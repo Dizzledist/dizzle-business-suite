@@ -5,6 +5,7 @@ import { demoEvents } from '../shared/contracts';
 import { ApiError, Workflow } from './workflow';
 import { MarketingService } from './marketing';
 import type { ImageGenerator } from './image-generation';
+import { PublishingHold } from './publishing/authorization';
 import type { SocialAccount } from '../shared/publishing';
 import { join } from 'node:path';
 import { PublishingQueue } from './publishing/queue';
@@ -53,7 +54,7 @@ function send(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
   res.end(JSON.stringify(data));
 }
-export function createApi(workflow = new Workflow(), options: { generator?: ImageGenerator; store?: MarketingStore; publishingQueue?: PublishingQueue; accounts?: SocialAccount[]; drafter?: CaptionDrafter } = {}) {
+export function createApi(workflow = new Workflow(), options: { generator?: ImageGenerator; store?: MarketingStore; publishingQueue?: PublishingQueue; accounts?: SocialAccount[]; resolveAccount?: (id: string) => SocialAccount | null; drafter?: CaptionDrafter } = {}) {
   const marketing = new MarketingService(workflow, options.generator, options.store, options.publishingQueue ?? (options.store ? new PublishingQueue(join(options.store.directory, 'publishing.sqlite')) : undefined), options.accounts, options.drafter);
   const ports = localPorts(process.env);
   const server = createServer(async (req, res) => {
@@ -73,6 +74,13 @@ export function createApi(workflow = new Workflow(), options: { generator?: Imag
       if (req.method === 'POST' && path === '/api/marketing/social/propose') {
         const input = z.object({ brandId: z.string(), brief: z.string().min(1).max(2000), platform: z.enum(['Instagram', 'X']) }).strict().parse(await body(req));
         return send(res, 200, await marketing.proposeSocial(actor, input.brandId, input.brief, input.platform));
+      }
+      const authorizePublishing = /^\/api\/marketing\/publishing-jobs\/([a-z0-9-]+)\/authorize$/.exec(path);
+      if (req.method === 'POST' && authorizePublishing) {
+        if (actor.organizationId !== 'demo-o1' || !actor.marketingGrants.includes('asset:publish') || !actor.marketingGrants.includes('asset:review')) throw new ApiError(403, 'Publishing review permission required.');
+        const input = z.object({ fingerprint: z.string().regex(/^[a-f0-9]{64}$/) }).strict().parse(await body(req));
+        const job = marketing.publishingQueue.get(authorizePublishing[1]);
+        return send(res, 200, await marketing.authorizePublishing(actor, job.id, input.fingerprint, options.resolveAccount?.(job.payload.account.id)));
       }
       const cancelSocial = /^\/api\/marketing\/publishing-jobs\/([a-z0-9-]+)\/cancel$/.exec(path);
       if (req.method === 'POST' && cancelSocial) return send(res, 200, marketing.cancelSocial(actor, cancelSocial[1]));
@@ -155,7 +163,8 @@ export function createApi(workflow = new Workflow(), options: { generator?: Imag
       }
       throw new ApiError(404, 'Route not found.');
     } catch (error) {
-      if (error instanceof ApiError) send(res, error.status, { error: error.message });
+      if (error instanceof PublishingHold) send(res, 409, { error: error.message });
+      else if (error instanceof ApiError) send(res, error.status, { error: error.message });
       else if (error instanceof z.ZodError) send(res, 400, { error: 'Invalid request fields. Check the required values and permitted fields for this action.' });
       else send(res, 500, { error: 'Local API error.' });
     }

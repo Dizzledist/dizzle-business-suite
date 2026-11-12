@@ -16,6 +16,7 @@ export function stagingPreflight(env: Record<string, string | undefined>, option
     catch { blockers.push('Persistent storage must be an absolute private path outside the checkout.'); }
   }
   return { readyForPrivateTestStaging: blockers.length === 0, publicExposureAllowed: false, livePublishingEnabled: false,
+    pilotSelectionRequired: true, authorityApiRequired: true,
     account: '@cheddrco_', accountReadiness: 'Not verified by preflight; confirm OAuth identity and console endpoint access.', blockers,
     privateSettingsPresent: Object.fromEntries(['X_CLIENT_ID', 'X_CLIENT_SECRET', 'SOCIAL_TOKEN_KEY', 'SOCIAL_OAUTH_REDIRECT_URI'].map(name => [name, !!env[name]])) };
 }

@@ -1,5 +1,6 @@
 import { randomUUID, createHash } from 'node:crypto';
 import sharp from 'sharp';
+import { assertPublishingAuthority, publishingFingerprint, PublishingHold } from './publishing/authorization';
 import { PublishingQueue } from './publishing/queue';
 import { OpenAICaptionDrafter, type CaptionDrafter } from './publishing/drafts';
 import { testAccounts } from './publishing/adapters';
@@ -503,6 +504,21 @@ export class MarketingService {
     this.require(actor, 'campaign:write'); this.brand(brandId);
     const kit = this.brandKits.find(kit => kit.brandId === brandId)!;
     return this.drafter.propose({ brief, platform, earliest: new Date().toISOString(), brandDirection: JSON.stringify(kit) });
+  }
+  async authorizePublishing(actor: Identity, id: string, fingerprint: string, account?: SocialAccount | null) {
+    this.require(actor, 'asset:publish'); this.require(actor, 'asset:review');
+    const job = this.publishingQueue.get(id), item = this.contentItem(job.payload.contentId);
+    assertPublishingAuthority(job, actor, account === undefined ? this.socialAccounts.find(a => a.id === job.payload.account.id) ?? null : account);
+    if (!['scheduled', 'publishing'].includes(job.state) || publishingFingerprint(job) !== fingerprint || item.status !== 'scheduled' ||
+      item.caption !== job.payload.caption || item.plannedAt !== job.payload.publishAt || item.linkedVersionId !== job.payload.versionId || item.destinationAccountId !== job.payload.account.id || item.destinationAccount !== job.payload.account.handle ||
+      item.approvalSnapshot !== job.payload.approvalSnapshot || item.approvedAt !== job.payload.approvedAt || item.approvedBy !== job.payload.approvedBy || item.approvalSnapshot !== this.contentSnapshot(item))
+      throw new PublishingHold('Current approval or job payload no longer matches. Hold for review.');
+    this.validateLinkedVersion(item.linkedAssetId, item.linkedVersionId, item.brandId);
+    const original = this.files.get(item.linkedVersionId!)!;
+    const jpeg = await sharp(original.body).rotate().resize({ width: 1440, withoutEnlargement: true }).flatten({ background: '#ffffff' }).toColourspace('srgb').jpeg({ quality: 95 }).toBuffer();
+    if (createHash('sha256').update(jpeg).digest('hex') !== job.payload.imageHash) throw new PublishingHold('Queued image differs from the approved creative.');
+    assertPublishingAuthority(job, actor, account === undefined ? this.socialAccounts.find(a => a.id === job.payload.account.id) ?? null : account);
+    return { fingerprint };
   }
   cancelSocial(actor: Identity, id: string) { this.require(actor, 'campaign:write'); return this.publishingQueue.cancel(id, actor.id); }
   markSocialPosted(actor: Identity, contentId: string, url: string, at: string, confirmExisting = false) {
