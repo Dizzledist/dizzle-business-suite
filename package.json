@@ -21,13 +21,19 @@
     "social:reconcile": "tsx scripts/social-reconcile.ts",
     "social:staging:check": "tsx scripts/social-staging-preflight.ts",
     "social:pilot:verify": "vitest run tests/social-pilot.test.ts tests/publishing-controls.test.ts",
-    "social:pilot:select": "tsx scripts/social-pilot-select.ts"
+    "social:pilot:select": "tsx scripts/social-pilot-select.ts",
+    "pretypecheck": "tsx scripts/prepare-marketing-consumer.ts",
+    "pretest": "tsx scripts/prepare-marketing-consumer.ts",
+    "prebuild": "tsx scripts/prepare-marketing-consumer.ts",
+    "auth:serve": "tsx server/identity-index.ts",
+    "auth:operator": "tsx scripts/identity-operator.ts"
   },
   "dependencies": {
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "sharp": "^0.35.5",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "google-auth-library": "11.3.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.0",

@@ -72,6 +72,16 @@ Next for Cheddr: choose a fixture-backed marketing home/Assets draft-review slic
 
 Historical Phase 1 status below is retained as the record before PR #3 merged; its draft/base references are not the current integration state. Setup verification and publication are recorded in the latest handoff.
 
+Updated: November 12, 2026 (America/Los_Angeles).
+
+## Current task: shared Google Workspace sessions and worker authority
+
+Lead: Cheddr with Codex; separate feat/shared-google-workspace-auth from fetched origin/main d4afc22. Scope: shared session/employee-grant foundation, Google OIDC and scoped worker authentication; local fixture/provider tests only. No deployment, real login/provider writes or live publishing. Sales a81ddae sessions/password code remains unmerged without a PR; extract reusable session primitives for joint review rather than accepting its branch as approved. Current user selects Google Workspace for this task; the Sales branch's November 8 password decision is recorded as an unresolved cross-branch adoption issue, with no change to that branch. Marketing PR #5 head 2ad2e46 is a pinned integration-test consumer, not a merged dependency.
+
+## Previous foundation status
+
+Updated: November 6, 2026 (America/Los_Angeles).
+
 ## Verified starting state and current task
 
 Repository: Dizzledist/dizzle-business-suite, origin `https://github.com/Dizzledist/dizzle-business-suite.git`. Phase 0 PR #1 merged as `19662f7cd731a64828801d52e825d5406be98633`. Fetched origin/main was that commit and ancestry was verified before creating **feat/phase-1-local-workflow**. Starting tracked tree was clean; `dizzle-business-suite.code-workspace` remains untracked/excluded.
@@ -109,3 +119,7 @@ Q01-Q04 remain open: actual Zoho origin/organization/data-center mapping, paymen
 | Both builders | Review the local C1-C5 mapping and remaining permission/terms-dispute decisions. Reconcile the separate Assets proposal in PR #2 independently |
 
 Department dashboards, marketing studio/Assets, live integration, infrastructure, deployment and operational cutover remain future tasks. Replit remains operational; this demo does not replace any production writer.
+
+Shared task outcome: Proposed shared implementation and setup/adoption guide are in [SHARED_AUTHENTICATION](SHARED_AUTHENTICATION.md). Local `npm run check` passed typecheck, 68 tests, build and 3 Chromium tests. Existing fixture dashboards and both consumer branches remain untouched. The standalone module's publishing resolver intentionally remains unavailable until PR #5 adopts the trusted interface. Real Google login, employee provisioning, Sales migration, consumer wiring, host/TLS and X account setup remain blockers to public staging. Live publishing stays off.
+
+Review: [draft shared-auth PR #6](https://github.com/Dizzledist/dizzle-business-suite/pull/6), implementation `3a54481`. Shared foundation is proposed for joint review; Sales and PR #5 adoption remain separate follow-up work.
