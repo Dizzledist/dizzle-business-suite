@@ -200,3 +200,13 @@ Next safe shared foundation step:
 - **Next: sales/accounting** · Select three existing invoice IDs with known first-send/resend/edit evidence and separately approve the seven GET attempts.
 - **Next: shared identity/Marketing lead** · Review documented cookie, schema, domain-grant and routing differences together before any branch integration. Do not replace the approved Sales login.
 - **Next safe shared step** · After approval, implement and mock-test a capped private operator runner, then perform only approved reads. Preserve all remaining activation gates.
+
+## Session 2026-11-12 / Codex: Controlled Zoho verification
+
+- **Task and lead** · Codex executed the user's Prompt #12A diagnostic after separate lookup and six-read approvals. Starting runtime reference `844e779`; same reconciliation worktree.
+- **External actions** · Exactly seven Inventory GET attempts succeeded: one scoped exact-number lookup and three selected detail/history pairs. Two permitted Accounts refreshes succeeded. No retry, pagination, Inventory write, PDF/payment read, import or reporting activation. The revised plan omitted organization listing with explicit user approval.
+- **Evidence result** · Three pending send-date assessments and three original-amount assessments unavailable in tested evidence. Selected records did not establish the intended October/resend/financial-edit cases. Local history times, minute precision, archival coverage and original revisions require corroboration. [Sanitized checkpoint](ZOHO_CONTROLLED_VERIFICATION.md)
+- **Privacy/preservation** · Exact IDs, financial observations, event references and diagnostic scripts remain in restricted private operator storage outside Git. No live customer data is committed. Original private configuration/grant digests matched. Read-only account checks found one active password administrator and no approved live binding. No production/database/other-worktree changes.
+- **Checks** · Preparation TypeScript and 263 Vitest passed. Across diagnostic phases, 43 mock checks and all seven live GETs passed. Prompt #11 build/28 Chromium results were not rerun during this operational task. Runtime source remains unchanged.
+- **Git** · Documentation-only local checkpoint on `feature/sales-crm-revenue-reconciliation`; no push, merge or deployment.
+- **Next safe task** · Separately approve independent mail/audit/original-copy corroboration and genuine October/resend/edit examples. Review timezone/precision, first-success semantics, original amounts/lines/credit and live tenant membership before import. The current API budget is exhausted; M5 remains blocked.

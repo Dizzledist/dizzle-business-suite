@@ -2,6 +2,14 @@
 
 Updated: November 12, 2026 (America/Los_Angeles).
 
+## Controlled Zoho verification · November 12
+
+Codex completed the separately approved Prompt #12A diagnostic from `844e779`. The [sanitized verification checkpoint](ZOHO_CONTROLLED_VERIFICATION.md) records the operational boundary.
+
+- Exactly seven approved Inventory GET attempts succeeded, with no retries, pagination, writes or import. The revised user-approved plan used one exact-number lookup and six detail/history reads. Two Accounts refreshes succeeded.
+- Historical send dates remain pending and original amounts remain unavailable in the tested evidence. The selected cohort did not establish the requested October/resend/financial-edit cases. Private records and financial values remain outside Git.
+- Existing password authentication and the administrator were preserved. No live tenant binding or dashboard activation occurred. **M5 remains blocked for live financial reporting.** The diagnostic budget is exhausted.
+
 ## Sales CRM revenue reconciliation · November 12
 
 Codex is the active implementation lead for the user's Prompt #11 on **feature/sales-crm-revenue-reconciliation**, based exactly on `a81ddae` in a separate worktree. The [implementation and compatibility report](SALES_CRM_REVENUE_RECONCILIATION.md) records the seven-request proposal and review gates.

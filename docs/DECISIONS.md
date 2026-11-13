@@ -125,3 +125,9 @@ Source: the user's Master Prompt #11. Codex is the active scoped implementation 
 The approved accounting rules remain first successful email, original subtotal, October 1 Los Angeles cutoff and immutable original credit. Preserve Management's invoice-date/current-total definition for comparison. Implement independent send and original-amount verification and synthetic administrator reconciliation. Prepare constrained live tenant binding without binding demo identities or changing the existing administrator.
 
 Main's Google/Marketing identity policy does not supersede Sales email/password for this task. Real tenant migration, original invoice evidence, bounded live test execution, broader discovery and profit activation remain separate review gates. [Implementation report](SALES_CRM_REVENUE_RECONCILIATION.md)
+
+## Prompt #12A bounded operational approval, November 12, 2026
+
+Source: the user's explicit selection and two subsequent approvals. The user retained a seven-Inventory-GET limit, then approved replacing the original organization-list call with a single exact-number lookup. After review of the three numeric IDs, the user separately approved six detail/history GETs. No further discovery, retry, pagination, PDF/payment read, write, import or activation was authorized. The generic push/PR rule remains superseded by the user's no-push boundary.
+
+The diagnostic completed within that budget. First-success and original-value requirements remain unchanged. No unverified record becomes an official sale, and operational approval grants no live CRM tenant access. [Verification checkpoint](ZOHO_CONTROLLED_VERIFICATION.md)
