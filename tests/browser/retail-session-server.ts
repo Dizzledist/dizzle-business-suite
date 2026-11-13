@@ -1,0 +1,16 @@
+import { join } from 'node:path';
+import { marketingSessionFixture, editorGrants } from '../fixtures/marketing-session';
+import { principal } from '../fixtures/shared-identity';
+import { ReportingPreferences, migrateReportingPreferences } from '../../server/reporting/preferences';
+import { ReportingService } from '../../server/reporting/service';
+import { FixtureReportingSource } from '../../server/reporting/fixtures';
+if (process.env.NODE_ENV !== 'test') throw new Error('Retail fixture launcher is test-only. Never deploy it.');
+const api = Number(process.env.DIZZLE_API_PORT ?? 3403), web = Number(process.env.DIZZLE_WEB_PORT ?? 5575), origin = `http://127.0.0.1:${web}`;
+const f = await marketingSessionFixture(api, origin, root => { const path = join(root, 'preferences.sqlite'); migrateReportingPreferences(path); return new ReportingService(new FixtureReportingSource(), new ReportingPreferences(path)); });
+f.identity.changeAccess('sales-editor-17', 'pilot-org', true, [...editorGrants, 'retail:read', 'wholesale:read'], 'fixture-operator', ['marketing', 'owner', 'admin', 'sales_manager'], ['fixture-cheddr-us', 'fixture-cheddr-events']);
+f.google.selected = principal('google-sales-editor-17');
+const original = f.google.authorizationUrl.bind(f.google);
+f.google.authorizationUrl = (state, nonce) => { original(state, nonce); return origin + '/api/auth/google/callback?' + new URLSearchParams({ code: 'verified-fixture-code', state }); };
+console.log(`Retail analytics demo: ${origin} — test Google provider, synthetic data, no live Shopify/social calls.`);
+console.log(`Management adoption preview: ${origin}/tests/browser/retail-preview.html`);
+for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => { void f.close().then(() => process.exit(0)); });

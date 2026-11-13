@@ -12,12 +12,13 @@ import { SinglePostPilot } from '../../server/publishing/pilot-control';
 import { TestImageGenerator } from './image-generator';
 import { TestCaptionDrafter } from '../../server/publishing/drafts';
 import { testAccounts } from '../../server/publishing/adapters';
+import type { ReportingService } from '../../server/reporting/service';
 import { FixtureGoogle, principal } from './shared-identity';
 import type { EmployeeGrant } from '../../shared/identity';
 export const editorGrants: EmployeeGrant[] = ['workspace:read', 'campaign:write', 'creative:generate', 'asset:read:all'];
 export const reviewerGrants: EmployeeGrant[] = ['workspace:read', 'campaign:write', 'asset:review', 'asset:publish', 'asset:read:all'];
 export const pilotTime = '2030-11-12T20:00:00.000Z';
-export async function marketingSessionFixture(port?: number, publicOrigin?: string) {
+export async function marketingSessionFixture(port?: number, publicOrigin?: string, reportingFactory?: (directory: string) => ReportingService) {
   const root = mkdtempSync(join(tmpdir(), 'dizzle-marketing-session-')), db = join(root, 'identity.sqlite');
   migrateIdentity(db); let clock = Date.now(); const identity = new IdentityStore(db, () => clock);
   for (const [id, organizationId, grants] of [['sales-editor-17', 'pilot-org', editorGrants], ['sales-reviewer-42', 'pilot-org', reviewerGrants], ['other-org', 'other-org', reviewerGrants]] as const)
@@ -27,7 +28,7 @@ export async function marketingSessionFixture(port?: number, publicOrigin?: stri
   const queue = new PublishingQueue(join(root, 'publishing.sqlite')); let pilot = new SinglePostPilot(join(root, 'pilot-control.sqlite'));
   const account = { ...testAccounts[1], handle: '@cheddrco_' };
   let accountReads = 0; const controls = { unavailable: false, onAccountRead: (_count: number) => {} };
-  const server = createApi(undefined, { generator: new TestImageGenerator(), drafter: new TestCaptionDrafter(), store: new MarketingStore(join(root, 'marketing')), publishingQueue: queue, accounts: [account],
+  const server = createApi(undefined, { reporting: reportingFactory?.(root), generator: new TestImageGenerator(), drafter: new TestCaptionDrafter(), store: new MarketingStore(join(root, 'marketing')), publishingQueue: queue, accounts: [account],
     resolveAccount: () => { controls.onAccountRead(++accountReads); if (controls.unavailable) throw new Error('Fixture authorization unavailable'); return account; },
     authentication: { store: identity, google, origin: publicOrigin ?? base, workerOrigin: base, organizationId: 'pilot-org', allowLoopbackHttp: true } });
   server.listen(port, '127.0.0.1'); await once(server, 'listening');

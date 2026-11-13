@@ -1,5 +1,9 @@
 # Repository conventions
 
+## Phase 1 retail analytics task, November 13, 2026
+
+The current user authorizes fixture-backed Shopify retail analytics on a separate branch from main, shared-session role/org/store checks, explicit shared identity role/store schema extension and per-user/dashboard preferences, plus a dev-only management component preview. Main has no merged management analytics dashboards; future Sales/management adoption is documented, not imported. This supersedes earlier task-bound exclusions for this reporting slice only. Keep Shopify store calls and social publishing off, Sales authentication/migration separate, the PR draft/unmerged and deployment unauthorized. See [retail analytics](docs/RETAIL_ANALYTICS.md).
+
 ## Marketing sign-in integration task, November 12, 2026
 
 The current user authorizes an isolated branch combining PR #5/#6 candidates, shared employee session/CSRF adoption for hosted Marketing, authenticated worker checks and a synthetic Sales migration rehearsal. This supersedes the earlier Marketing consumer-adoption deferral on this branch only. Preserve both source PRs; joint review remains required. No Sales login replacement, real migration, deployment, merge to main or live publishing is authorized. See [integration guide](docs/MARKETING_SHARED_SIGNIN.md).

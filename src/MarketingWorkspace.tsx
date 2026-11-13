@@ -1,3 +1,4 @@
+import { RetailAnalytics } from './RetailAnalytics';
 import { apiFetch } from './transport';
 import { useEffect, useRef, useState } from 'react';
 import type { AssetPublication, ContentItem, GenerationJob, MarketingAsset, MarketingWorkspaceData, SalesAssetView } from '../shared/contracts';
@@ -92,6 +93,7 @@ export function MarketingWorkspace({ identity, section, setSection }: { identity
 
   const filteredData = { ...data, content, assets, campaigns };
   const page = {
+    retail: { title: 'Retail Analytics', description: 'A clear view of Shopify merchandise sales, by authorized store.', number: '07' },
     home: { title: 'Marketing overview', description: 'Your campaigns, creative and next steps. All in view.', number: '01' },
     calendar: { title: 'Content calendar', description: 'Turn the campaign brief into a clear plan.', number: '02' },
     studio: { title: 'Image studio', description: 'A dedicated space to shape your next creative.', number: '03' },
@@ -103,7 +105,7 @@ export function MarketingWorkspace({ identity, section, setSection }: { identity
     <div className="workspace-context"><span><i/>LOCAL PREVIEW</span><time>{new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).format(new Date())}<span className="context-timezone"> · Pacific time</span></time></div>
     <div className="marketing-heading">
       <div><span className="eyebrow">DIZZLE / MARKETING <span className="section-number">{page.number}</span></span><h1>{page.title}</h1><p>{page.description}</p></div>
-      {section !== 'studio' && section !== 'brands' && <label className="brand-filter">WORKING ACROSS<select aria-label="Brand filter" value={brandId} onChange={event => setBrandId(event.target.value)}><option value="all">All brands</option>{data.brands.map(brand => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label>}
+      {section !== 'studio' && section !== 'brands' && section !== 'retail' && <label className="brand-filter">WORKING ACROSS<select aria-label="Brand filter" value={brandId} onChange={event => setBrandId(event.target.value)}><option value="all">All brands</option>{data.brands.map(brand => <option key={brand.id} value={brand.id}>{brand.name}</option>)}</select></label>}
     </div>
     {error && <div className="alert error" role="alert">{error}</div>}
     {notice && <div className="alert success" role="status">{notice}</div>}
@@ -133,6 +135,7 @@ export function MarketingWorkspace({ identity, section, setSection }: { identity
     {section === 'studio' && <StudioView data={data} busy={busy} act={act} api={api} identity={identity}/>}
     {section === 'review' && <ReviewView data={filteredData} notes={reviewNotes} setNotes={setReviewNotes} busy={busy} act={act} setSection={setSection} identity={identity}/>}
     {section === 'brands' && <BrandKitSettings data={data} identity={identity} busy={busy} act={act}/>}
+    {section === 'retail' && <RetailAnalytics/>}
     {section === 'assets' && <AssetsView data={filteredData} busy={busy} act={act} api={api} identity={identity}/>}
     <details className="workspace-disclosure"><summary>Sample workspace <span>Internal planning & publishing only</span></summary><p>{data.fixtureNotice} Demo review rule: no self-approval; Owner reviews and publishes. All audiences are recipient snapshots.</p></details>
   </section>;

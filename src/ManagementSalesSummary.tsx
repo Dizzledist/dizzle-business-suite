@@ -1,0 +1,13 @@
+import { useCallback, useEffect, useState } from 'react';
+import type { ManagementDashboard, ManagementReport } from '../shared/retail-reporting';
+import { apiFetch } from './transport';
+import { money } from './RetailAnalytics';
+export function ManagementSalesSummary({ dashboard, from, to }: { dashboard: ManagementDashboard; from: string; to: string }) {
+  const [report, setReport] = useState<ManagementReport | null>(null), [error, setError] = useState(''), [busy, setBusy] = useState(false), [pendingInclude, setPendingInclude] = useState<boolean | null>(null);
+  const load = useCallback(async () => { const r = await apiFetch(`/api/reporting/management/${dashboard}?` + new URLSearchParams({ from, to })); const data = await r.json(); if (!r.ok) throw new Error(data.error); setReport(data); }, [dashboard, from, to]);
+  useEffect(() => { setReport(null); setError(''); void load().catch(e => setError(e.message)); }, [load]);
+  return <section className="retail-card management-sales" aria-label={dashboard + ' reporting'}><h2>{dashboard.replaceAll('_', ' ')} · channel sales</h2><p>DEMO · {from} – {to} · Pacific · net merchandise sales</p>{error && <p role="alert">{error}</p>}
+    <label><input type="checkbox" aria-label={`Include Shopify sales · ${dashboard}`} checked={pendingInclude ?? report?.includeShopify ?? false} disabled={!report || busy} onChange={async e => { const includeShopify = e.target.checked; setPendingInclude(includeShopify); setBusy(true); setError(''); try { const r = await apiFetch(`/api/reporting/management/${dashboard}/preference`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ includeShopify }) }); if (!r.ok) throw new Error((await r.json()).error); setReport(null); await load(); } catch (e) { setError(e instanceof Error ? e.message : 'Reporting unavailable.'); } finally { setBusy(false); setPendingInclude(null); } }}/>Include Shopify sales</label>
+    {report && <><p data-testid={`${dashboard}-wholesale`}>Zoho wholesale: {report.wholesale.available && report.wholesale.netSalesMinor !== null ? money(report.wholesale.netSalesMinor, report.wholesale.currency) + ' ' + report.wholesale.currency : 'Unavailable'}</p>{report.includeShopify && <>{report.retail.map(r => <p key={r.label}>{r.label}: {r.available && r.netSalesMinor !== null ? money(r.netSalesMinor, r.currency) + ' ' + r.currency : 'Unavailable'}</p>)}<strong data-testid={`${dashboard}-combined`}>Combined: {report.combined ? money(report.combined.netSalesMinor, report.combined.currency) + ' ' + report.combined.currency : 'Unavailable'}</strong></>}<p>{report.explanation}</p></>}
+  </section>;
+}

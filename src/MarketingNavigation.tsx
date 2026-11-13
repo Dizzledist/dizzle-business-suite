@@ -1,6 +1,6 @@
 import type { KeyboardEvent } from 'react';
 
-export type MarketingSection = 'home' | 'calendar' | 'studio' | 'review' | 'assets' | 'brands';
+export type MarketingSection = 'home' | 'calendar' | 'studio' | 'review' | 'assets' | 'brands' | 'retail';
 
 export const marketingSections = [
   { id: 'home', label: 'Home', description: 'Your marketing overview' },
@@ -8,6 +8,7 @@ export const marketingSections = [
   { id: 'studio', label: 'Image Studio', description: 'Create & refine' },
   { id: 'review', label: 'Review', description: 'Content & creative approval' },
   { id: 'assets', label: 'Assets', description: 'Approved for sales' },
+  { id: 'retail', label: 'Retail Analytics', description: 'Shopify sales & products' },
   { id: 'brands', label: 'Brand Kits', description: 'References & guidelines' },
 ] as const;
 
@@ -18,6 +19,7 @@ export function MarketingIcon({ name, className = '' }: { name: MarketingSection
     studio: 'm12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5ZM20 2v4m-2-2h4',
     review: 'm8 12 3 3 5-6M9 3H5a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1h-4M9 2h6v4H9Z',
     assets: 'M3 7h7l2-3h9v16H3ZM3 11h18',
+    retail: 'M4 20V10m5 10V4m6 16v-7m5 7V7M2 22h21',
     brands: 'M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 2-2c0-1-1-2-1-3a2 2 0 0 1 2-2h3a2 2 0 0 0 2-2 9 9 0 0 0-9-9ZM7 9h.01M10 6h.01M15 6h.01M18 9h.01',
     arrow: 'M5 12h14m-6-6 6 6-6 6',
     menu: 'M4 6h16M4 12h16M4 18h16',

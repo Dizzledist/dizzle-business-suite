@@ -11,6 +11,8 @@ import { join } from 'node:path';
 import { PublishingQueue } from './publishing/queue';
 import type { CaptionDrafter } from './publishing/drafts';
 import { MarketingStore } from './marketing-store';
+import type { ReportingService } from './reporting/service';
+import type { EmployeeContext } from '../shared/identity';
 import { createSharedAuthApi, type SharedAuthOptions } from './auth/api';
 import { marketingActor } from './auth/marketing-actor';
 import type { Identity } from '../shared/contracts';
@@ -57,11 +59,11 @@ function send(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
   res.end(JSON.stringify(data));
 }
-export function createApi(workflow = new Workflow(), options: { generator?: ImageGenerator; store?: MarketingStore; publishingQueue?: PublishingQueue; accounts?: SocialAccount[]; resolveAccount?: (id: string) => SocialAccount | null; drafter?: CaptionDrafter; authentication?: Omit<SharedAuthOptions, 'resolvePublishingResource' | 'handleEmployeeRequest' | 'afterLogin'> } = {}) {
+export function createApi(workflow = new Workflow(), options: { generator?: ImageGenerator; store?: MarketingStore; publishingQueue?: PublishingQueue; accounts?: SocialAccount[]; resolveAccount?: (id: string) => SocialAccount | null; drafter?: CaptionDrafter; reporting?: ReportingService; authentication?: Omit<SharedAuthOptions, 'resolvePublishingResource' | 'handleEmployeeRequest' | 'afterLogin'> } = {}) {
   if (!options.authentication && (process.env.DIZZLE_AUTH_MODE === 'employee' || process.env.AUTH_PUBLIC_ORIGIN || process.env.NODE_ENV && !['development', 'test'].includes(process.env.NODE_ENV))) throw new Error('Fixture API is restricted to local development/tests.');
   const marketing = new MarketingService(options.authentication ? { identities: [], isAssignedToAccount: () => false } : workflow, options.generator, options.store, options.publishingQueue ?? (options.store ? new PublishingQueue(join(options.store.directory, 'publishing.sqlite')) : undefined), options.accounts, options.drafter, options.authentication?.organizationId ?? 'demo-o1', !options.authentication);
   const ports = localPorts(process.env);
-  const handle = async (req: IncomingMessage, res: ServerResponse, authenticatedActor?: Identity) => {
+  const handle = async (req: IncomingMessage, res: ServerResponse, authenticatedActor?: Identity, employee?: EmployeeContext) => {
     try {
       const host = new URL(options.authentication?.origin ?? `http://${req.headers.host ?? ''}`);
       if (!authenticatedActor && !['127.0.0.1', 'localhost', '[::1]'].includes(host.hostname)) throw new ApiError(403, 'Local host required.');
@@ -74,6 +76,7 @@ export function createApi(workflow = new Workflow(), options: { generator?: Imag
       // It is deliberately not production authentication and only runs on loopback.
       const id = req.headers['x-demo-identity'];
       const actor = authenticatedActor ?? workflow.authenticate(typeof id === 'string' ? id : undefined);
+      if (path.startsWith('/api/reporting/')) { if (!employee) throw new ApiError(401, 'Shared employee sign-in required for reporting.'); if (!options.reporting) throw new ApiError(503, 'Retail reporting is not configured. No live or demo fallback.'); return await options.reporting.handle(req, res, employee); }
       if (req.method === 'GET' && path === '/api/workspace') return send(res, 200, authenticatedActor ? { identity: actor, invoices: [], jobs: [], fixtureNotice: 'Private Marketing pilot; live publishing OFF.' } : workflow.workspace(actor));
       if (req.method === 'GET' && path === '/api/marketing/workspace') return send(res, 200, marketing.workspace(actor));
       if (req.method === 'POST' && path === '/api/marketing/social/propose') {
@@ -176,7 +179,7 @@ export function createApi(workflow = new Workflow(), options: { generator?: Imag
     }
   };
   const server = options.authentication ? createSharedAuthApi({ ...options.authentication, afterLogin: '/',
-    handleEmployeeRequest: async (req, res, employee) => { await handle(req, res, marketingActor(employee)); },
+    handleEmployeeRequest: async (req, res, employee) => { await handle(req, res, marketingActor(employee), employee); },
     resolvePublishingResource: async id => {
       const job = marketing.publishingQueue.get(id), auth = options.authentication!;
       const employee = auth.store.employee(job.payload.approvedBy, auth.organizationId);
@@ -187,6 +190,6 @@ export function createApi(workflow = new Workflow(), options: { generator?: Imag
       return { organizationId: job.payload.organizationId, approvedBy: job.payload.approvedBy, fingerprint, approvalCurrent: true, destinationMatches: true };
     },
   }) : createServer((req, res) => { void handle(req, res); });
-  server.on('close', () => marketing.publishingQueue.close());
+  server.on('close', () => { marketing.publishingQueue.close(); options.reporting?.close(); });
   return server;
 }
