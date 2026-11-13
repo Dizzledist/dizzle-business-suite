@@ -186,3 +186,17 @@ Next safe shared foundation step:
 - **Changes** · Invoice name fallback, reusable synthetic cost and profit formulas, and a pinned fixture runner comparing the original implementation with Business Suite. No new API or database schema is needed.
 - **Checks** · TypeScript, build, 224 Vitest and 27 Chromium checks passed, including six new parity cases. The reference capture uses a fake provider and database.
 - **Open work** · Sales verifies first-send evidence and original invoice values. Shared integration review approves the tenant binding and the cost source, currency and effective-date rules before live reporting. Samples integration stays deferred.
+
+## Session 2026-11-12 / Codex: Revenue reconciliation preparation
+
+- **Task and lead** · Codex completed the synthetic implementation authorized by Prompt #11. Sales/accounting and shared identity owners review evidence and tenant policy.
+- **Git reference** · `feature/sales-crm-revenue-reconciliation`, exact parent `a81ddaed3e838e0a03256578b8faae3650d1e6b8`; commit subject `Prepare synthetic revenue reconciliation and tenant binding`. No remote branch or PR was created.
+- **Compatibility** · Fetched main `928a45c`; parity-only 8 / main-only 17. Reviewed Marketing routing, shared Google sessions/grants/schema, developer tooling and the dry-run Sales adoption plan. Applied no main changes and retained password login.
+- **Changes and contracts** · Independent evidence checks/history, immutable original normalized snapshots, administrator-only synthetic comparison, constrained inactive provider binding and a pure seven-read proposal. [Full report](SALES_CRM_REVENUE_RECONCILIATION.md)
+- **Checks** · TypeScript and build passed, 263 Vitest tests across 17 files, 28 Chromium checks across four isolated modes. The original Management 414 / CRM 300 fixture result is retained. Final password browser mode passed after the currency display update. No lint script exists.
+- **Schema/configuration** · Reporting migration 003 adds evidence/snapshots/history. Identity migration 003 adds the binding table. Optional names `SALES_ZOHO_TENANT_ID`, `SALES_ZOHO_APPROVAL_REFERENCE` are documented and unset. Only disposable test databases were migrated.
+- **External actions** · Fetched Git heads and read official documentation. No Zoho requests, actual PDF retrieval, employee credential change, import, binding activation, push, merge or deployment. Existing worktrees, encrypted grant and administrator store preserved.
+- **Blockers** · Provider first-success/retention/timezone semantics and historical amounts/lines remain unverified. Real tenant membership, retention and the capped diagnostic runner need review. Financial sync stays off.
+- **Next: sales/accounting** · Select three existing invoice IDs with known first-send/resend/edit evidence and separately approve the seven GET attempts.
+- **Next: shared identity/Marketing lead** · Review documented cookie, schema, domain-grant and routing differences together before any branch integration. Do not replace the approved Sales login.
+- **Next safe shared step** · After approval, implement and mock-test a capped private operator runner, then perform only approved reads. Preserve all remaining activation gates.

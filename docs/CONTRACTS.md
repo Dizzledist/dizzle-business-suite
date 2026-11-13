@@ -130,3 +130,15 @@ The local route/data representation and fixtures are implementation choices, not
 ## Sales reporting detail and document contracts
 
 [shared/reporting.ts](../shared/reporting.ts) adds initial coverage metadata to the existing report and current line, reconciliation, and payment fields to invoice detail. An active employee password session and the existing tenant and credited-user invoice scope guard the synthetic PDF and product endpoints. The Sales CRM report and detail are the UI consumers. The finance and identity reviewers must approve the original-revision evidence and server-owned provider binding before live use. [Invoice details guide](SALES_CRM_INVOICE_DETAILS.md)
+
+## Prompt #11 revenue evidence and binding contracts
+
+Consumers are Sales reporting, invoice detail/product reports and the administrator's synthetic reconciliation view. The active lead is Codex under the user's November 12 Prompt #11. Sales/accounting and shared identity reviewers must approve provider evidence and future tenant integration before live activation.
+
+- `shared/reconciliation.ts` defines independent send and original-amount checks, provenance/review metadata, supported reasons and per-currency comparison. A trusted send review additionally attests success and first send. Schema validation does not establish external truth.
+- The existing reporting database keeps current and original normalized documents separately. Original lines require the existing explicit original-revision evidence. Source refreshes cannot overwrite frozen recognized amounts, quantities or credit. Legacy approved states remain compatible without manufacturing missing snapshots.
+- `GET /api/sales-crm/reconciliation` is restricted to active password administrators of `demo-o1`; query parameters accept dates/page only. Data is synthetic. Reps/managers, other tenants and fixture-header impersonation receive no reconciliation access.
+- `GET/PUT /api/sales-crm/auth/admin/zoho-binding` uses the same password administrator/session layer. The server fixes provider organization 821729823 and optionally names a reviewed non-demo tenant. Mutations require CSRF, exact approved reference, optimistic revision and audit. Browser tenant/organization overrides are forbidden. This foundation always reports live access disabled and never connects reports to the provider.
+- General live sync budgets and the proposed seven-attempt diagnostic budget are different operational contracts. The diagnostic cannot reuse automatic retries unchanged. No transport is added by the pure plan helper.
+
+Reporting migration 003 and identity migration 003 are additive and tested on disposable stores. Do not apply the main branch's separate shared-identity migration loader to these stores. [Detailed report and approval proposal](SALES_CRM_REVENUE_RECONCILIATION.md)

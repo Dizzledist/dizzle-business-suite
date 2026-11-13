@@ -3,6 +3,7 @@ import { openSqliteDatabase } from '../../sqlite';
 import type { ZohoInvoice } from '../zoho/invoice';
 import { exactInstant, moneyUnits, settlement, type RecognitionEvidence } from './model';
 import { saveInvoiceDetails } from './invoice-details';
+import { reviewedRecognition, saveEvidenceReview } from './evidence';
 
 export { transaction } from '../../sqlite';
 
@@ -10,6 +11,7 @@ export function openReportingDatabase(path: string) {
   return openSqliteDatabase(path, [
     new URL('./migrations/001-invoice-reporting.sql', import.meta.url),
     new URL('./migrations/002-invoice-details.sql', import.meta.url),
+    new URL('./migrations/003-revenue-evidence.sql', import.meta.url),
   ]);
 }
 
@@ -20,7 +22,7 @@ export function saveSalesperson(db: DatabaseSync, organization: string, source: 
 }
 
 // Called inside the same transaction as the durable queue acknowledgement.
-export function upsertInvoice(db: DatabaseSync, invoice: ZohoInvoice, evidence: RecognitionEvidence, now: number) {
+export function upsertInvoice(db: DatabaseSync, invoice: ZohoInvoice, input: RecognitionEvidence, now: number) {
   const { organizationId, invoiceId } = invoice;
   const existing = db.prepare(`SELECT first_email_at, evidence_source, evidence_id, evidence_salesperson_id, verification, currency,
     CAST(recognized_subtotal AS TEXT) AS recognized_subtotal, credited_user_id, credited_name, source_modified_at
@@ -29,6 +31,7 @@ export function upsertInvoice(db: DatabaseSync, invoice: ZohoInvoice, evidence: 
   if (typeof existing?.source_modified_at === 'number' &&
       (sourceModified === null || sourceModified < existing.source_modified_at)) return;
 
+  const evidence = reviewedRecognition(input, now);
   const sourceSubtotal = moneyUnits(invoice.subtotal);
   const payment = settlement(invoice);
   let verifiedAt: number | null = null;
@@ -113,4 +116,7 @@ export function upsertInvoice(db: DatabaseSync, invoice: ZohoInvoice, evidence: 
     reviewReason, sourceModified, now,
   );
   saveInvoiceDetails(db, invoice, evidence, verification === 'verified', now);
+  db.prepare(`UPDATE reporting_invoices SET current_snapshot = ? WHERE organization_id = ? AND invoice_id = ?`)
+    .run(JSON.stringify(invoice), organizationId, invoiceId);
+  saveEvidenceReview(db, organizationId, invoiceId, evidence, now);
 }

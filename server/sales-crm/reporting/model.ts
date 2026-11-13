@@ -1,10 +1,12 @@
 import type { PaymentStatus } from '../../../shared/reporting';
 import type { ZohoInvoice } from '../zoho/invoice';
+import type { RevenueReview } from '../../../shared/reconciliation';
 
-export type RecognitionEvidence =
+export type RecognitionEvidence = (
   | { status: 'pending' | 'unavailable' | 'conflicting' }
   | { status: 'verified'; firstEmailAt: string; source: string; id: string; subtotal: string;
-      salespersonId: string | null; currency: string; originalLineRevision?: string };
+      salespersonId: string | null; currency: string; originalLineRevision?: string }
+) & { review?: RevenueReview };
 
 export const demoOrganization = 'demo-o1';
 const scale = 1_000_000n;

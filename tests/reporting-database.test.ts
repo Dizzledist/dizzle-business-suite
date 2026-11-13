@@ -56,9 +56,12 @@ describe('Reporting persistence and recognition', () => {
     }
     const upgraded = openReportingDatabase(oldFile);
     try {
-      expect(upgraded.prepare(`SELECT verification, first_email_at, recognized_subtotal, line_state
+      expect(upgraded.prepare(`SELECT verification, first_email_at, recognized_subtotal, line_state,
+        send_verification, amount_verification, original_snapshot, current_snapshot, send_evidence, amount_evidence
         FROM reporting_invoices WHERE invoice_id = '701'`).get()).toMatchObject({
         verification: 'verified', first_email_at: now, recognized_subtotal: 5000000, line_state: 'unavailable',
+        send_verification: 'verified', amount_verification: 'verified', original_snapshot: null, current_snapshot: null,
+        send_evidence: null, amount_evidence: null,
       });
       expect(upgraded.prepare('SELECT COUNT(*) AS count FROM reporting_invoice_lines').get()).toMatchObject({ count: 0 });
     } finally {
@@ -76,7 +79,7 @@ describe('Reporting persistence and recognition', () => {
     upsertInvoice(db, invoice(), { status: 'pending' }, now); // older snapshot cannot roll back settlement
     db.close();
     db = openReportingDatabase(file);
-    expect(db.prepare('PRAGMA user_version').get()).toMatchObject({ user_version: 2 });
+    expect(db.prepare('PRAGMA user_version').get()).toMatchObject({ user_version: 3 });
     expect(db.prepare('SELECT COUNT(*) AS count FROM reporting_invoices').get()).toMatchObject({ count: 1 });
     expect(row()).toMatchObject({ verification: 'verified', credited_user_id: 'rep-a', customer_id: '803',
       first_email_at: Date.parse(evidence.firstEmailAt), amount: '100230000', balance: '60250000', payment: 'partial' });

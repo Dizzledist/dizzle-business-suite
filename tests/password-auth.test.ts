@@ -16,6 +16,8 @@ import { openSqliteDatabase } from '../server/sqlite';
 import { reportingApi } from '../shared/reporting';
 import { passwordAuthApi, salesAuthApi, type SalesDirectory, type SalesRole } from '../shared/sales-auth';
 import { invoicePayload } from './fixtures/zoho-invoices';
+import { reconciliationApi } from '../shared/reconciliation';
+import { loadZohoBindingPolicy, zohoBindingApi, type ZohoBindingPolicy } from '../server/sales-crm/auth/zoho-binding';
 
 const origin = 'http://127.0.0.1:5173';
 const adminEmail = 'admin@example.test';
@@ -27,12 +29,12 @@ const admin = { name: 'Sample Admin', email: adminEmail, department: 'sales', te
 let api: ReturnType<typeof createApi> | undefined;
 let closeStores: (() => void) | undefined;
 
-async function start(options: { clock?: () => number; enabled?: boolean; configured?: boolean } = {}) {
+async function start(options: { clock?: () => number; enabled?: boolean; configured?: boolean; bindingPolicy?: ZohoBindingPolicy } = {}) {
   vi.stubEnv('NODE_ENV', 'test');
   vi.stubEnv('SALES_CRM_ENABLED', 'true');
   vi.stubEnv('SALES_CRM_AUTH_ENABLED', 'true');
   vi.stubEnv('SALES_CRM_PASSWORD_ENABLED', options.enabled === false ? 'false' : 'true');
-  const identity = openSalesIdentity(':memory:', options.clock);
+  const identity = openSalesIdentity(':memory:', options.clock, options.bindingPolicy);
   const reporting = await createSyntheticReporting({ path: ':memory:' });
   closeStores = () => { identity.close(); reporting.db.close(); };
   const passwords = await createPasswordAuth(identity);
@@ -107,6 +109,56 @@ afterEach(async () => {
 });
 
 describe('Company email and password authentication', () => {
+  it('limits reconciliation to password administrators of the synthetic tenant and rejects browser org changes', async () => {
+    const { administrator, send, cookieHeader, createEmployee, redeem, login } = await start();
+    expect((await send(reconciliationApi)).status).toBe(401);
+    expect((await send(reconciliationApi, 'GET', { 'X-Demo-Identity': 'admin' })).status).toBe(401);
+    const admin = await administrator('demo-o1');
+    const response = await send(reconciliationApi, 'GET', cookieHeader(admin));
+    expect(response.status).toBe(200);
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.body).not.toMatch(/password_hash|refresh_token|access_token|client_secret/);
+    for (const role of ['sales_rep', 'sales_manager'] as const) {
+      const employee = await createEmployee(admin, 'Recon ' + role, 'team', role);
+      await redeem(employee.email, employee.code);
+      const signed = (await login(employee.email)).cookie!;
+      expect((await send(reconciliationApi, 'GET', cookieHeader(signed))).status).toBe(403);
+      expect((await send(zohoBindingApi, 'GET', cookieHeader(signed))).status).toBe(403);
+    }
+    expect((await send(reconciliationApi + '?organizationId=821729823', 'GET', cookieHeader(admin))).status).toBe(400);
+    expect((await send(reconciliationApi, 'POST', cookieHeader(admin))).status).toBe(404);
+  });
+
+  it('keeps demo tenants ineligible for live binding even for their administrator', async () => {
+    const { administrator, send, cookieHeader, json } = await start();
+    const admin = await administrator('demo-o1');
+    const view = await send(zohoBindingApi, 'GET', cookieHeader(admin));
+    expect(JSON.parse(view.body)).toMatchObject({ eligible: false, state: 'unconfigured', liveAccess: false });
+    expect((await json(zohoBindingApi, { action: 'approve', expectedRevision: 0, approvalReference: 'owner-review' }, 'PUT', admin)).status)
+      .toBe(403);
+    expect(() => loadZohoBindingPolicy({ SALES_ZOHO_TENANT_ID: 'demo-o1', SALES_ZOHO_APPROVAL_REFERENCE: 'owner-review' })).toThrow();
+    expect(() => loadZohoBindingPolicy({ SALES_ZOHO_TENANT_ID: '821729823', SALES_ZOHO_APPROVAL_REFERENCE: 'owner-review' })).toThrow();
+  });
+
+  it('audits explicit tenant approval and revocation with CSRF and revision checks while keeping live access disabled', async () => {
+    const policy = { tenantId: 'dizzle-company', approvalReference: 'review-2026-11' };
+    const { administrator, send, cookieHeader, json, directory } = await start({ bindingPolicy: policy });
+    const token = await administrator(policy.tenantId);
+    expect((await send(reconciliationApi, 'GET', cookieHeader(token))).status).toBe(403);
+    const input = { action: 'approve', expectedRevision: 0, approvalReference: policy.approvalReference };
+    expect((await send(zohoBindingApi, 'PUT', { ...cookieHeader(token), 'Content-Type': 'application/json' },
+      JSON.stringify(input))).status).toBe(403);
+    expect((await json(zohoBindingApi, { ...input, tenantId: 'another-company' }, 'PUT', token)).status).toBe(400);
+    expect((await json(zohoBindingApi, { ...input, organizationId: '901' }, 'PUT', token)).status).toBe(400);
+    expect((await json(zohoBindingApi, { ...input, approvalReference: 'unapproved' }, 'PUT', token)).status).toBe(403);
+    const approved = await json(zohoBindingApi, input, 'PUT', token);
+    expect(approved.status).toBe(200);
+    expect(JSON.parse(approved.body)).toMatchObject({ tenantId: policy.tenantId, organizationId: '821729823',
+      state: 'approved', revision: 1, liveAccess: false });
+    expect((await json(zohoBindingApi, input, 'PUT', token)).status).toBe(409);
+    expect((await json(zohoBindingApi, { ...input, action: 'revoke', expectedRevision: 1 }, 'PUT', token)).status).toBe(200);
+    expect((await directory(token)).audit.filter(entry => entry.action === 'zoho-organization-binding-changed')).toHaveLength(2);
+  });
   it('serves synthetic PDFs only to an authenticated employee with matching invoice scope', async () => {
     const { administrator, createEmployee, identity, reporting, redeem, login, send, cookieHeader } = await start();
     const token = await administrator('demo-o1');

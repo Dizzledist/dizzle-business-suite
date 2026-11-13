@@ -14,7 +14,7 @@ const paymentLabels = { all: 'All', open: 'Open', closed: 'Closed' } as const;
 const statusLabels = { unpaid: 'Unpaid', partial: 'Partially paid', paid: 'Paid' } as const;
 const sorts = { newest: 'Newest first', oldest: 'Oldest first', invoice: 'Invoice number', customer: 'Customer' };
 
-function initialRange(): RangeSelection {
+export function initialRange(): RangeSelection {
   const fromUrl = new URLSearchParams(window.location.search);
   try {
     if (fromUrl.has('preset')) return parseRange(fromUrl);
@@ -53,7 +53,7 @@ function dateLabel(value: string, timeZone: string, includeTime = false) {
   }).format(new Date(value));
 }
 
-function FilterDates({ selection, loaded, onChange }: {
+export function FilterDates({ selection, loaded, onChange }: {
   selection: RangeSelection;
   loaded?: ReportingPage['range'];
   onChange: (range: RangeSelection) => void;
@@ -118,7 +118,7 @@ function PaymentToggle({ selected, onChange }: { selected: PaymentFilter; onChan
 type Load<T> = { path: string; state: 'ready'; value: T }
   | { path: string; state: 'missing' | 'error' };
 
-function useReport<T>(path: string | null) {
+export function useReport<T>(path: string | null) {
   const [request, setRequest] = useState<Load<T>>();
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {

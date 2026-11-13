@@ -1,6 +1,15 @@
 # Project status
 
-Updated: November 8, 2026 (America/Los_Angeles).
+Updated: November 12, 2026 (America/Los_Angeles).
+
+## Sales CRM revenue reconciliation · November 12
+
+Codex is the active implementation lead for the user's Prompt #11 on **feature/sales-crm-revenue-reconciliation**, based exactly on `a81ddae` in a separate worktree. The [implementation and compatibility report](SALES_CRM_REVENUE_RECONCILIATION.md) records the seven-request proposal and review gates.
+
+- Added administrator-only synthetic reconciliation, independent send/amount evidence, immutable original normalized snapshots and an inactive tenant-binding foundation. Existing password authentication, Zoho grant, administrator account and Management fixtures were preserved.
+- TypeScript, build, 263 Vitest tests and 28 Chromium checks passed. Management remains 4 / USD 414 and CRM 3 / USD 300 for the October reference.
+- Fetched main at `928a45c`. Parity is 8 commits ahead and 17 behind. Marketing/Google identity adoption requires separate compatibility review. No main changes were merged.
+- **M5 remains blocked for live financial reporting.** No live reads, mapping activation, full import, push or deployment occurred. The next step is owner selection and separate approval of three existing invoice IDs and the exact seven-read budget.
 
 ## Sales CRM Management parity · November 8
 

@@ -117,3 +117,11 @@ The user approved October 1, 2026 as the initial reporting baseline with later h
 ## Revised Prompt #10 Management reuse, November 8, 2026
 
 The user approved a source audit and compatible reuse of Dizzle Management calculations in an isolated Business Suite worktree. The first successful email instant and original invoice subtotal remain the Sales CRM recognition rules. Management's invoice date and final total are preserved as a separate test reference. Its cost precedence and weighted margin are approved for synthetic implementation and comparison. Live cost sources, product profit allocation and samples integration remain separate decisions. [Management parity report](SALES_CRM_MANAGEMENT_PARITY.md)
+
+## Prompt #11 reconciliation preparation, November 12, 2026
+
+Source: the user's Master Prompt #11. Codex is the active scoped implementation lead. The user explicitly requires a separate worktree based on `a81ddae`, superseding the generic AGENTS instruction to branch from current main for this task. The user also explicitly prohibits push, merge, rebase, cherry-pick, deployment and unapproved live reads, superseding the generic push/PR step.
+
+The approved accounting rules remain first successful email, original subtotal, October 1 Los Angeles cutoff and immutable original credit. Preserve Management's invoice-date/current-total definition for comparison. Implement independent send and original-amount verification and synthetic administrator reconciliation. Prepare constrained live tenant binding without binding demo identities or changing the existing administrator.
+
+Main's Google/Marketing identity policy does not supersede Sales email/password for this task. Real tenant migration, original invoice evidence, bounded live test execution, broader discovery and profit activation remain separate review gates. [Implementation report](SALES_CRM_REVENUE_RECONCILIATION.md)

@@ -36,7 +36,11 @@ let salesIdentity: SalesIdentityStore | undefined;
 if (isSalesCrmEnabled(process.env) && isSalesAuthEnabled(process.env)) {
   try {
     const { openSalesIdentity } = await import('./sales-crm/auth/store');
-    salesIdentity = openSalesIdentity(process.env.NODE_ENV === 'test' ? ':memory:' : undefined);
+    const { loadZohoBindingPolicy } = await import('./sales-crm/auth/zoho-binding');
+    let bindingPolicy;
+    try { bindingPolicy = loadZohoBindingPolicy(process.env); }
+    catch { console.warn('Zoho tenant binding disabled. Review its server configuration.'); }
+    salesIdentity = openSalesIdentity(process.env.NODE_ENV === 'test' ? ':memory:' : undefined, Date.now, bindingPolicy);
   } catch {
     console.warn('Company sign-in is unavailable. Check the local identity database.');
   }

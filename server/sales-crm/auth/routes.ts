@@ -8,6 +8,9 @@ import { getScopedReporting } from '../reporting/routes';
 import type { SalesIdentityStore } from './store';
 import { csrfToken, hasSessionMutationProtection, requestSession, sessionCookie } from './sessions';
 import { changeOwnPassword, managePasswordEmployee } from './password-routes';
+import { manageZohoBinding, zohoBindingApi } from './zoho-binding';
+import { reconciliationApi } from '../../../shared/reconciliation';
+import { getReconciliation } from '../reporting/reconciliation';
 import type { PasswordAuth } from './passwords';
 
 export async function getAuthenticatedSalesCrm(
@@ -28,6 +31,13 @@ export async function getAuthenticatedSalesCrm(
     identity.logout(token);
     res.setHeader('Set-Cookie', sessionCookie(null));
     return { signedOut: true };
+  }
+
+  if (url.pathname === zohoBindingApi || url.pathname === reconciliationApi) {
+    if (!passwordMode || user.role !== 'admin') throw new ApiError(403, 'Password administrator access required.');
+    if (url.pathname === zohoBindingApi) return manageZohoBinding(req, url, token, identity, origins);
+    if (req.method !== 'GET') throw new ApiError(404, 'Route not found.');
+    return getReconciliation(url, reporting, user.organization_id);
   }
 
   if (passwords && req.method === 'POST' && url.pathname === passwordAuthApi + '/change') {

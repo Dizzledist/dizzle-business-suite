@@ -8,6 +8,8 @@ import { openSqliteDatabase, transaction } from '../../sqlite';
 import { ApiError } from '../../workflow';
 import type { ReportingScope } from '../reporting/routes';
 import { absoluteLifetime, idleLifetime, isSessionToken, newSessionToken, sessionDigest } from './sessions';
+import { loadZohoBindingPolicy, type ZohoBindingPolicy } from './zoho-binding';
+import { zohoOrganizationId } from '../zoho/config';
 
 const slug = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}$/);
 const principal = z.object({
@@ -58,7 +60,12 @@ type DirectoryRow = UserRow & {
 type PasswordTarget = { id: string; organization_id: string; email: string; password_hash: string };
 type PasswordAction = { id: string; organization_id: string; purpose: PasswordPurpose; password_hash: string | null };
 
-export function openSalesIdentity(path = resolve('.sales-auth-private', 'identity.sqlite'), now = Date.now) {
+export function openSalesIdentity(
+  path = resolve('.sales-auth-private', 'identity.sqlite'), now = Date.now, policy?: ZohoBindingPolicy,
+) {
+  const validated = policy ? loadZohoBindingPolicy({
+    SALES_ZOHO_TENANT_ID: policy.tenantId, SALES_ZOHO_APPROVAL_REFERENCE: policy.approvalReference,
+  }) : undefined;
   if (path !== ':memory:') {
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
     try { closeSync(openSync(path, 'wx', 0o600)); }
@@ -67,12 +74,15 @@ export function openSalesIdentity(path = resolve('.sales-auth-private', 'identit
   const db = openSqliteDatabase(path, [
     new URL('./migrations/001-identity.sql', import.meta.url),
     new URL('./migrations/002-password-credentials.sql', import.meta.url),
+    new URL('./migrations/003-zoho-binding.sql', import.meta.url),
   ]);
-  return new SalesIdentityStore(db, now);
+  return new SalesIdentityStore(db, now, validated);
 }
 
 export class SalesIdentityStore {
-  constructor(private readonly db: DatabaseSync, private readonly now: () => number) {}
+  constructor(
+    private readonly db: DatabaseSync, private readonly now: () => number, private readonly bindingPolicy?: ZohoBindingPolicy,
+  ) {}
 
   close() { this.db.close(); }
 
@@ -407,6 +417,42 @@ export class SalesIdentityStore {
       if (user.password_hash !== previousHash) throw new ApiError(401, 'Company sign-in required.');
       this.replacePassword(user.id, nextHash);
       this.audit(user.organization_id, user.id, user.id, 'password-changed');
+    });
+  }
+
+  zohoBinding(token: string) {
+    const actor = this.passwordAdministrator(token);
+    const binding = this.db.prepare(`SELECT organization_id, revision, state, approval_reference FROM sales_zoho_bindings
+      WHERE tenant_id = ?`).get(actor.organization_id);
+    return {
+      tenantId: actor.organization_id, organizationId: zohoOrganizationId,
+      eligible: actor.organization_id === this.bindingPolicy?.tenantId,
+      state: binding?.state ?? 'unconfigured', revision: Number(binding?.revision ?? 0),
+      liveAccess: false,
+    };
+  }
+
+  changeZohoBinding(token: string, input: {
+    action: 'approve' | 'revoke'; expectedRevision: number; approvalReference: string;
+  }) {
+    return transaction(this.db, () => {
+      const actor = this.passwordAdministrator(token);
+      const policy = this.bindingPolicy;
+      if (!policy || policy.tenantId !== actor.organization_id || input.approvalReference !== policy.approvalReference) {
+        throw new ApiError(403, 'A server-approved live tenant and approval reference are required.');
+      }
+      const previous = this.zohoBinding(token);
+      if (previous.revision !== input.expectedRevision) throw new ApiError(409, 'The binding changed. Reload before updating.');
+      const state = input.action === 'approve' ? 'approved' : 'revoked';
+      this.db.prepare(`INSERT INTO sales_zoho_bindings VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT (tenant_id) DO UPDATE SET revision = excluded.revision, state = excluded.state,
+        approval_reference = excluded.approval_reference, approved_by = excluded.approved_by, updated_at = excluded.updated_at`)
+        .run(actor.organization_id, zohoOrganizationId, previous.revision + 1, state, policy.approvalReference, actor.id, this.now());
+      this.audit(actor.organization_id, actor.id, actor.id, 'zoho-organization-binding-changed', {
+        organizationId: zohoOrganizationId, before: previous.state, after: state,
+        revision: previous.revision + 1, reference: policy.approvalReference,
+      });
+      return this.zohoBinding(token);
     });
   }
 

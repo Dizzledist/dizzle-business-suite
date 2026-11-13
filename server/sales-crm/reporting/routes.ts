@@ -168,7 +168,8 @@ function report(
     : ' AND credited_user_id IN (SELECT value FROM json_each(?))');
   const scopeArgs: SQLInputValue[] = [authorization.organizationId, zohoOrganizationId];
   if (authorization.credit === 'selected') scopeArgs.push(JSON.stringify(authorization.userIds));
-  const eligible = scope + " AND verification = 'verified' AND review_reason IS NULL AND first_email_at >= ? AND first_email_at < ?";
+  const eligible = scope + " AND verification = 'verified' AND send_verification = 'verified' AND amount_verification = 'verified'" +
+    " AND review_reason IS NULL AND first_email_at >= ? AND first_email_at < ?";
   const selectedArgs = [...scopeArgs, Math.max(range.selected.from, coverageFrom), Math.min(range.selected.until, asOf + 1)];
   const payment = paymentClause(filters.payment);
 

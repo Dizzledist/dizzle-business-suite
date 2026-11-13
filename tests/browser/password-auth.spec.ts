@@ -8,6 +8,20 @@ async function signIn(page: Page, email = samplePasswordEmail, password = sample
 }
 
 if (process.env.DIZZLE_E2E_PASSWORD === 'true') {
+  test('administrator can reconcile synthetic revenue using the shared date controls', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/sales');
+    await signIn(page);
+    await page.getByRole('link', { name: 'Revenue reconciliation' }).click();
+    await expect(page.getByRole('heading', { name: 'Revenue reconciliation' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Management method' })).toBeVisible();
+    await expect(page.getByLabel('Reporting date range')).toHaveValue('mtd');
+    await page.getByLabel('Reporting date range').selectOption('last-month');
+    await expect(page.getByRole('region', { name: 'Revenue reconciliation' })).toContainText('Original amount');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.getByRole('link', { name: 'Dashboard', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Sales Dashboard' })).toBeVisible();
+  });
   test('opens all invoice tabs and shows a private synthetic PDF on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/sales');

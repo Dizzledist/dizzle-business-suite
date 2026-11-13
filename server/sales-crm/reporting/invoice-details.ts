@@ -43,10 +43,10 @@ export function saveInvoiceDetails(
   if (originalRevisionAt === null || originalRevisionAt > exactInstant(evidence.firstEmailAt)! ||
       invoice.sourceModifiedAt !== evidence.originalLineRevision || moneyUnits(invoice.subtotal) !== moneyUnits(evidence.subtotal)) return;
   const discount = invoice.discountType === 'entity_level' ? invoice.invoiceDiscount! : '0';
-  const claimed = db.prepare(`UPDATE reporting_invoices SET recognized_line_revision = ?, recognized_invoice_discount = ?,
+  const claimed = db.prepare(`UPDATE reporting_invoices SET original_snapshot = ?, recognized_line_revision = ?, recognized_invoice_discount = ?,
     recognized_customer_id = ?, recognized_customer_name = ?
     WHERE organization_id = ? AND invoice_id = ? AND recognized_line_revision IS NULL`).run(
-    evidence.originalLineRevision, decimalAmount(moneyUnits(discount)), invoice.customerId, invoice.customerName, ...keys,
+    JSON.stringify(invoice), evidence.originalLineRevision, decimalAmount(moneyUnits(discount)), invoice.customerId, invoice.customerName, ...keys,
   );
   if (claimed.changes === 1) save('recognized');
 }

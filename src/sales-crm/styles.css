@@ -192,12 +192,14 @@
   margin: .75rem 0;
 }
 
+.reconciliation-fields,
 .reporting-detail dl {
   display: grid;
   grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
   gap: .5rem .9rem;
 }
 
+.reconciliation-fields dd,
 .reporting-detail dd {
   margin: 0;
   overflow-wrap: anywhere;
@@ -228,6 +230,7 @@
     display: grid;
   }
 
+  .reconciliation-fields,
   .reporting-detail dl {
     grid-template-columns: 1fr;
   }
