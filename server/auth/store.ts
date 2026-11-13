@@ -2,11 +2,11 @@ import { DatabaseSync } from 'node:sqlite';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, resolve, sep } from 'node:path';
 import { z } from 'zod';
-import { employeeGrants, type EmployeeContext, type GooglePrincipal } from '../../shared/identity';
+import { employeeGrants, employeeRoles, type EmployeeContext, type GooglePrincipal } from '../../shared/identity';
 import { ApiError } from '../workflow';
 import { absoluteLifetime, idleLifetime, digest, isSessionToken, newSessionToken, sessionDigest } from './sessions';
 const id = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/);
-export const employeeInput = z.object({ id, organizationId: id, issuer: z.literal('https://accounts.google.com'), subject: z.string().min(1).max(255).regex(/^\S+$/), hostedDomain: z.string().min(1).max(255), email: z.string().email().max(254), name: z.string().min(1).max(150), active: z.boolean(), grants: z.array(z.enum(employeeGrants)).max(employeeGrants.length) }).strict();
+export const employeeInput = z.object({ id, organizationId: id, issuer: z.literal('https://accounts.google.com'), subject: z.string().min(1).max(255).regex(/^\S+$/), hostedDomain: z.string().min(1).max(255), email: z.string().email().max(254), name: z.string().min(1).max(150), active: z.boolean(), grants: z.array(z.enum(employeeGrants)).max(employeeGrants.length), roles: z.array(z.enum(employeeRoles)).max(employeeRoles.length).default([]), retailStoreIds: z.array(id).max(100).default([]) }).strict();
 export function privateIdentityPath(path: string) {
   const root = resolve('.'), result = resolve(path);
   if (!isAbsolute(path) || result.toLowerCase() === root.toLowerCase() || result.toLowerCase().startsWith((root + sep).toLowerCase())) throw new Error('Identity state must be an absolute private path outside the checkout.');
@@ -15,13 +15,13 @@ export function privateIdentityPath(path: string) {
 function connect(path: string) { const db = new DatabaseSync(path); db.exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;'); return db; }
 export function migrateIdentity(path: string) {
   privateIdentityPath(path); mkdirSync(dirname(path), { recursive: true, mode: 0o700 }); const db = connect(path);
-  try { const version = (db.prepare('PRAGMA user_version').get() as any).user_version; if (version === 1) return; if (version !== 0) throw new Error('Unsupported identity schema.'); db.exec('BEGIN IMMEDIATE'); try { db.exec(readFileSync(new URL('./001-shared-identity.sql', import.meta.url), 'utf8')); db.exec('COMMIT'); } catch(error) { db.exec('ROLLBACK'); throw error; } } finally { db.close(); }
+  try { const version = (db.prepare('PRAGMA user_version').get() as any).user_version; if (version === 2) return; if (![0, 1].includes(version)) throw new Error('Unsupported identity schema.'); db.exec('BEGIN IMMEDIATE'); try { if (version === 0) db.exec(readFileSync(new URL('./001-shared-identity.sql', import.meta.url), 'utf8')); db.exec(readFileSync(new URL('./002-reporting-access.sql', import.meta.url), 'utf8')); db.exec('COMMIT'); } catch(error) { db.exec('ROLLBACK'); throw error; } } finally { db.close(); }
 }
 export class IdentityStore {
   private db: DatabaseSync;
   constructor(path: string, private now: () => number = Date.now) {
     privateIdentityPath(path); if (!existsSync(path)) throw new Error('Identity database missing. Run reviewed explicit migration first.');
-    this.db = connect(path); if ((this.db.prepare('PRAGMA user_version').get() as any).user_version !== 1) { this.db.close(); throw new Error('Run the reviewed identity migration before startup.'); }
+    this.db = connect(path); if ((this.db.prepare('PRAGMA user_version').get() as any).user_version !== 2) { this.db.close(); throw new Error('Run the reviewed identity migration before startup.'); }
   }
   close() { this.db.close(); }
   private transaction<T>(work: () => T) { this.db.exec('BEGIN IMMEDIATE'); try { const result = work(); this.db.exec('COMMIT'); return result; } catch(error) { this.db.exec('ROLLBACK'); throw error; } }
@@ -31,20 +31,26 @@ export class IdentityStore {
     this.transaction(() => {
       this.db.prepare('INSERT INTO employees VALUES(?,?,?,?,?,?,?,?)').run(employee.id, employee.organizationId, employee.issuer, employee.subject, employee.hostedDomain, employee.email, employee.name, Number(employee.active));
       for (const grant of new Set(employee.grants)) this.db.prepare('INSERT INTO employee_grants VALUES(?,?)').run(employee.id, grant);
+      this.reportingAccess(employee.id, employee.roles, employee.retailStoreIds);
       this.db.prepare('DELETE FROM pending_principals WHERE issuer=? AND subject=?').run(employee.issuer, employee.subject); this.audit(employee.organizationId, operator, employee.id, 'employee-provisioned');
     });
   }
-  changeAccess(employeeId: string, organizationId: string, active: boolean, grants: readonly string[], operator: string) {
+  changeAccess(employeeId: string, organizationId: string, active: boolean, grants: readonly string[], operator: string, roles?: readonly string[], retailStoreIds?: readonly string[]) {
     z.boolean().parse(active);
     const parsed = z.array(z.enum(employeeGrants)).parse(grants);
     this.transaction(() => { if (!this.employee(employeeId, organizationId, false)) throw new ApiError(404, 'Employee not in organization.');
       this.db.prepare('UPDATE employees SET active=? WHERE id=? AND organization_id=?').run(Number(active), employeeId, organizationId);
       this.db.prepare('DELETE FROM employee_grants WHERE employee_id=?').run(employeeId); for (const grant of new Set(parsed)) this.db.prepare('INSERT INTO employee_grants VALUES(?,?)').run(employeeId, grant);
+      this.reportingAccess(employeeId, roles, retailStoreIds);
       if (!active) this.db.prepare('DELETE FROM sessions WHERE employee_id=?').run(employeeId); this.audit(organizationId, operator, employeeId, 'access-changed'); });
+  }
+  private reportingAccess(employeeId: string, roles?: readonly string[], stores?: readonly string[]) {
+    if (roles !== undefined) { const parsed = z.array(z.enum(employeeRoles)).max(employeeRoles.length).parse(roles); this.db.prepare('DELETE FROM employee_roles WHERE employee_id=?').run(employeeId); for (const role of new Set(parsed)) this.db.prepare('INSERT INTO employee_roles VALUES(?,?)').run(employeeId, role); }
+    if (stores !== undefined) { const parsed = z.array(id).max(100).parse(stores); this.db.prepare('DELETE FROM employee_retail_stores WHERE employee_id=?').run(employeeId); for (const store of new Set(parsed)) this.db.prepare('INSERT INTO employee_retail_stores VALUES(?,?)').run(employeeId, store); }
   }
   employee(employeeId: string, organizationId: string, requireActive = true): EmployeeContext | null {
     const row: any = this.db.prepare('SELECT * FROM employees WHERE id=? AND organization_id=?').get(employeeId, organizationId); if (!row || requireActive && !row.active) return null;
-    return { id: row.id, organizationId: row.organization_id, name: row.name, email: row.email, grants: this.db.prepare('SELECT grant_name FROM employee_grants WHERE employee_id=? ORDER BY grant_name').all(row.id).map((g: any) => g.grant_name) };
+    return { id: row.id, organizationId: row.organization_id, name: row.name, email: row.email, roles: this.db.prepare('SELECT role FROM employee_roles WHERE employee_id=? ORDER BY role').all(row.id).map((r: any) => r.role), retailStoreIds: this.db.prepare('SELECT store_id FROM employee_retail_stores WHERE employee_id=? ORDER BY store_id').all(row.id).map((r: any) => r.store_id), grants: this.db.prepare('SELECT grant_name FROM employee_grants WHERE employee_id=? ORDER BY grant_name').all(row.id).map((g: any) => g.grant_name) };
   }
   pending() { return this.db.prepare('SELECT * FROM pending_principals ORDER BY seen_at').all(); }
   startSession(principal: GooglePrincipal, organizationId: string, previous?: string) {

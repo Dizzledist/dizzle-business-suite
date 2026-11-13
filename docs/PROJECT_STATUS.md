@@ -1,4 +1,8 @@
-# Current integration task ? November 12, 2026
+# Current task: Phase 1 retail analytics, November 13, 2026
+
+Lead: Cheddr with Codex. `feat/shopify-retail-analytics`, isolated worktree from fetched main `928a45c`. No existing Shopify branch/PR found. Scope: shared-session Marketing retail dashboard, deterministic synthetic reporting, current role/organization/store policy and persistent per-user/dashboard preferences for future management adoption. Main has no merged Owner/Admin/Sales Manager analytics dashboards; invoice fixtures are not promoted into those products. Live Shopify/social calls, Sales authentication/migration, deployment and merge remain out of scope.
+
+## Previous integration task — November 12, 2026
 
 Lead: Cheddr with Codex. Branch feat/marketing-shared-signin combines pinned PR #5 2ad2e46 and PR #6 9f6a9b5 from current main d4afc22. Both sources remain draft/unmodified; no prior review approval is inferred. Scope: shared session/CSRF Marketing adoption, trusted worker resolver, fixture checks and Sales migration rehearsal. Live publishing/deployment/real data migration remain unauthorized.
 
@@ -133,3 +137,9 @@ Review: [draft shared-auth PR #6](https://github.com/Dizzledist/dizzle-business-
 See [MARKETING_SHARED_SIGNIN](MARKETING_SHARED_SIGNIN.md) for the implemented boundary, private settings/storage, localhost demo and Sales manager adoption plan. Final local evidence: typecheck and 180 tests pass; build and 10 browser cases pass. Existing source PR #5/#6 remain draft/unmerged with no submitted reviews found; this is proposed integration for joint review. No real Google/X login, data migration or deployment is claimed. Hosted Marketing now mounts shared sessions/CSRF and authenticated trusted worker resolution; Sales/assignment adoption and actual Google/host/account configuration remain blockers. Live gates remain off.
 
 Review: [draft integration PR #7](https://github.com/Dizzledist/dizzle-business-suite/pull/7), implementation c60113f; both source candidates remain preserved for review.
+
+## Retail Phase 1 implementation outcome
+
+Marketing is wired to fixture retail reporting; Owner/Admin/Sales Manager analytics dashboards are absent on main and remain adoption work. Their shared component/API/preferences are implemented and verified in the dev-only preview. Final `npm run check` passed typecheck, 214 tests, build and 12 Chromium cases. Review the [reporting guide](RETAIL_ANALYTICS.md), shared identity schema002 and channel definitions before merge. No real store or employee data was connected/migrated; Shopify/social live stays off. User review command: `npm run demo:retail` in the retail worktree, http://127.0.0.1:5575; preview at /tests/browser/retail-preview.html after test-provider sign-in.
+
+Review: [draft PR #8](https://github.com/Dizzledist/dizzle-business-suite/pull/8), `feat/shopify-retail-analytics`; implementation 2c8015d. Main remains unchanged at 928a45c. Marketing is wired; management components are verified previews pending real dashboard adoption. Storefront identity and live connection/reconciliation remain separate blockers.

@@ -1,5 +1,7 @@
 # Shared employee sessions and publishing authority
 
+November 13 reporting proposal: [Retail Analytics](RETAIL_ANALYTICS.md) adds explicit shared identity migration 002 for server-managed role/store memberships. Existing IDs/grants/sessions are preserved and new memberships default empty. Startup on that branch requires the explicit migration; the version-1 foundation description below is historical. No Sales authentication/schema migration or role assignment is performed by the reporting task.
+
 Integration follow-up, November 12: [Marketing shared sign-in](MARKETING_SHARED_SIGNIN.md) describes adoption on a separate branch. Its `marketing:serve` mounts the domain resolver; standalone `auth:serve` below remains module-only. Source PR #5/#6 remain unchanged; Sales adoption is pending joint review.
 
 Prepared November 12, 2026 by Cheddr with Codex on `feat/shared-google-workspace-auth`. This is a proposed shared extraction for joint review, not a deployed sign-in or authorization service. Live publishing remains disabled. Business authority remains [C1](CONTRACTS.md) and [PERMISSIONS](PERMISSIONS.md); build ownership grants no employee privileges.

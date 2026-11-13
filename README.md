@@ -1,5 +1,7 @@
 # Dizzle AI Business Suite
 
+**Retail Analytics Phase 1:** run `npm run demo:retail`, open **http://127.0.0.1:5575**, sign in with the isolated test provider and select Retail Analytics. The [fixture reporting guide](docs/RETAIL_ANALYTICS.md) includes metric rules, role/store access, the management-toggle adoption preview and live-store verification steps. No live Shopify store is connected.
+
 The integration branch adds [shared Google Workspace sign-in for Marketing](docs/MARKETING_SHARED_SIGNIN.md). Run `npm run demo:signin` at **http://127.0.0.1:5474** for the test-provider session demo with temporary data. Hosted setup uses `marketing:serve` with private configuration. Live publishing stays off.
 
 Dizzle is a web app for the AI Business Suite described in the [project brief](docs/PROJECT_SCOPE.md).
