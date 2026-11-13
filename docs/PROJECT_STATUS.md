@@ -2,6 +2,10 @@
 
 Updated: November 12, 2026 (America/Los_Angeles).
 
+## GitHub publication authorization · November 12
+
+The user authorized normal pushes of the newest completed feature branches. This supersedes the earlier no-push restriction for publication only; main, deployment, live-data and tenant boundaries remain unchanged. Codex is the scoped lead for GitHub publication and remote verification. Historical evidence, revenue reconciliation/verification and the deferred Google branch remain separate. Existing code passed 314 Vitest, 38 Chromium, TypeScript and build; this publication checkpoint changes documentation only. Three unfinished older Zoho-validation drafts remain local and untouched. See the latest handoff for the exact publication refs and checks.
+
 ## Historical evidence and operational reporting · November 12
 
 Codex is the active scoped implementation lead for Prompt #12 on **feature/sales-crm-historical-evidence**, in a separate worktree based on documentation commit `9658353` (runtime ancestor `844e779`). Modules: source-clock interpretation, synthetic document evidence, administrator reporting modes and prospective capture preparation. Dependencies reuse the existing identity, reporting store, reconciliation and PDF services. Shared API and accounting distinctions require review. No additional Zoho reads, real emails, live bindings, imports, push or deployment are authorized. Implementation and local verification are complete. [Historical evidence guide](SALES_CRM_HISTORICAL_EVIDENCE.md)

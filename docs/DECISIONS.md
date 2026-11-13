@@ -139,3 +139,9 @@ Source: the user's Prompt #12. Create the separate feature/sales-crm-historical-
 Official recognition remains first independently verified successful email, verified original subtotal and frozen original quantities/salesperson credit, with the October 1, 2026 reporting boundary. The user approves a separately labeled, optional administrator-only **Operational Sales: Dizzle Management Method** using current invoice date/final total and reviewed Management eligibility/status rules. This authorizes synthetic comparison and an opt-in dashboard selector; it does not supersede official recognition or commission policy and does not authorize live Operational Sales.
 
 Register and review synthetic evidence separately for send dates and original amounts. Preserve raw source time independently of the CRM calendar, reject DST ambiguity, and do not promote an uploaded document into financial recognition. Future archive, timezone, capture and tenant/import work requires the documented explicit approval gates. [Historical evidence guide](SALES_CRM_HISTORICAL_EVIDENCE.md)
+
+## GitHub publication authorization, November 12, 2026
+
+Source: the user's explicit request to push all newest unpublished updates. This authorizes normal, non-forced pushes of the completed Sales CRM feature branches, superseding the earlier no-push restriction for publication only. It does not authorize merge, deployment, live requests/imports, account/tenant changes or modifications to Dizzle Management.
+
+The three publication refs are feature/sales-crm-historical-evidence, feature/sales-crm-revenue-reconciliation and the separate deferred feature/sales-crm-google-oidc. Earlier approved CRM milestones already exist in the published Management-parity ancestry. Preserve the three unfinished untracked Zoho-validation drafts; do not mix them into the completed branches. A write-capable GitHub login and final remote-tip verification are required for publication.
