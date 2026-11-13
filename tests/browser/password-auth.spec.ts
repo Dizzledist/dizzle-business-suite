@@ -121,3 +121,41 @@ if (process.env.DIZZLE_E2E_PASSWORD === 'true') {
     } finally { await context.close(); }
   });
 }
+
+if (process.env.DIZZLE_E2E_PASSWORD === 'true' && process.env.SALES_HISTORICAL_EVIDENCE_ENABLED === 'true') {
+  test('administrator switches distinct reporting bases while retaining date filters and original reports', async ({page}) => {
+    await page.setViewportSize({width:390,height:844});await page.goto('/sales');await signIn(page);
+    await expect(page.getByRole('combobox',{name:'Reporting method',exact:true})).toHaveValue('verified');
+    await page.getByLabel('Reporting date range').selectOption('last-month');
+    await page.getByRole('combobox',{name:'Reporting method',exact:true}).selectOption('operational');
+    await expect(page.getByRole('heading',{name:'Operational Sales: Dizzle Management Method'})).toBeVisible();
+    await expect(page.getByLabel('Reporting date range')).toHaveValue('last-month');
+    await expect(page.getByRole('region',{name:'Reporting methods'})).toContainText('Current final invoice total');
+    await page.getByLabel('Reporting date range').selectOption('custom');
+    await page.getByLabel('Start date').fill('2026-09-01');await page.getByLabel('End date').fill('2026-09-30');
+    await page.getByRole('button',{name:'Apply dates'}).click();
+    await expect(page.getByText('Totals unavailable — incomplete evidence or coverage')).toBeVisible();
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    await page.getByRole('combobox',{name:'Reporting method',exact:true}).selectOption('verified');
+    await expect(page.getByRole('heading',{name:'Verified Sales',exact:true})).toBeVisible();
+  });
+
+  test('administrator registers a protected original PDF without verifying a sale', async ({page}) => {
+    await page.setViewportSize({width:390,height:844});await page.goto('/sales');await signIn(page);
+    await page.getByRole('link',{name:'Historical evidence',exact:true}).click();
+    await expect(page.getByRole('heading',{name:'Historical evidence',exact:true})).toBeVisible();
+    await page.getByRole('button',{name:'Register evidence',exact:true}).click();
+    await expect(page.getByRole('status')).toContainText('Evidence registered as pending');
+    await expect(page.getByRole('heading',{name:'Registered evidence'})).toBeVisible();
+    const pdfResponse=await page.request.get(await page.getByRole('link',{name:'Open protected evidence PDF'}).getAttribute('href')??'');
+    expect(pdfResponse.status()).toBe(200);expect(pdfResponse.headers()['cache-control']).toBe('private, no-store');
+    expect((await pdfResponse.body()).toString()).toContain('Original subtotal');
+    await page.getByLabel('Verification state').selectOption('verified');
+    await page.getByLabel('Independent corroboration reference').fill('Sample original archive');
+    await page.getByLabel('Review notes').fill('Independent fixture review');
+    await page.getByLabel('Original subtotal from evidence').fill('925.75');
+    await page.getByRole('button',{name:'Record review',exact:true}).click();
+    await expect(page.getByRole('status')).toContainText('Independently verify identity and provenance');
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  });
+}

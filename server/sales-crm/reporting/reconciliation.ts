@@ -22,7 +22,7 @@ type Row = {
 
 // Adapted from Management lib/invoice-filters.ts and lib/sync-policy.ts at f8da43c.
 // The reference includes non-void emailed drafts and uses the current invoice date.
-function managementQualifies(source: ZohoInvoice, start: string, end: string, today: string, cutoff: string) {
+export function managementQualifies(source: ZohoInvoice, start: string, end: string, today: string, cutoff: string) {
   return source.emailed === true && source.status !== 'void' && source.invoiceDate !== null &&
     /^\d{4}-\d{2}-\d{2}$/.test(source.invoiceDate) && source.invoiceDate >= cutoff &&
     source.invoiceDate <= today && source.invoiceDate >= start && source.invoiceDate <= end;

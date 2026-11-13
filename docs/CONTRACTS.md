@@ -142,3 +142,16 @@ Consumers are Sales reporting, invoice detail/product reports and the administra
 - General live sync budgets and the proposed seven-attempt diagnostic budget are different operational contracts. The diagnostic cannot reuse automatic retries unchanged. No transport is added by the pure plan helper.
 
 Reporting migration 003 and identity migration 003 are additive and tested on disposable stores. Do not apply the main branch's separate shared-identity migration loader to these stores. [Detailed report and approval proposal](SALES_CRM_REVENUE_RECONCILIATION.md)
+
+## Prompt #12 historical evidence and reporting-method contracts
+
+Consumers: administrator dashboard, synthetic evidence review and future capture adapters. Codex is the scoped lead under the user's November 12 Prompt #12. Sales/accounting and shared identity reviewers must review any real-document promotion, provider semantics or tenant activation separately.
+
+- shared/historical-evidence.ts defines SourceClock with raw value, independently verified IANA zone, precision, possible instants, interpreted instant/status/reference. Clock verification alone does not verify first-send success. Minute-only and ambiguous source times stay pending.
+- The opt-in SALES_HISTORICAL_EVIDENCE_ENABLED flag is false by default. The existing password session must resolve an active administrator; new endpoints additionally require demo-o1 and explicit source=synthetic. Fixture headers, other tenants, reps/managers and organization overrides cannot grant access.
+- GET /api/sales-crm/reporting-methods accepts a strict basis/date/payment/source query. Verified delegates to the existing recognition report. Operational uses current snapshots, invoice date/current final total and the reviewed Management eligibility/status rules. Methods and currencies remain separate; unknown coverage uses nullable totals, never invented zero. This provisional route never changes commission policy.
+- GET/POST /api/sales-crm/evidence, POST /api/sales-crm/evidence/{id}/reviews and GET /api/sales-crm/evidence/{id}/document register/review fixed synthetic artifacts and deliver a protected fixture PDF. Mutations use existing CSRF. Identity, registrar/reviewer and timestamps are server owned; hashes are rechecked, duplicates deduplicated and stale review revisions rejected.
+- Reporting migration 004 adds documents/reviews to the existing store without rewriting original snapshots. Registration starts pending; independent send and amount reviews are audited separately. No review promotes a recognized sale. No real upload, mail parser, public URL/file proxy or live data adapter is enabled.
+- prepareProspectiveCapture is a pure, synthetic-tested gate. A future trusted adapter must prove first successful acceptance, exact source clock and original structured revision before it can supply RecognitionEvidence. No ingress/webhook or poll is activated.
+
+Existing employee/rep/team scopes, tenant-binding liveAccess=false, Zoho READ scopes, official recognition, warehouse and invoice/PDF contracts are unchanged. [Implementation and future approval gates](SALES_CRM_HISTORICAL_EVIDENCE.md)

@@ -5,6 +5,7 @@ export const salesCrmApiWorkspace = '/api/sales-crm/workspace';
 
 export interface SalesCrmWorkspace {
   displayName: string;
+  historicalEvidenceEnabled?: boolean;
   integrations: {
     zohoInventory: 'not-configured';
     shipStation: 'not-configured';

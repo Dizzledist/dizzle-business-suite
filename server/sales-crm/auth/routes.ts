@@ -12,6 +12,9 @@ import { manageZohoBinding, zohoBindingApi } from './zoho-binding';
 import { reconciliationApi } from '../../../shared/reconciliation';
 import { getReconciliation } from '../reporting/reconciliation';
 import type { PasswordAuth } from './passwords';
+import { evidenceApi, methodsApi, isHistoricalEvidenceEnabled } from '../../../shared/historical-evidence';
+import { reportingMethod } from '../reporting/methods';
+import { evidenceRoute } from '../reporting/documents';
 
 export async function getAuthenticatedSalesCrm(
   req: IncomingMessage, res: ServerResponse, url: URL, identity: SalesIdentityStore | undefined,
@@ -31,6 +34,17 @@ export async function getAuthenticatedSalesCrm(
     identity.logout(token);
     res.setHeader('Set-Cookie', sessionCookie(null));
     return { signedOut: true };
+  }
+
+  if (url.pathname === methodsApi || url.pathname === evidenceApi || url.pathname.startsWith(evidenceApi + '/')) {
+    if (!isHistoricalEvidenceEnabled(process.env)) throw new ApiError(404, 'Route not found.');
+    if (!passwordMode || user.role !== 'admin') throw new ApiError(403, 'Password administrator access required.');
+    if (url.pathname === methodsApi) {
+      if (req.method !== 'GET') throw new ApiError(404, 'Route not found.');
+      return reportingMethod(url, reporting, user.organization_id);
+    }
+    return evidenceRoute(req, url, reporting, { tenant: user.organization_id, id: user.id },
+      hasSessionMutationProtection(req, token, origins));
   }
 
   if (url.pathname === zohoBindingApi || url.pathname === reconciliationApi) {
@@ -59,6 +73,7 @@ export async function getAuthenticatedSalesCrm(
   if (url.pathname === salesCrmApiWorkspace) {
     return {
       displayName: user.name,
+      ...(passwordMode && user.role === 'admin' && isHistoricalEvidenceEnabled(process.env) ? { historicalEvidenceEnabled: true } : {}),
       integrations: { zohoInventory: 'not-configured', shipStation: 'not-configured' },
     };
   }

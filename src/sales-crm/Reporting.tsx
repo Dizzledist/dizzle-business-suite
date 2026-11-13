@@ -375,7 +375,7 @@ function InvoiceTable({ data, onPage, onDetail }: {
   </>;
 }
 
-export function SalesReporting({ dashboard }: { dashboard: boolean }) {
+export function SalesReporting({ dashboard, onRangeChange }: { dashboard: boolean; onRangeChange?: (range: RangeSelection) => void }) {
   const [range, setRange] = useState(initialRange);
   const [payment, setPayment] = useState(initialPayment);
   const [sort, setSort] = useState<InvoiceSort>('newest');
@@ -395,6 +395,7 @@ export function SalesReporting({ dashboard }: { dashboard: boolean }) {
 
   function changeRange(next: RangeSelection) {
     setRange(next);
+    onRangeChange?.(next);
     updateLocation(next, payment);
     setPage(1);
     setDetail(null);

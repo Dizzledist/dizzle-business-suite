@@ -4,12 +4,13 @@ import { ApiError } from '../../workflow';
 export const maxInvoicePdfBytes = 5 * 1024 * 1024;
 
 // Fixture-only. There is no provider transport, token access or live binding here.
-export function syntheticInvoicePdf(id: string) {
+export function syntheticInvoicePdf(id: string, evidenceLines?: readonly string[]) {
   if (!/^100[1-5]$|^1010$/.test(id)) return null;
   const content = [
     'BT /F1 20 Tf 48 752 Td (Dizzle Business Suite) Tj',
     '/F1 14 Tf 0 -38 Td (Synthetic invoice DEMO-' + id + ') Tj',
-    '/F1 11 Tf 0 -22 Td (Local invoice viewer fixture) Tj ET',
+    '/F1 11 Tf 0 -22 Td (Local invoice viewer fixture) Tj' + (evidenceLines ? '' : ' ET'),
+    ...(evidenceLines ? [...evidenceLines.map(line => '0 -18 Td (' + line.replace(/[^\x20-\x7e]/g, '').replace(/[()\\]/g, '\\$&') + ') Tj'), 'ET'] : []),
   ].join('\n');
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',

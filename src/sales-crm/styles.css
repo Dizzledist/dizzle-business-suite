@@ -340,3 +340,9 @@
     font-size: .875rem;
   }
 }
+
+.evidence-form { display: grid; gap: .8rem; }
+.evidence-form label { display: grid; gap: .3rem; }
+.evidence-form label:has(input[type="checkbox"]) { display: flex; align-items: center; gap: .5rem; }
+.evidence-form input[type="checkbox"] { width: auto; }
+.evidence-digest { overflow-wrap: anywhere; word-break: break-all; }

@@ -8,6 +8,8 @@ import { Dashboard, DashboardCard } from './Dashboard';
 import { sections } from './sections';
 import { SalesReporting } from './Reporting';
 import { RevenueReconciliation } from './Reconciliation';
+import { HistoricalReportingModes } from './HistoricalReportingModes';
+import { HistoricalEvidence } from './HistoricalEvidence';
 
 type Access =
   | { status: 'loading' }
@@ -17,6 +19,7 @@ type Access =
 
 const integrationStatus = { 'not-configured': 'Not configured' };
 const reconciliationSection = { path: salesCrmPath + '/reconciliation', label: 'Revenue reconciliation', icon: '≋' };
+const evidenceSection = { path: salesCrmPath + '/evidence', label: 'Historical evidence', icon: '▤' };
 const userSection = { path: salesCrmPath + '/users', label: 'User management', icon: '◎' };
 const accountSection = { path: salesCrmPath + '/account', label: 'Account settings', icon: '⚙' };
 
@@ -83,10 +86,13 @@ function Workspace({ section, session, controls }: {
   const users = section.path === userSection.path;
   const account = section.path === accountSection.path;
   const reconciliation = section.path === reconciliationSection.path;
+  const evidence = section.path === evidenceSection.path;
+  const historicalEnabled = !!access.workspace.historicalEvidenceEnabled && session?.role === 'admin';
   const standardNavigation = !session ? sections : session.role === 'admin' ? [...sections, userSection]
     : sections.filter(item => item.path !== salesCrmPath + '/settings');
   const navigation = session?.email ? [...standardNavigation, accountSection,
-    ...(session.role === 'admin' ? [reconciliationSection] : [])] : standardNavigation;
+    ...(session.role === 'admin' ? [reconciliationSection, ...(historicalEnabled ? [evidenceSection] : [])] : [])] : standardNavigation;
+  if (evidence && (!historicalEnabled || !session?.email)) return <Notice heading="Historical evidence unavailable" />;
   if (reconciliation && (!session?.email || session.role !== 'admin')) return <Notice heading="Administrator access required" />;
   if (account && !session?.email) return <Notice heading="Account settings unavailable" />;
   if (session && session.role !== 'admin' && (settings || users)) return <Notice heading="Administrator access required" />;
@@ -112,7 +118,7 @@ function Workspace({ section, session, controls }: {
           <p>Viewing as {displayName}. This local workspace uses synthetic data.</p>
           {controls}
         </header>
-        {(dashboard || reports) && <SalesReporting dashboard={dashboard} />}
+        {dashboard && historicalEnabled ? <HistoricalReportingModes /> : (dashboard || reports) && <SalesReporting dashboard={dashboard} />}
         {dashboard && <Dashboard />}
         {settings && (
           <section className="sales-crm-group" aria-label="Integrations">
@@ -126,7 +132,8 @@ function Workspace({ section, session, controls }: {
         {users && session && <UserDirectory session={session} />}
         {account && session && <AccountPassword session={session} />}
         {reconciliation && <RevenueReconciliation />}
-        {!dashboard && !reports && !users && !account && !reconciliation && (
+        {evidence && session && <HistoricalEvidence session={session} />}
+        {!dashboard && !reports && !users && !account && !reconciliation && !evidence && (
           <section className="panel sales-crm-card">
             <h2>Development placeholder</h2>
             <p>{section.label} functionality is planned for a future phase.</p>
@@ -140,7 +147,7 @@ function Workspace({ section, session, controls }: {
 export default function SalesCrm() {
   const path = window.location.pathname.replace(/\/$/, '');
   const section = sections.find(item => item.path === path) ??
-    (salesCrmSessionEnabled ? [userSection, accountSection, reconciliationSection].find(item => item.path === path) : undefined);
+    (salesCrmSessionEnabled ? [userSection, accountSection, reconciliationSection, evidenceSection].find(item => item.path === path) : undefined);
   if (!section) return <Notice heading="Page unavailable" />;
   if (!salesCrmSessionEnabled) return <Workspace section={section} />;
   return <CompanyAccess>{(session, controls) => <Workspace section={section} session={session} controls={controls} />}</CompanyAccess>;

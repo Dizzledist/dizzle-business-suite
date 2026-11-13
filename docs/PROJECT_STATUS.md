@@ -2,6 +2,14 @@
 
 Updated: November 12, 2026 (America/Los_Angeles).
 
+## Historical evidence and operational reporting · November 12
+
+Codex is the active scoped implementation lead for Prompt #12 on **feature/sales-crm-historical-evidence**, in a separate worktree based on documentation commit `9658353` (runtime ancestor `844e779`). Modules: source-clock interpretation, synthetic document evidence, administrator reporting modes and prospective capture preparation. Dependencies reuse the existing identity, reporting store, reconciliation and PDF services. Shared API and accounting distinctions require review. No additional Zoho reads, real emails, live bindings, imports, push or deployment are authorized. Implementation and local verification are complete. [Historical evidence guide](SALES_CRM_HISTORICAL_EVIDENCE.md)
+
+- Added protected synthetic evidence with independent send/amount reviews and DST-aware source clocks. Reviews do not promote sales. Added an opt-in administrator reporting selector with separate Verified and Operational totals; default flag remains off.
+- TypeScript, build, 314 Vitest checks and 38 Chromium checks passed. October reference remains Verified 3 / USD 300 and Operational 4 / USD 414. Original password authentication, reporting/PDF, reconciliation and warehouse regression checks passed.
+- **M5 remains blocked for live financial reporting.** No additional live requests, real emails, migration of private stores, bindings, imports, pushes or deployment occurred. Next: independently corroborate one known original send/revision and source timezone under a separately approved scope.
+
 ## Controlled Zoho verification · November 12
 
 Codex completed the separately approved Prompt #12A diagnostic from `844e779`. The [sanitized verification checkpoint](ZOHO_CONTROLLED_VERIFICATION.md) records the operational boundary.

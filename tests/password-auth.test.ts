@@ -17,6 +17,7 @@ import { reportingApi } from '../shared/reporting';
 import { passwordAuthApi, salesAuthApi, type SalesDirectory, type SalesRole } from '../shared/sales-auth';
 import { invoicePayload } from './fixtures/zoho-invoices';
 import { reconciliationApi } from '../shared/reconciliation';
+import { evidenceApi, methodsApi } from '../shared/historical-evidence';
 import { loadZohoBindingPolicy, zohoBindingApi, type ZohoBindingPolicy } from '../server/sales-crm/auth/zoho-binding';
 
 const origin = 'http://127.0.0.1:5173';
@@ -29,9 +30,10 @@ const admin = { name: 'Sample Admin', email: adminEmail, department: 'sales', te
 let api: ReturnType<typeof createApi> | undefined;
 let closeStores: (() => void) | undefined;
 
-async function start(options: { clock?: () => number; enabled?: boolean; configured?: boolean; bindingPolicy?: ZohoBindingPolicy } = {}) {
+async function start(options: { clock?: () => number; enabled?: boolean; configured?: boolean; historical?: boolean; bindingPolicy?: ZohoBindingPolicy } = {}) {
   vi.stubEnv('NODE_ENV', 'test');
   vi.stubEnv('SALES_CRM_ENABLED', 'true');
+  vi.stubEnv('SALES_HISTORICAL_EVIDENCE_ENABLED', options.historical ? 'true' : 'false');
   vi.stubEnv('SALES_CRM_AUTH_ENABLED', 'true');
   vi.stubEnv('SALES_CRM_PASSWORD_ENABLED', options.enabled === false ? 'false' : 'true');
   const identity = openSalesIdentity(':memory:', options.clock, options.bindingPolicy);
@@ -109,6 +111,54 @@ afterEach(async () => {
 });
 
 describe('Company email and password authentication', () => {
+  it('keeps optional historical endpoints disabled by default', async () => {
+    const {administrator,send,cookieHeader}=await start();
+    const token=await administrator('demo-o1');
+    expect((await send(methodsApi+'?source=synthetic','GET',cookieHeader(token))).status).toBe(404);
+    expect((await send(evidenceApi+'?source=synthetic','GET',cookieHeader(token))).status).toBe(404);
+  });
+
+  it('enforces administrator roles, source selection and tenant isolation on both new endpoints', async () => {
+    const {administrator,send,cookieHeader,createEmployee,redeem,login}=await start({historical:true});
+    for(const path of [methodsApi,evidenceApi])expect((await send(path+'?source=synthetic')).status).toBe(401);
+    const token=await administrator('demo-o1');
+    expect((await send(methodsApi+'?source=synthetic&basis=operational','GET',cookieHeader(token))).status).toBe(200);
+    expect((await send(evidenceApi+'?source=synthetic','GET',cookieHeader(token))).status).toBe(200);
+    expect((await send(methodsApi+'?source=live','GET',cookieHeader(token))).status).toBe(400);
+    expect((await send(evidenceApi+'?source=synthetic&organizationId=821729823','GET',cookieHeader(token))).status).toBe(400);
+    for(const role of ['sales_rep','sales_manager'] as const){
+      const employee=await createEmployee(token,'Historical '+role,'north',role);await redeem(employee.email,employee.code);
+      const signed=(await login(employee.email)).cookie!;
+      for(const path of [methodsApi,evidenceApi])expect((await send(path+'?source=synthetic','GET',{...cookieHeader(signed),'X-Role':'admin'})).status).toBe(403);
+    }
+  });
+
+  it('rejects a different tenant administrator even with the historical flag enabled', async () => {
+    const {administrator,send,cookieHeader}=await start({historical:true});
+    const token=await administrator();
+    for(const path of [methodsApi,evidenceApi])expect((await send(path+'?source=synthetic','GET',cookieHeader(token))).status).toBe(403);
+  });
+
+  it('protects registration, review and document reads with session, CSRF and immutable identity', async () => {
+    const {administrator,send,cookieHeader,json,createEmployee,redeem,login}=await start({historical:true});
+    const token=await administrator('demo-o1');
+    const input={source:'synthetic',invoiceId:'1001',artifactId:'1001-original-pdf',provenance:'Synthetic independent archive'};
+    expect((await send(evidenceApi,'POST',{'Content-Type':'application/json',...cookieHeader(token)},JSON.stringify(input))).status).toBe(403);
+    expect((await json(evidenceApi,{...input,organizationId:'821729823'},'POST',token)).status).toBe(400);
+    const registered=await json(evidenceApi,input,'POST',token);expect(registered.status).toBe(200);
+    const row=JSON.parse(registered.body);expect(row).toMatchObject({sendStatus:'pending',amountStatus:'pending'});
+    const path=evidenceApi+'/'+row.id+'/document?source=synthetic';
+    expect((await send(path)).status).toBe(401);
+    const document=await send(path,'GET',cookieHeader(token));
+    expect(document.status).toBe(200);expect(document.headers['cache-control']).toBe('private, no-store');
+    expect(document.headers['content-type']).toBe('application/pdf');
+    const employee=await createEmployee(token,'Document Scope Rep',null);await redeem(employee.email,employee.code);
+    const signed=(await login(employee.email)).cookie!;
+    expect((await send(path,'GET',cookieHeader(signed))).status).toBe(403);
+    expect((await json(evidenceApi+'/'+row.id+'/reviews',{source:'synthetic',reviewerId:'forged'},'POST',token)).status).toBe(400);
+    expect((await send(evidenceApi+'?source=synthetic','GET',cookieHeader(token))).body).not.toMatch(/password_hash|access_token|refresh_token|client_secret/);
+  });
+
   it('limits reconciliation to password administrators of the synthetic tenant and rejects browser org changes', async () => {
     const { administrator, send, cookieHeader, createEmployee, redeem, login } = await start();
     expect((await send(reconciliationApi)).status).toBe(401);

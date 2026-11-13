@@ -131,3 +131,11 @@ Main's Google/Marketing identity policy does not supersede Sales email/password 
 Source: the user's explicit selection and two subsequent approvals. The user retained a seven-Inventory-GET limit, then approved replacing the original organization-list call with a single exact-number lookup. After review of the three numeric IDs, the user separately approved six detail/history GETs. No further discovery, retry, pagination, PDF/payment read, write, import or activation was authorized. The generic push/PR rule remains superseded by the user's no-push boundary.
 
 The diagnostic completed within that budget. First-success and original-value requirements remain unchanged. No unverified record becomes an official sale, and operational approval grants no live CRM tenant access. [Verification checkpoint](ZOHO_CONTROLLED_VERIFICATION.md)
+
+## Prompt #12 historical evidence and optional operational basis, November 12, 2026
+
+Source: the user's Prompt #12. Create the separate feature/sales-crm-historical-evidence worktree from documentation commit 9658353, retaining runtime ancestor 844e779; this supersedes the generic main-branch start for this task. The user prohibits additional live Zoho requests, actual email ingestion, live tenant activation/import, changes to Management, push, merge and deployment. These prohibitions supersede the generic push/PR instruction.
+
+Official recognition remains first independently verified successful email, verified original subtotal and frozen original quantities/salesperson credit, with the October 1, 2026 reporting boundary. The user approves a separately labeled, optional administrator-only **Operational Sales: Dizzle Management Method** using current invoice date/final total and reviewed Management eligibility/status rules. This authorizes synthetic comparison and an opt-in dashboard selector; it does not supersede official recognition or commission policy and does not authorize live Operational Sales.
+
+Register and review synthetic evidence separately for send dates and original amounts. Preserve raw source time independently of the CRM calendar, reject DST ambiguity, and do not promote an uploaded document into financial recognition. Future archive, timezone, capture and tenant/import work requires the documented explicit approval gates. [Historical evidence guide](SALES_CRM_HISTORICAL_EVIDENCE.md)

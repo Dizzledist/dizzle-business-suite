@@ -12,6 +12,7 @@ export function openReportingDatabase(path: string) {
     new URL('./migrations/001-invoice-reporting.sql', import.meta.url),
     new URL('./migrations/002-invoice-details.sql', import.meta.url),
     new URL('./migrations/003-revenue-evidence.sql', import.meta.url),
+    new URL('./migrations/004-historical-documents.sql', import.meta.url),
   ]);
 }
 

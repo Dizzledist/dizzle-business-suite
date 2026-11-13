@@ -79,7 +79,7 @@ describe('Reporting persistence and recognition', () => {
     upsertInvoice(db, invoice(), { status: 'pending' }, now); // older snapshot cannot roll back settlement
     db.close();
     db = openReportingDatabase(file);
-    expect(db.prepare('PRAGMA user_version').get()).toMatchObject({ user_version: 3 });
+    expect(db.prepare('PRAGMA user_version').get()).toMatchObject({ user_version: 4 });
     expect(db.prepare('SELECT COUNT(*) AS count FROM reporting_invoices').get()).toMatchObject({ count: 1 });
     expect(row()).toMatchObject({ verification: 'verified', credited_user_id: 'rep-a', customer_id: '803',
       first_email_at: Date.parse(evidence.firstEmailAt), amount: '100230000', balance: '60250000', payment: 'partial' });
